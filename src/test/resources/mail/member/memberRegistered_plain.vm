@@ -1,0 +1,12 @@
+Subject: ${subject}
+From: ${from}
+To: sea@gmail.com
+Attachment: ${attachment}
+
+${memberName}様
+
+会員登録したよー
+
+■${memberAccount}
+
+よろしくお願いいたします。

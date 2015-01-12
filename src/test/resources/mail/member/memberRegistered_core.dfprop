@@ -1,0 +1,11 @@
+map:{
+    ; from = @support.address@
+    ; to = $$dynamic$$
+    ; subject = 銭湯はどこですか？
+    ; attachment = map:{
+        ; attach1 = map:{
+            ; filename = abc.xls.$$dynamic$$
+        }
+    }
+    ; suppressHtml = true
+}
