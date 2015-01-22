@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.dbflute.mailflute</groupId>
 	<artifactId>mailflute</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>0.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>MailFlute</name>
@@ -12,6 +12,8 @@
 	<inceptionYear>2014</inceptionYear>
 
 	<properties>
+		<dbflute.version>1.1.0</dbflute.version>
+		<javax.mail.version>1.4.5</javax.mail.version>
 		<slf4j.version>1.7.7</slf4j.version>
 		<junit.version>4.8.2</junit.version>
 	</properties>
@@ -189,6 +191,16 @@
 		<!-- =============== -->
 		<!-- |   compile   | -->
 		<!-- =============== -->
+		<dependency>
+			<groupId>org.dbflute</groupId>
+			<artifactId>dbflute-runtime</artifactId>
+			<version>${dbflute.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>${javax.mail.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
