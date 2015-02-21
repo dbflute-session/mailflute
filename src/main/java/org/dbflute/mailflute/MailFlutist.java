@@ -15,9 +15,28 @@
  */
 package org.dbflute.mailflute;
 
+import java.util.List;
+
+import javax.mail.Address;
+
 /**
  * @author jflute
+ * @author Takeshi Kato
  * @since 1.0.0 (2015/01/12 Monday at higashi-ginza)
  */
 public interface MailFlutist {
+	
+    Address getFromAddress();
+    
+    List<Address> getToAddressList();
+    
+    List<Address> getCcAddressList();
+    
+    List<Address> getBccAddressList();
+    
+    String getSubject();
+    
+    String getPlainBody();
+    
+    String getHtmlBody();
 }

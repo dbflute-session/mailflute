@@ -25,6 +25,7 @@ import org.dbflute.mailflute.send.exception.SMailMessageSettingFailureException;
 
 /**
  * @author jflute
+ * @author Takeshi Kato
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
 public class SMailMessage {
@@ -43,6 +44,10 @@ public class SMailMessage {
 
     protected Session extractNativeSession(SMailSession session) {
         return session.getNativeSession();
+    }
+    
+    public MimeMessage getMimeMessage(){
+    	return message;
     }
 
     // ===================================================================================

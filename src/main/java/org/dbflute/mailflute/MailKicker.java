@@ -15,13 +15,73 @@
  */
 package org.dbflute.mailflute;
 
+import javax.mail.Address;
+
+import org.dbflute.mailflute.send.SMailPost;
+import org.dbflute.mailflute.send.SMailSender;
+import org.dbflute.mailflute.send.SMailSession;
+import org.dbflute.mailflute.send.SMailSessionHolder;
+import org.dbflute.mailflute.send.simple.SMailSimpleJapaneseSender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author jflute
+ * @author Takeshi Kato
  * @since 1.0.0 (2015/01/12 Monday at higashi-ginza)
  */
 public class MailKicker {
 
-    public void kick(MailFlutist flutist) {
-        // TODO jflute mailflute: kick implementation
-    }
+    // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
+    private static final Logger LOG = LoggerFactory.getLogger(MailKicker.class);
+
+    // ===================================================================================
+    //                                                                           Send mail
+    //                                                                    ================
+	public void kick(MailFlutist flutist) {
+		SMailSender sender = getSMailSender();
+
+		SMailPost post = new SMailPost();
+		
+		post.setSubject(flutist.getSubject());
+		post.setPlainBody(flutist.getPlainBody());
+		post.setHtmlBody(flutist.getHtmlBody());
+
+		post.setFrom(flutist.getFromAddress());
+		
+		for (Address toAddr : flutist.getToAddressList()) {
+			post.addTo(toAddr);
+		}
+		
+		for (Address ccAddr : flutist.getCcAddressList()) {
+			post.addTo(ccAddr);
+		}
+		
+		for (Address bccAddr : flutist.getBccAddressList()) {
+			post.addTo(bccAddr);
+		}
+		
+		sender.send(post);
+	}
+
+	protected SMailSender getSMailSender() { //TODO Takeshi Kato: SmailSenderのインスタンス取得。仮実装
+		SMailSessionHolder holder = getMailSessionHandler();
+
+		SMailSession session = new SMailSession();
+		session.registerConnectionInfo("localhost", 25);
+		// session.registerUserInfo(user, password);
+		// session.registerProxy(proxyHost, proxyPort);
+
+		holder.registerSession("main", session);
+
+		SMailSimpleJapaneseSender sender = new SMailSimpleJapaneseSender(holder);
+		return sender;
+	}
+
+	protected SMailSessionHolder getMailSessionHandler() { //TODO Takeshi Kato: SmailSenderのインスタンス生成。仮実装
+		SMailSessionHolder holder = new SMailSessionHolder();
+		return holder;
+	}
 }

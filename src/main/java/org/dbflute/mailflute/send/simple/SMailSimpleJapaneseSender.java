@@ -16,17 +16,22 @@
 package org.dbflute.mailflute.send.simple;
 
 import javax.mail.Address;
+import javax.mail.MessagingException;
+import javax.mail.Transport;
 
 import org.dbflute.mailflute.send.SMailMessage;
 import org.dbflute.mailflute.send.SMailPost;
 import org.dbflute.mailflute.send.SMailSession;
 import org.dbflute.mailflute.send.SMailSessionHolder;
+import org.dbflute.mailflute.send.SMailSender;
+import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
 
 /**
  * @author jflute
+ * @author Takeshi Kato
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailSimpleJapaneseSender {
+public class SMailSimpleJapaneseSender implements SMailSender {
 
     // ===================================================================================
     //                                                                          Definition
@@ -61,6 +66,13 @@ public class SMailSimpleJapaneseSender {
         final String encoding = getJapaneseEncoding();
         message.setSubject(post.getSubject(), encoding);
         message.setPlainBody(post.getPlainBody(), encoding);
+        message.setHtmlBody(post.getHtmlBody(), encoding);
+        
+        try {
+			Transport.send(message.getMimeMessage());
+		} catch (MessagingException e) {
+			throw new SMailTransportFailureException("Failed to send mail.", e);
+		}
     }
 
     protected SMailMessage newMailMessage(SMailSession session) {
