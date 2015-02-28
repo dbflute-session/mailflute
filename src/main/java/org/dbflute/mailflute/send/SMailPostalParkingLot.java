@@ -25,12 +25,12 @@ import org.slf4j.LoggerFactory;
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailPostalMotorbikeParkingLot {
+public class SMailPostalParkingLot {
 
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final Logger LOG = LoggerFactory.getLogger(SMailPostalMotorbikeParkingLot.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SMailPostalParkingLot.class);
     private static final String DEFAULT_CATEGORY = "main";
 
     // ===================================================================================

@@ -17,7 +17,7 @@ package org.dbflute.mailflute;
 
 import org.dbflute.mailflute.send.SMailDeliveryDepartment;
 import org.dbflute.mailflute.send.SMailPostalMotorbike;
-import org.dbflute.mailflute.send.SMailPostalMotorbikeParkingLot;
+import org.dbflute.mailflute.send.SMailPostalParkingLot;
 import org.dbflute.mailflute.send.SMailPostalPersonnel;
 import org.dbflute.mailflute.send.SMailPostie;
 import org.dbflute.mailflute.send.exception.SMailPostCategoryNotFoundException;
@@ -50,7 +50,7 @@ public class PostOffice {
 
     protected SMailPostie callPostie(Postcard post) {
         final String category = post.getCategory();
-        final SMailPostalMotorbikeParkingLot sessionHolder = sendMailResource.getParkingLot();
+        final SMailPostalParkingLot sessionHolder = sendMailResource.getParkingLot();
         final SMailPostalMotorbike session = sessionHolder.findSession(category);
         assertCategorySessionValid(category, session);
         final SMailPostalPersonnel personnel = sendMailResource.getPersonnel();

@@ -24,14 +24,14 @@ public class SMailDeliveryDepartment {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailPostalMotorbikeParkingLot parkingLot;
+    protected final SMailPostalParkingLot parkingLot;
     protected final SMailPostalPersonnel personnel;
     protected final SMailTemplateScanner templateScanner;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailDeliveryDepartment(SMailPostalMotorbikeParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTemplateScanner templateScanner) {
+    public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTemplateScanner templateScanner) {
         this.parkingLot = parkingLot;
         this.personnel = personnel;
         this.templateScanner = templateScanner;
@@ -40,7 +40,7 @@ public class SMailDeliveryDepartment {
     // ===================================================================================
     //                                                                            Accessor
     //                                                                            ========
-    public SMailPostalMotorbikeParkingLot getParkingLot() {
+    public SMailPostalParkingLot getParkingLot() {
         return parkingLot;
     }
 
