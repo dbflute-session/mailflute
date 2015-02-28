@@ -51,6 +51,7 @@ public class SMailSimpleJapanesePostie implements SMailPostie {
     }
 
     public void deliver(Postcard postcard) {
+        // TODO jflute mailflute: postie's retry
         final SMailMessage message = createMailMessage(motorbike);
         message.setFrom(postcard.getFromAdr());
         for (Address adr : postcard.getToAdrList()) {
