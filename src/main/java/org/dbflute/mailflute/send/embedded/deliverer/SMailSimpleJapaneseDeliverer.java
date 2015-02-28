@@ -13,17 +13,16 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.simple;
+package org.dbflute.mailflute.send.embedded.deliverer;
 
 import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.Transport;
 
+import org.dbflute.mailflute.Postcard;
 import org.dbflute.mailflute.send.SMailMessage;
-import org.dbflute.mailflute.send.SMailPost;
+import org.dbflute.mailflute.send.SMailDeliverer;
 import org.dbflute.mailflute.send.SMailSession;
-import org.dbflute.mailflute.send.SMailSessionHolder;
-import org.dbflute.mailflute.send.SMailSender;
 import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
 
 /**
@@ -31,7 +30,7 @@ import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
  * @author Takeshi Kato
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailSimpleJapaneseSender implements SMailSender {
+public class SMailSimpleJapaneseDeliverer implements SMailDeliverer {
 
     // ===================================================================================
     //                                                                          Definition
@@ -41,38 +40,37 @@ public class SMailSimpleJapaneseSender implements SMailSender {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailSessionHolder sessionHolder;
+    protected final SMailSession session;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSimpleJapaneseSender(SMailSessionHolder sessionHolder) {
-        this.sessionHolder = sessionHolder;
+    public SMailSimpleJapaneseDeliverer(SMailSession session) {
+        this.session = session;
     }
 
-    public void send(SMailPost post) {
-        final SMailSession session = sessionHolder.getSession("main");
+    public void send(Postcard postcard) {
         final SMailMessage message = newMailMessage(session);
-        message.setFrom(post.getFromAdr());
-        for (Address adr : post.getToAdrList()) {
+        message.setFrom(postcard.getFromAdr());
+        for (Address adr : postcard.getToAdrList()) {
             message.addTo(adr);
         }
-        for (Address adr : post.getCcAdrList()) {
+        for (Address adr : postcard.getCcAdrList()) {
             message.addCc(adr);
         }
-        for (Address adr : post.getBccAdrList()) {
+        for (Address adr : postcard.getBccAdrList()) {
             message.addBcc(adr);
         }
         final String encoding = getJapaneseEncoding();
-        message.setSubject(post.getSubject(), encoding);
-        message.setPlainBody(post.getPlainBody(), encoding);
-        message.setHtmlBody(post.getHtmlBody(), encoding);
-        
+        message.setSubject(postcard.getSubject(), encoding);
+        message.setPlainBody(postcard.getPlainBody(), encoding);
+        message.setHtmlBody(postcard.getHtmlBody(), encoding);
+
         try {
-			Transport.send(message.getMimeMessage());
-		} catch (MessagingException e) {
-			throw new SMailTransportFailureException("Failed to send mail.", e);
-		}
+            Transport.send(message.getMimeMessage());
+        } catch (MessagingException e) {
+            throw new SMailTransportFailureException("Failed to send mail.", e);
+        }
     }
 
     protected SMailMessage newMailMessage(SMailSession session) {

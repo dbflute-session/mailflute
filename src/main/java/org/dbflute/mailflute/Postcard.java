@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
+package org.dbflute.mailflute;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +24,9 @@ import org.dbflute.util.DfCollectionUtil;
 
 /**
  * @author jflute
- * @since 0.1.0 (2015/01/20 Tuesday)
+ * @since 0.1.0 (2015/01/20 Tuesday at higashi-ginza)
  */
-public class SMailPost {
+public class Postcard {
 
     // ===================================================================================
     //                                                                           Attribute
@@ -37,12 +37,15 @@ public class SMailPost {
     protected List<Address> bccAdrList;
     protected String subject;
     protected String plainBody;
+    protected String plainTemplatePath;
     protected String htmlBody;
+    protected String htmlTemplatePath;
+    protected String category;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPost() {
+    public Postcard() {
     }
 
     // ===================================================================================
@@ -114,5 +117,13 @@ public class SMailPost {
 
     public String getHtmlBody() {
         return htmlBody;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

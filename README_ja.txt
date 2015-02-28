@@ -58,10 +58,11 @@ memberRegisteredKicker.send(mb -> {
 });
 
 MemberRegisteredMB mb = new MemberRegisteredMB();
+mb.setFrom();
 mb.addTo("aaa");
 mb.addCc("aaa");
 mb.addBcc("aaa");
-mb.setJobPosition("aaa");
+mb.setMemberAccount("aaa");
 mailKicker.kick(mb);
 
 mail.set

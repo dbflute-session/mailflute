@@ -31,6 +31,7 @@ public class SMailSessionHolder {
     //                                                                          Definition
     //                                                                          ==========
     private static final Logger LOG = LoggerFactory.getLogger(SMailSessionHolder.class);
+    private static final String DEFAULT_CATEGORY = "main";
 
     // ===================================================================================
     //                                                                           Attribute
@@ -40,12 +41,12 @@ public class SMailSessionHolder {
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
-    public SMailSession getSession(String key) {
-        return sessionMap.get(key);
+    public SMailSession findSession(String category) {
+        return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
     }
 
-    public void registerSession(String key, SMailSession session) {
-        LOG.info("...Registering mail session: {}, {}", key, session);
-        sessionMap.put(key, session);
+    public void registerSession(String category, SMailSession session) {
+        LOG.info("...Registering mail session: {}, {}", category, session);
+        sessionMap.put(category, session);
     }
 }

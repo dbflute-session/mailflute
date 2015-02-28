@@ -13,30 +13,15 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute;
+package org.dbflute.mailflute.send;
 
-import java.util.List;
-
-import javax.mail.Address;
+import java.util.Map;
 
 /**
  * @author jflute
- * @author Takeshi Kato
- * @since 1.0.0 (2015/01/12 Monday at higashi-ginza)
+ * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
  */
-public interface MailFlutist {
-	
-    Address getFromAddress();
-    
-    List<Address> getToAddressList();
-    
-    List<Address> getCcAddressList();
-    
-    List<Address> getBccAddressList();
-    
-    String getSubject();
-    
-    String getPlainBody();
-    
-    String getHtmlBody();
+public interface SMailTemplateAnalyzer {
+
+    String analyzeTemplate(String templatePath, Map<String, Object> contextMap);
 }

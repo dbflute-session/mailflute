@@ -15,6 +15,7 @@
 		<dbflute.version>1.1.0</dbflute.version>
 		<javax.mail.version>1.4.5</javax.mail.version>
 		<slf4j.version>1.7.7</slf4j.version>
+		<utflute.version>0.5.0-sp1</utflute.version>
 		<junit.version>4.8.2</junit.version>
 	</properties>
 
@@ -188,9 +189,9 @@
 	</build>
 
 	<dependencies>
-		<!-- =============== -->
-		<!-- |   compile   | -->
-		<!-- =============== -->
+		<!-- = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = -->
+		<!--                                                                Main Framework -->
+		<!--                                                                 = = = = = = = -->
 		<dependency>
 			<groupId>org.dbflute</groupId>
 			<artifactId>dbflute-runtime</artifactId>
@@ -207,13 +208,19 @@
 			<version>${slf4j.version}</version>
 		</dependency>
 
-		<!-- ============ -->
-		<!-- |   test   | -->
-		<!-- ============ -->
+		<!-- = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = -->
+		<!--                                                                       Testing -->
+		<!--                                                                       = = = = -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>${slf4j.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.dbflute.utflute</groupId>
+			<artifactId>utflute-core</artifactId>
+			<version>${utflute.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
