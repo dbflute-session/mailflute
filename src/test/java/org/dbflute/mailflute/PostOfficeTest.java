@@ -1,25 +1,14 @@
 package org.dbflute.mailflute;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.mail.Address;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-
 import jdk.nashorn.internal.ir.annotations.Ignore;
 
-import org.dbflute.mailflute.send.SMailSession;
-import org.dbflute.mailflute.send.SMailSessionHolder;
 import org.dbflute.utflute.core.PlainTestCase;
 
 /**
- * 
  * @author CreativeGear
- *
  */
 @Ignore
-public class MailClerkTest extends PlainTestCase {
+public class PostOfficeTest extends PlainTestCase {
 
     // TODO miya なんとかして by jflute 
     //	public void test_kick() throws AddressException {

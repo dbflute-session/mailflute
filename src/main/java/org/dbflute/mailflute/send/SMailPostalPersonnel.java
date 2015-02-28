@@ -20,7 +20,7 @@ import org.dbflute.mailflute.Postcard;
 /**
  * @author jflute
  */
-public interface SMailPersonnel {
+public interface SMailPostalPersonnel {
 
-    SMailDeliverer selectDeliverer(SMailSession session, Postcard post);
+    SMailPostie selectDeliverer(SMailPostalMotorbike motorbike, Postcard postcard);
 }

@@ -38,16 +38,12 @@ public class SMailMessage {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailMessage(SMailSession session) {
-        message = new MimeMessage(extractNativeSession(session));
+    public SMailMessage(Session session) {
+        message = new MimeMessage(session);
     }
 
-    protected Session extractNativeSession(SMailSession session) {
-        return session.getNativeSession();
-    }
-    
-    public MimeMessage getMimeMessage(){
-    	return message;
+    public MimeMessage getMimeMessage() {
+        return message;
     }
 
     // ===================================================================================

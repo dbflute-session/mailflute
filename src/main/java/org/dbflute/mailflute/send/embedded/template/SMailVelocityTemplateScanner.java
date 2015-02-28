@@ -17,23 +17,14 @@ package org.dbflute.mailflute.send.embedded.template;
 
 import java.util.Map;
 
-import javax.mail.Address;
-import javax.mail.MessagingException;
-import javax.mail.Transport;
-
-import org.dbflute.mailflute.Postcard;
-import org.dbflute.mailflute.send.SMailMessage;
-import org.dbflute.mailflute.send.SMailDeliverer;
-import org.dbflute.mailflute.send.SMailSession;
-import org.dbflute.mailflute.send.SMailTemplateAnalyzer;
-import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
+import org.dbflute.mailflute.send.SMailTemplateScanner;
 
 /**
  * @author jflute
  * @author Takeshi Kato
  * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
  */
-public class SMailVelocityTemplateAnalyzer implements SMailTemplateAnalyzer {
+public class SMailVelocityTemplateScanner implements SMailTemplateScanner {
 
     @Override
     public String analyzeTemplate(String templatePath, Map<String, Object> contextMap) {

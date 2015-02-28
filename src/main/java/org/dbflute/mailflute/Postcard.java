@@ -48,6 +48,11 @@ public class Postcard {
     public Postcard() {
     }
 
+    public Postcard asDeliveryCategory(String category) {
+        this.category = category;
+        return this;
+    }
+
     // ===================================================================================
     //                                                                            Settings
     //                                                                            ========
@@ -89,8 +94,8 @@ public class Postcard {
     }
 
     // ===================================================================================
-    //                                                                            Accessor
-    //                                                                            ========
+    //                                                                              Getter
+    //                                                                              ======
     public Address getFromAdr() {
         return fromAdr;
     }
@@ -121,9 +126,5 @@ public class Postcard {
 
     public String getCategory() {
         return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 }

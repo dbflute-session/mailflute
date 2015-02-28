@@ -14,6 +14,7 @@
 	<properties>
 		<dbflute.version>1.1.0</dbflute.version>
 		<javax.mail.version>1.4.5</javax.mail.version>
+		<velocity.version>1.7</velocity.version>
 		<slf4j.version>1.7.7</slf4j.version>
 		<utflute.version>0.5.0-sp1</utflute.version>
 		<junit.version>4.8.2</junit.version>
@@ -197,11 +198,19 @@
 			<artifactId>dbflute-runtime</artifactId>
 			<version>${dbflute.version}</version>
 		</dependency>
+		<!-- java mail (mail native library) -->
 		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mail</artifactId>
 			<version>${javax.mail.version}</version>
 		</dependency>
+		<!-- velocity (template engine) -->
+		<dependency>
+			<groupId>org.apache.velocity</groupId>
+			<artifactId>velocity</artifactId>
+			<version>${velocity.version}</version>
+		</dependency>
+		<!-- slf4j (logging interface) -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

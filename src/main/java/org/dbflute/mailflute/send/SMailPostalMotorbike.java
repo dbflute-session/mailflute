@@ -23,7 +23,7 @@ import javax.mail.Session;
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailSession {
+public class SMailPostalMotorbike {
 
     // ===================================================================================
     //                                                                           Attribute
@@ -33,7 +33,7 @@ public class SMailSession {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSession() {
+    public SMailPostalMotorbike() {
         session = Session.getInstance(newSessionProperties());
     }
 
@@ -42,13 +42,15 @@ public class SMailSession {
     }
 
     public void registerConnectionInfo(String host, int port) {
-        session.getProperties().setProperty("mail.smtp.host", host);
-        session.getProperties().setProperty("mail.smtp.port", String.valueOf(port));
+        final Properties props = session.getProperties();
+        props.setProperty("mail.smtp.host", host);
+        props.setProperty("mail.smtp.port", String.valueOf(port));
     }
 
     public void registerUserInfo(String user, String password) {
-        session.getProperties().setProperty("mail.smtp.user", user);
-        session.getProperties().setProperty("mail.smtp.pass", password);
+        final Properties props = session.getProperties();
+        props.setProperty("mail.smtp.user", user);
+        props.setProperty("mail.smtp.pass", password);
     }
 
     public void registerProxy(String proxyHost, String proxyPort) {

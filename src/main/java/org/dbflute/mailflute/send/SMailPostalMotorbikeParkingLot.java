@@ -25,27 +25,27 @@ import org.slf4j.LoggerFactory;
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailSessionHolder {
+public class SMailPostalMotorbikeParkingLot {
 
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final Logger LOG = LoggerFactory.getLogger(SMailSessionHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SMailPostalMotorbikeParkingLot.class);
     private static final String DEFAULT_CATEGORY = "main";
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final Map<String, SMailSession> sessionMap = new ConcurrentHashMap<String, SMailSession>();
+    protected final Map<String, SMailPostalMotorbike> sessionMap = new ConcurrentHashMap<String, SMailPostalMotorbike>();
 
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
-    public SMailSession findSession(String category) {
+    public SMailPostalMotorbike findSession(String category) {
         return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
     }
 
-    public void registerSession(String category, SMailSession session) {
+    public void registerSession(String category, SMailPostalMotorbike session) {
         LOG.info("...Registering mail session: {}, {}", category, session);
         sessionMap.put(category, session);
     }

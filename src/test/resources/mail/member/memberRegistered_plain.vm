@@ -2,8 +2,6 @@ Subject: ${subject}
 From: ${from}
 To: sea@gmail.com
 Attachment: ${attachment}
--- !!String memberName!!
--- !!String memberName!!
 ---
 ${memberName}様
 

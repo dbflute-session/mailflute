@@ -13,16 +13,17 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.embedded.deliverer;
+package org.dbflute.mailflute.send.embedded.postie;
 
 import javax.mail.Address;
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.Transport;
 
 import org.dbflute.mailflute.Postcard;
 import org.dbflute.mailflute.send.SMailMessage;
-import org.dbflute.mailflute.send.SMailDeliverer;
-import org.dbflute.mailflute.send.SMailSession;
+import org.dbflute.mailflute.send.SMailPostalMotorbike;
+import org.dbflute.mailflute.send.SMailPostie;
 import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
 
 /**
@@ -30,7 +31,7 @@ import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
  * @author Takeshi Kato
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailSimpleJapaneseDeliverer implements SMailDeliverer {
+public class SMailSimpleJapanesePostie implements SMailPostie {
 
     // ===================================================================================
     //                                                                          Definition
@@ -40,17 +41,17 @@ public class SMailSimpleJapaneseDeliverer implements SMailDeliverer {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailSession session;
+    protected final SMailPostalMotorbike motorbike;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSimpleJapaneseDeliverer(SMailSession session) {
-        this.session = session;
+    public SMailSimpleJapanesePostie(SMailPostalMotorbike motorbike) {
+        this.motorbike = motorbike;
     }
 
-    public void send(Postcard postcard) {
-        final SMailMessage message = newMailMessage(session);
+    public void deliver(Postcard postcard) {
+        final SMailMessage message = createMailMessage(motorbike);
         message.setFrom(postcard.getFromAdr());
         for (Address adr : postcard.getToAdrList()) {
             message.addTo(adr);
@@ -73,8 +74,12 @@ public class SMailSimpleJapaneseDeliverer implements SMailDeliverer {
         }
     }
 
-    protected SMailMessage newMailMessage(SMailSession session) {
-        return new SMailMessage(session);
+    protected SMailMessage createMailMessage(SMailPostalMotorbike motorbike) {
+        return new SMailMessage(extractNativeSession(motorbike));
+    }
+
+    protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
+        return motorbike.getNativeSession();
     }
 
     protected String getJapaneseEncoding() {
