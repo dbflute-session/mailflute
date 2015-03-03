@@ -41,7 +41,7 @@ public class SMailPostalParkingLot {
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
-    public SMailPostalMotorbike findSession(String category) {
+    public SMailPostalMotorbike findMotorbike(String category) {
         return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
     }
 

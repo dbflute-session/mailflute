@@ -22,5 +22,5 @@ import org.dbflute.mailflute.Postcard;
  */
 public interface SMailPostalPersonnel {
 
-    SMailPostie selectDeliverer(SMailPostalMotorbike motorbike, Postcard postcard);
+    SMailPostie selectPostie(SMailPostalMotorbike motorbike, Postcard postcard);
 }

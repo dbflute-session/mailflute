@@ -32,13 +32,13 @@ public class PostOffice {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailDeliveryDepartment sendMailResource;
+    protected final SMailDeliveryDepartment deliveryDepartment;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
     public PostOffice(SMailDeliveryDepartment sendMailResource) {
-        this.sendMailResource = sendMailResource;
+        this.deliveryDepartment = sendMailResource;
     }
 
     // ===================================================================================
@@ -48,13 +48,13 @@ public class PostOffice {
         callPostie(post).deliver(post);
     }
 
-    protected SMailPostie callPostie(Postcard post) {
-        final String category = post.getCategory();
-        final SMailPostalParkingLot sessionHolder = sendMailResource.getParkingLot();
-        final SMailPostalMotorbike session = sessionHolder.findSession(category);
-        assertCategorySessionValid(category, session);
-        final SMailPostalPersonnel personnel = sendMailResource.getPersonnel();
-        return personnel.selectDeliverer(session, post);
+    protected SMailPostie callPostie(Postcard postcard) {
+        final String category = postcard.getCategory();
+        final SMailPostalParkingLot parkingLot = deliveryDepartment.getParkingLot();
+        final SMailPostalMotorbike motorbike = parkingLot.findMotorbike(category);
+        assertCategorySessionValid(category, motorbike);
+        final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
+        return personnel.selectPostie(motorbike, postcard);
 
         //SMailSession session = new SMailSession();
         //session.registerConnectionInfo("localhost", 25);
