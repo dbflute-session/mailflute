@@ -21,6 +21,7 @@ import org.dbflute.mailflute.send.SMailPostalParkingLot;
 import org.dbflute.mailflute.send.SMailPostalPersonnel;
 import org.dbflute.mailflute.send.SMailPostie;
 import org.dbflute.mailflute.send.exception.SMailPostCategoryNotFoundException;
+import org.dbflute.util.DfTypeUtil;
 
 /**
  * @author jflute
@@ -37,19 +38,19 @@ public class PostOffice {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public PostOffice(SMailDeliveryDepartment sendMailResource) {
-        this.deliveryDepartment = sendMailResource;
+    public PostOffice(SMailDeliveryDepartment deliveryDepartment) {
+        this.deliveryDepartment = deliveryDepartment;
     }
 
     // ===================================================================================
     //                                                                        Deliver Mail
     //                                                                        ============
-    public void deliver(Postcard post) {
-        callPostie(post).deliver(post);
+    public void deliver(Postcard postcard) {
+        callPostie(postcard).deliver(postcard);
     }
 
     protected SMailPostie callPostie(Postcard postcard) {
-        final String category = postcard.getCategory();
+        final DeliveryCategory category = postcard.getDeliveryCategory();
         final SMailPostalParkingLot parkingLot = deliveryDepartment.getParkingLot();
         final SMailPostalMotorbike motorbike = parkingLot.findMotorbike(category);
         assertCategorySessionValid(category, motorbike);
@@ -57,10 +58,18 @@ public class PostOffice {
         return personnel.selectPostie(motorbike, postcard);
     }
 
-    protected void assertCategorySessionValid(String category, SMailPostalMotorbike session) {
+    protected void assertCategorySessionValid(DeliveryCategory category, SMailPostalMotorbike session) {
         if (session == null) {
             String msg = "Not found the session for the category: " + category;
             throw new SMailPostCategoryNotFoundException(msg);
         }
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return DfTypeUtil.toClassTitle(this) + ":{" + deliveryDepartment + "}@" + Integer.toHexString(hashCode());
     }
 }

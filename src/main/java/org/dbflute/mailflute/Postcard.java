@@ -16,11 +16,14 @@
 package org.dbflute.mailflute;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.mail.Address;
 
 import org.dbflute.util.DfCollectionUtil;
+import org.dbflute.util.DfTypeUtil;
 
 /**
  * @author jflute
@@ -31,16 +34,17 @@ public class Postcard {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected Address fromAdr;
-    protected List<Address> toAdrList;
-    protected List<Address> ccAdrList;
-    protected List<Address> bccAdrList;
-    protected String subject;
-    protected String plainBody;
-    protected String plainTemplatePath;
-    protected String htmlBody;
-    protected String htmlTemplatePath;
-    protected String category;
+    protected DeliveryCategory deliveryCategory; // optional (has default)
+    protected boolean fixedTextUsed; // may be sometimes used
+    protected boolean directBodyUsed; // normally false, for easy sending
+    protected Address from; // required
+    protected List<Address> toList; // required at least one, lazy loaded
+    protected List<Address> ccList; // optional, lazy loaded
+    protected List<Address> bccList; // optional, lazy loaded
+    protected String subject; // required or optional (e.g. from template file)
+    protected String plainBody; // required, path or direct text
+    protected String htmlBody; // optional, path or direct text
+    protected Map<String, Object> variableMap; // optional, lazy loaded
 
     // ===================================================================================
     //                                                                         Constructor
@@ -48,8 +52,18 @@ public class Postcard {
     public Postcard() {
     }
 
-    public Postcard asDeliveryCategory(String category) {
-        this.category = category;
+    public Postcard asDeliveryCategory(DeliveryCategory category) {
+        this.deliveryCategory = category;
+        return this;
+    }
+
+    public Postcard useDirectBody() {
+        this.directBodyUsed = true;
+        return this;
+    }
+
+    public Postcard useFixedText() {
+        this.fixedTextUsed = true;
         return this;
     }
 
@@ -57,28 +71,28 @@ public class Postcard {
     //                                                                            Settings
     //                                                                            ========
     public void setFrom(Address address) {
-        fromAdr = address;
+        from = address;
     }
 
     public void addTo(Address address) {
-        if (toAdrList == null) {
-            toAdrList = new ArrayList<Address>();
+        if (toList == null) {
+            toList = new ArrayList<Address>();
         }
-        toAdrList.add(address);
+        toList.add(address);
     }
 
     public void addCc(Address address) {
-        if (ccAdrList == null) {
-            ccAdrList = new ArrayList<Address>();
+        if (ccList == null) {
+            ccList = new ArrayList<Address>();
         }
-        ccAdrList.add(address);
+        ccList.add(address);
     }
 
     public void addBcc(Address address) {
-        if (bccAdrList == null) {
-            bccAdrList = new ArrayList<Address>();
+        if (bccList == null) {
+            bccList = new ArrayList<Address>();
         }
-        bccAdrList.add(address);
+        bccList.add(address);
     }
 
     public void setSubject(String subject) {
@@ -93,23 +107,50 @@ public class Postcard {
         this.htmlBody = htmlBody;
     }
 
+    public void addVariable(String name, Object value) {
+        if (variableMap == null) {
+            variableMap = new LinkedHashMap<String, Object>();
+        }
+        variableMap.put(name, value);
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return DfTypeUtil.toClassTitle(this) + ":{from=" + from + ", to=" + toList + ", " + subject + "}";
+    }
+
     // ===================================================================================
     //                                                                              Getter
     //                                                                              ======
-    public Address getFromAdr() {
-        return fromAdr;
+    public DeliveryCategory getDeliveryCategory() {
+        return deliveryCategory;
     }
 
-    public List<Address> getToAdrList() {
-        return toAdrList != null ? toAdrList : DfCollectionUtil.emptyList();
+    public boolean isDirectBodyUsed() {
+        return directBodyUsed;
     }
 
-    public List<Address> getCcAdrList() {
-        return ccAdrList != null ? ccAdrList : DfCollectionUtil.emptyList();
+    public boolean isFixedTextUsed() {
+        return fixedTextUsed;
     }
 
-    public List<Address> getBccAdrList() {
-        return bccAdrList != null ? bccAdrList : DfCollectionUtil.emptyList();
+    public Address getFrom() {
+        return from;
+    }
+
+    public List<Address> getToList() {
+        return toList != null ? toList : DfCollectionUtil.emptyList();
+    }
+
+    public List<Address> getCcList() {
+        return ccList != null ? ccList : DfCollectionUtil.emptyList();
+    }
+
+    public List<Address> getBccList() {
+        return bccList != null ? bccList : DfCollectionUtil.emptyList();
     }
 
     public String getSubject() {
@@ -124,7 +165,7 @@ public class Postcard {
         return htmlBody;
     }
 
-    public String getCategory() {
-        return category;
+    public Map<String, Object> getVariableMap() {
+        return variableMap != null ? variableMap : DfCollectionUtil.emptyMap();
     }
 }

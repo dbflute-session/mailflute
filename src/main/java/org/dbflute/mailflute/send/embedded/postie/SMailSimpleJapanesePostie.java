@@ -53,14 +53,14 @@ public class SMailSimpleJapanesePostie implements SMailPostie {
     public void deliver(Postcard postcard) {
         // TODO jflute mailflute: postie's retry
         final SMailMessage message = createMailMessage(motorbike);
-        message.setFrom(postcard.getFromAdr());
-        for (Address adr : postcard.getToAdrList()) {
+        message.setFrom(postcard.getFrom());
+        for (Address adr : postcard.getToList()) {
             message.addTo(adr);
         }
-        for (Address adr : postcard.getCcAdrList()) {
+        for (Address adr : postcard.getCcList()) {
             message.addCc(adr);
         }
-        for (Address adr : postcard.getBccAdrList()) {
+        for (Address adr : postcard.getBccList()) {
             message.addBcc(adr);
         }
         final String encoding = getJapaneseEncoding();
@@ -71,7 +71,7 @@ public class SMailSimpleJapanesePostie implements SMailPostie {
         try {
             Transport.send(message.getMimeMessage());
         } catch (MessagingException e) {
-            throw new SMailTransportFailureException("Failed to send mail.", e);
+            throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
         }
     }
 

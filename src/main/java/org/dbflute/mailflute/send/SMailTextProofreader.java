@@ -21,7 +21,7 @@ import java.util.Map;
  * @author jflute
  * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
  */
-public interface SMailTemplateScanner {
+public interface SMailTextProofreader {
 
-    String analyzeTemplate(String templatePath, Map<String, Object> contextMap);
+    String proofreader(String templatePath, Map<String, Object> contextMap);
 }

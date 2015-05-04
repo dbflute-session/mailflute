@@ -17,17 +17,17 @@ package org.dbflute.mailflute.send.embedded.template;
 
 import java.util.Map;
 
-import org.dbflute.mailflute.send.SMailTemplateScanner;
+import org.dbflute.mailflute.send.SMailTextProofreader;
 
 /**
  * @author jflute
  * @author Takeshi Kato
  * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
  */
-public class SMailVelocityTemplateScanner implements SMailTemplateScanner {
+public class SMailTextTemplateProofreader implements SMailTextProofreader {
 
     @Override
-    public String analyzeTemplate(String templatePath, Map<String, Object> contextMap) {
+    public String proofreader(String templatePath, Map<String, Object> contextMap) {
         // TODO jflute mailflute: velocity
         return null;
     }

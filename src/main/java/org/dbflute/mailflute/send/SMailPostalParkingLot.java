@@ -18,6 +18,7 @@ package org.dbflute.mailflute.send;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.dbflute.mailflute.DeliveryCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,22 +32,22 @@ public class SMailPostalParkingLot {
     //                                                                          Definition
     //                                                                          ==========
     private static final Logger LOG = LoggerFactory.getLogger(SMailPostalParkingLot.class);
-    private static final String DEFAULT_CATEGORY = "main";
+    private static final DeliveryCategory DEFAULT_CATEGORY = new DeliveryCategory("main");
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final Map<String, SMailPostalMotorbike> sessionMap = new ConcurrentHashMap<String, SMailPostalMotorbike>();
+    protected final Map<DeliveryCategory, SMailPostalMotorbike> sessionMap = new ConcurrentHashMap<>();
 
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
-    public SMailPostalMotorbike findMotorbike(String category) {
+    public SMailPostalMotorbike findMotorbike(DeliveryCategory category) {
         return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
     }
 
-    public void registerSession(String category, SMailPostalMotorbike session) {
-        LOG.info("...Registering mail session: {}, {}", category, session);
-        sessionMap.put(category, session);
+    public void registerMotorbike(DeliveryCategory category, SMailPostalMotorbike motorbike) {
+        LOG.info("...Registering postal motorbike: {}, {}", category, motorbike);
+        sessionMap.put(category, motorbike);
     }
 }

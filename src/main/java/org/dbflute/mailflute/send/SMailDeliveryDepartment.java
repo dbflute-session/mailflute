@@ -15,6 +15,8 @@
  */
 package org.dbflute.mailflute.send;
 
+import org.dbflute.util.DfTypeUtil;
+
 /**
  * @author jflute
  * @since 0.1.0 (2015/02/28 Saturday)
@@ -26,15 +28,23 @@ public class SMailDeliveryDepartment {
     //                                                                           =========
     protected final SMailPostalParkingLot parkingLot;
     protected final SMailPostalPersonnel personnel;
-    protected final SMailTemplateScanner templateScanner;
+    protected final SMailTextProofreader proofreader;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTemplateScanner templateScanner) {
+    public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTextProofreader proofreader) {
         this.parkingLot = parkingLot;
         this.personnel = personnel;
-        this.templateScanner = templateScanner;
+        this.proofreader = proofreader;
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return DfTypeUtil.toClassTitle(this) + ":{" + parkingLot + ", " + personnel + ", " + proofreader + "}";
     }
 
     // ===================================================================================
@@ -48,7 +58,7 @@ public class SMailDeliveryDepartment {
         return personnel;
     }
 
-    public SMailTemplateScanner getTemplateScanner() {
-        return templateScanner;
+    public SMailTextProofreader getProofreader() {
+        return proofreader;
     }
 }
