@@ -55,12 +55,6 @@ public class PostOffice {
         assertCategorySessionValid(category, motorbike);
         final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
         return personnel.selectPostie(motorbike, postcard);
-
-        //SMailSession session = new SMailSession();
-        //session.registerConnectionInfo("localhost", 25);
-        //// session.registerUserInfo(user, password);
-        //// session.registerProxy(proxyHost, proxyPort);
-        //holder.registerSession("main", session);
     }
 
     protected void assertCategorySessionValid(String category, SMailPostalMotorbike session) {
