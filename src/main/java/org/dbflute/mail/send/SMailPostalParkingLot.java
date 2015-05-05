@@ -19,8 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.dbflute.mail.DeliveryCategory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dbflute.util.DfTypeUtil;
 
 /**
  * @author jflute
@@ -31,7 +30,6 @@ public class SMailPostalParkingLot {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final Logger LOG = LoggerFactory.getLogger(SMailPostalParkingLot.class);
     private static final DeliveryCategory DEFAULT_CATEGORY = new DeliveryCategory("main");
 
     // ===================================================================================
@@ -47,11 +45,18 @@ public class SMailPostalParkingLot {
     }
 
     public void registerMotorbike(DeliveryCategory category, SMailPostalMotorbike motorbike) {
-        LOG.info("...Registering postal motorbike: {}, {}", category, motorbike);
         sessionMap.put(category, motorbike);
     }
 
     public void registerMotorbikeAsMain(SMailPostalMotorbike motorbike) {
         registerMotorbike(DEFAULT_CATEGORY, motorbike);
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return DfTypeUtil.toClassTitle(this) + ":{" + sessionMap + "}@" + Integer.toHexString(hashCode());
     }
 }

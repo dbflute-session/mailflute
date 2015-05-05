@@ -26,6 +26,12 @@ import javax.mail.Session;
 public class SMailPostalMotorbike {
 
     // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
+    protected static final String MAIL_SMTP_HOST = "mail.smtp.host";
+    protected static final String MAIL_SMTP_PORT = "mail.smtp.port";
+
+    // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final Session session;
@@ -41,10 +47,13 @@ public class SMailPostalMotorbike {
         return new Properties();
     }
 
+    // ===================================================================================
+    //                                                                            Register
+    //                                                                            ========
     public void registerConnectionInfo(String host, int port) {
         final Properties props = session.getProperties();
-        props.setProperty("mail.smtp.host", host);
-        props.setProperty("mail.smtp.port", String.valueOf(port));
+        props.setProperty(MAIL_SMTP_HOST, host);
+        props.setProperty(MAIL_SMTP_PORT, String.valueOf(port));
     }
 
     public void registerUserInfo(String user, String password) {
@@ -60,6 +69,16 @@ public class SMailPostalMotorbike {
         props.setProperty("socksProxyPort", proxyPort);
         props.setProperty("mail.smtp.socks.host", proxyHost);
         props.setProperty("mail.smtp.socks.port", proxyPort);
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        final String host = session.getProperty(MAIL_SMTP_HOST);
+        final String port = session.getProperty(MAIL_SMTP_PORT);
+        return "motobike:{host=" + host + ", port=" + port + "}";
     }
 
     // ===================================================================================

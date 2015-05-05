@@ -22,21 +22,34 @@ import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailParameterCommentTextProofreader;
+import org.dbflute.util.DfTypeUtil;
 
 /**
  * @author jflute
  */
 public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
 
+    // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
     protected static final SMailParameterCommentTextProofreader PROOFREADER = new SMailParameterCommentTextProofreader();
 
+    // ===================================================================================
+    //                                                                           Attribute
+    //                                                                           =========
     protected boolean training;
 
+    // ===================================================================================
+    //                                                                         Constructor
+    //                                                                         ===========
     public SMailDogmaticPostalPersonnel asTraining() {
         training = true;
         return this;
     }
 
+    // ===================================================================================
+    //                                                                              Select
+    //                                                                              ======
     @Override
     public SMailTextProofreader selectProofreader(Postcard postcard) {
         return PROOFREADER;
@@ -44,10 +57,26 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
 
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
-        final SMailSimpleGlobalPostie postie = new SMailSimpleGlobalPostie(motorbike);
+        final SMailSimpleGlobalPostie postie = newSMailSimpleGlobalPostie(motorbike);
         return training ? postie.asTraining() : postie;
     }
 
+    protected SMailSimpleGlobalPostie newSMailSimpleGlobalPostie(SMailPostalMotorbike motorbike) {
+        return new SMailSimpleGlobalPostie(motorbike);
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        final String hash = Integer.toHexString(hashCode());
+        return DfTypeUtil.toClassTitle(this) + ":{" + PROOFREADER + (training ? ", *training" : "") + "}@" + hash;
+    }
+
+    // ===================================================================================
+    //                                                                            Accessor
+    //                                                                            ========
     public boolean isTraining() {
         return training;
     }

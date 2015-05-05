@@ -62,4 +62,9 @@ public class SMailParameterCommentTextProofreader implements SMailTextProofreade
     protected CommandContextCreator createCommandContextCreator() {
         return new CommandContextCreator(new String[] { "pmb" }, new Class<?>[] { SimpleMapPmb.class });
     }
+
+    @Override
+    public String toString() {
+        return "proofreader:{pmcomment}";
+    }
 }

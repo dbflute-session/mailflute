@@ -137,4 +137,11 @@ public class PostOffice {
     public String toString() {
         return DfTypeUtil.toClassTitle(this) + ":{" + deliveryDepartment + "}@" + Integer.toHexString(hashCode());
     }
+
+    // ===================================================================================
+    //                                                                            Accessor
+    //                                                                            ========
+    public SMailDeliveryDepartment getDeliveryDepartment() {
+        return deliveryDepartment;
+    }
 }
