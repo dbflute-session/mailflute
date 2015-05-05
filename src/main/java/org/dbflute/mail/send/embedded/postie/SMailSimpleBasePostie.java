@@ -73,9 +73,14 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
         }
         final String encoding = getEncoding();
         message.setSubject(postcard.getSubject(), encoding);
-        message.setPlainBody(postcard.getProofreadingPlain(), encoding);
-        message.setHtmlBody(postcard.getProofreadingHtml(), encoding);
-
+        final String plain = postcard.getProofreadingPlain();
+        if (plain != null) {
+            message.setPlainBody(plain, encoding);
+        }
+        final String html = postcard.getProofreadingHtml();
+        if (html != null) {
+            message.setHtmlBody(html, encoding);
+        }
         try {
             send(message);
         } catch (MessagingException e) {
