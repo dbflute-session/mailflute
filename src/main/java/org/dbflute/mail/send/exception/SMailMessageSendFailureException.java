@@ -13,22 +13,17 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.embedded.template;
-
-import java.util.Map;
-
-import org.dbflute.mailflute.send.SMailTextProofreader;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
- * @author Takeshi Kato
- * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
+ * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailTextTemplateProofreader implements SMailTextProofreader {
+public class SMailMessageSendFailureException extends RuntimeException {
 
-    @Override
-    public String proofreader(String templatePath, Map<String, Object> contextMap) {
-        // TODO jflute mailflute: velocity
-        return null;
+    private static final long serialVersionUID = 1L;
+
+    public SMailMessageSendFailureException(String msg, Throwable e) {
+        super(msg, e);
     }
 }

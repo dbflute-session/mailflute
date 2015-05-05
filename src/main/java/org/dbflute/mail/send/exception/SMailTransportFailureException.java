@@ -13,17 +13,17 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.exception;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailMessageSettingFailureException extends RuntimeException {
+public class SMailTransportFailureException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public SMailMessageSettingFailureException(String msg, Throwable e) {
+    public SMailTransportFailureException(String msg, Throwable e) {
         super(msg, e);
     }
 }

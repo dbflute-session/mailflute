@@ -13,14 +13,15 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute;
+package org.dbflute.mail;
 
-import org.dbflute.mailflute.send.SMailDeliveryDepartment;
-import org.dbflute.mailflute.send.SMailPostalMotorbike;
-import org.dbflute.mailflute.send.SMailPostalParkingLot;
-import org.dbflute.mailflute.send.SMailPostalPersonnel;
-import org.dbflute.mailflute.send.SMailPostie;
-import org.dbflute.mailflute.send.exception.SMailPostCategoryNotFoundException;
+import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.send.SMailDeliveryDepartment;
+import org.dbflute.mail.send.SMailPostalMotorbike;
+import org.dbflute.mail.send.SMailPostalPersonnel;
+import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.SMailTextProofreader;
+import org.dbflute.mail.send.exception.SMailDelivertyCategoryNotFoundException;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -46,23 +47,47 @@ public class PostOffice {
     //                                                                        Deliver Mail
     //                                                                        ============
     public void deliver(Postcard postcard) {
-        callPostie(postcard).deliver(postcard);
+        readOutsideBodyIfNeeds(postcard);
+        proofreadIfNeeds(postcard);
+        final SMailPostalMotorbike motorbike = fetchMotorbike(postcard);
+        final SMailPostie postie = callPostie(postcard, motorbike);
+        postie.deliver(postcard);
     }
 
-    protected SMailPostie callPostie(Postcard postcard) {
-        final DeliveryCategory category = postcard.getDeliveryCategory();
-        final SMailPostalParkingLot parkingLot = deliveryDepartment.getParkingLot();
-        final SMailPostalMotorbike motorbike = parkingLot.findMotorbike(category);
-        assertCategorySessionValid(category, motorbike);
-        final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
-        return personnel.selectPostie(motorbike, postcard);
-    }
-
-    protected void assertCategorySessionValid(DeliveryCategory category, SMailPostalMotorbike session) {
-        if (session == null) {
-            String msg = "Not found the session for the category: " + category;
-            throw new SMailPostCategoryNotFoundException(msg);
+    protected void readOutsideBodyIfNeeds(Postcard postcard) {
+        if (!postcard.isDirectBodyUsed()) {
+            final FileTextIO textIO = new FileTextIO().encodeAsUTF8();
+            postcard.setPlainBody(textIO.read(postcard.getPlainBody()));
+            postcard.setHtmlBody(textIO.read(postcard.getHtmlBody()));
         }
+    }
+
+    protected void proofreadIfNeeds(Postcard postcard) {
+        if (!postcard.isFixedTextUsed()) {
+            final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
+            final SMailTextProofreader proofreader = personnel.selectProofreader(postcard);
+            postcard.setPlainBody(proofreader.proofreader(postcard.getPlainBody(), postcard.getVariableMap()));
+            postcard.setHtmlBody(proofreader.proofreader(postcard.getHtmlBody(), postcard.getVariableMap()));
+        }
+    }
+
+    protected SMailPostalMotorbike fetchMotorbike(Postcard postcard) {
+        final DeliveryCategory category = postcard.getDeliveryCategory();
+        final SMailPostalMotorbike motorbike = deliveryDepartment.getParkingLot().findMotorbike(category);
+        if (motorbike == null) {
+            String msg = "Not found the motorbike for the category: " + category;
+            throw new SMailDelivertyCategoryNotFoundException(msg);
+        }
+        return motorbike;
+    }
+
+    protected SMailPostie callPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
+        final SMailPostie postie = deliveryDepartment.getPersonnel().selectPostie(postcard, motorbike);
+        if (postie == null) {
+            String msg = "Not found the postie for the postcard: " + postcard + ", " + motorbike;
+            throw new SMailDelivertyCategoryNotFoundException(msg);
+        }
+        return postie;
     }
 
     // ===================================================================================

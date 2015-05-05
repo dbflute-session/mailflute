@@ -13,14 +13,21 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
-
-import org.dbflute.mailflute.Postcard;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
+ * @since 0.1.0 (2015/02/28 Saturday)
  */
-public interface SMailPostalPersonnel {
+public class SMailDelivertyCategoryNotFoundException extends RuntimeException {
 
-    SMailPostie selectPostie(SMailPostalMotorbike motorbike, Postcard postcard);
+    private static final long serialVersionUID = 1L;
+
+    public SMailDelivertyCategoryNotFoundException(String msg) {
+        super(msg);
+    }
+
+    public SMailDelivertyCategoryNotFoundException(String msg, Throwable e) {
+        super(msg, e);
+    }
 }

@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
+package org.dbflute.mail.send;
 
 import javax.mail.Address;
 import javax.mail.Message.RecipientType;
@@ -21,7 +21,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 
-import org.dbflute.mailflute.send.exception.SMailMessageSettingFailureException;
+import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 
 /**
  * @author jflute

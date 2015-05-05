@@ -13,12 +13,12 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
+package org.dbflute.mail.send;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.dbflute.mailflute.DeliveryCategory;
+import org.dbflute.mail.DeliveryCategory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

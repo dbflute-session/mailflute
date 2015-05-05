@@ -13,17 +13,24 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.exception;
+package org.dbflute.mail.send.embedded.postie;
+
+import org.dbflute.mail.send.SMailPostalMotorbike;
 
 /**
  * @author jflute
- * @since 0.1.0 (2015/01/20 Tuesday)
+ * @since 0.4.0 (2015/05/05 Tuesday)
  */
-public class SMailTransportFailureException extends RuntimeException {
+public class SMailSimpleGlobalPostie extends SMailSimpleBasePostie {
 
-    private static final long serialVersionUID = 1L;
+    private static final String UTF8 = "UTF-8";
 
-    public SMailTransportFailureException(String msg, Throwable e) {
-        super(msg, e);
+    public SMailSimpleGlobalPostie(SMailPostalMotorbike motorbike) {
+        super(motorbike);
+    }
+
+    @Override
+    protected String getEncoding() {
+        return UTF8;
     }
 }

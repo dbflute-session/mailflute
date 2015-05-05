@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
+package org.dbflute.mail.send;
 
 import org.dbflute.util.DfTypeUtil;
 
@@ -26,17 +26,29 @@ public class SMailDeliveryDepartment {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailPostalParkingLot parkingLot;
-    protected final SMailPostalPersonnel personnel;
-    protected final SMailTextProofreader proofreader;
+    protected final SMailPostalParkingLot parkingLot; // not null
+    protected final SMailPostalPersonnel personnel; // not null
+    protected final SMailTextProofreader proofreader; // not null
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
     public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTextProofreader proofreader) {
+        assertArgumentNotNull("parkingLot", parkingLot);
+        assertArgumentNotNull("personnel", personnel);
+        assertArgumentNotNull("proofreader", proofreader);
         this.parkingLot = parkingLot;
         this.personnel = personnel;
         this.proofreader = proofreader;
+    }
+
+    // ===================================================================================
+    //                                                                       Assert Helper
+    //                                                                       =============
+    protected void assertArgumentNotNull(String title, Object value) {
+        if (value == null) {
+            throw new IllegalStateException("The argument '" + title + "' should not be null.");
+        }
     }
 
     // ===================================================================================

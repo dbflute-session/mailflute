@@ -13,15 +13,26 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
-
-import org.dbflute.mailflute.Postcard;
+package org.dbflute.mail;
 
 /**
- * @author Takeshi Kato
  * @author jflute
+ * @since 0.4.0 (2015/05/05 Tuesday at nakameguro)
  */
-public interface SMailPostie {
+public class DeliveryCategory {
 
-    void deliver(Postcard post);
+    protected final String category;
+
+    public DeliveryCategory(String category) {
+        this.category = category;
+    }
+
+    @Override
+    public String toString() {
+        return "category:{" + category + "}";
+    }
+
+    public String getCategory() {
+        return category;
+    }
 }

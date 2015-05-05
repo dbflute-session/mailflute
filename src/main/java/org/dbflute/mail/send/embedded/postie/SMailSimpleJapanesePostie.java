@@ -13,15 +13,25 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send;
+package org.dbflute.mail.send.embedded.postie;
 
-import java.util.Map;
+import org.dbflute.mail.send.SMailPostalMotorbike;
 
 /**
  * @author jflute
- * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
+ * @author Takeshi Kato
+ * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public interface SMailTextProofreader {
+public class SMailSimpleJapanesePostie extends SMailSimpleBasePostie {
 
-    String proofreader(String templatePath, Map<String, Object> contextMap);
+    private static final String ISO_2022_JP = "iso-2022-jp";
+
+    public SMailSimpleJapanesePostie(SMailPostalMotorbike motorbike) {
+        super(motorbike);
+    }
+
+    @Override
+    protected String getEncoding() {
+        return ISO_2022_JP;
+    }
 }

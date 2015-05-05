@@ -13,26 +13,15 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute;
+package org.dbflute.mail.send;
+
+import java.util.Map;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/05 Tuesday at nakameguro)
+ * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
  */
-public class DeliveryCategory {
+public interface SMailTextProofreader {
 
-    protected final String category;
-
-    public DeliveryCategory(String category) {
-        this.category = category;
-    }
-
-    @Override
-    public String toString() {
-        return "category:{" + category + "}";
-    }
-
-    public String getCategory() {
-        return category;
-    }
+    String proofreader(String templateText, Map<String, Object> variableMap);
 }

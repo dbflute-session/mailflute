@@ -13,21 +13,15 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.exception;
+package org.dbflute.mail.send;
+
+import org.dbflute.mail.Postcard;
 
 /**
+ * @author Takeshi Kato
  * @author jflute
- * @since 0.1.0 (2015/02/28 Saturday)
  */
-public class SMailPostCategoryNotFoundException extends RuntimeException {
+public interface SMailPostie {
 
-    private static final long serialVersionUID = 1L;
-
-    public SMailPostCategoryNotFoundException(String msg) {
-        super(msg);
-    }
-
-    public SMailPostCategoryNotFoundException(String msg, Throwable e) {
-        super(msg, e);
-    }
+    void deliver(Postcard post);
 }

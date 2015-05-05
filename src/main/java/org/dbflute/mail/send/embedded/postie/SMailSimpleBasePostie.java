@@ -13,30 +13,24 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mailflute.send.embedded.postie;
+package org.dbflute.mail.send.embedded.postie;
 
 import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
 
-import org.dbflute.mailflute.Postcard;
-import org.dbflute.mailflute.send.SMailMessage;
-import org.dbflute.mailflute.send.SMailPostalMotorbike;
-import org.dbflute.mailflute.send.SMailPostie;
-import org.dbflute.mailflute.send.exception.SMailTransportFailureException;
+import org.dbflute.mail.Postcard;
+import org.dbflute.mail.send.SMailMessage;
+import org.dbflute.mail.send.SMailPostalMotorbike;
+import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.exception.SMailTransportFailureException;
 
 /**
  * @author jflute
- * @author Takeshi Kato
- * @since 0.1.0 (2015/01/20 Tuesday)
+ * @since 0.4.0 (2015/05/05 Tuesday)
  */
-public class SMailSimpleJapanesePostie implements SMailPostie {
-
-    // ===================================================================================
-    //                                                                          Definition
-    //                                                                          ==========
-    private static final String ISO_2022_JP = "iso-2022-jp";
+public abstract class SMailSimpleBasePostie implements SMailPostie {
 
     // ===================================================================================
     //                                                                           Attribute
@@ -46,24 +40,28 @@ public class SMailSimpleJapanesePostie implements SMailPostie {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSimpleJapanesePostie(SMailPostalMotorbike motorbike) {
+    public SMailSimpleBasePostie(SMailPostalMotorbike motorbike) {
         this.motorbike = motorbike;
     }
 
+    // ===================================================================================
+    //                                                                             Deliver
+    //                                                                             =======
+    @Override
     public void deliver(Postcard postcard) {
         // TODO jflute mailflute: postie's retry
         final SMailMessage message = createMailMessage(motorbike);
         message.setFrom(postcard.getFrom());
-        for (Address adr : postcard.getToList()) {
-            message.addTo(adr);
+        for (Address to : postcard.getToList()) {
+            message.addTo(to);
         }
-        for (Address adr : postcard.getCcList()) {
-            message.addCc(adr);
+        for (Address cc : postcard.getCcList()) {
+            message.addCc(cc);
         }
-        for (Address adr : postcard.getBccList()) {
-            message.addBcc(adr);
+        for (Address bcc : postcard.getBccList()) {
+            message.addBcc(bcc);
         }
-        final String encoding = getJapaneseEncoding();
+        final String encoding = getEncoding();
         message.setSubject(postcard.getSubject(), encoding);
         message.setPlainBody(postcard.getPlainBody(), encoding);
         message.setHtmlBody(postcard.getHtmlBody(), encoding);
@@ -83,7 +81,5 @@ public class SMailSimpleJapanesePostie implements SMailPostie {
         return motorbike.getNativeSession();
     }
 
-    protected String getJapaneseEncoding() {
-        return ISO_2022_JP;
-    }
+    protected abstract String getEncoding();
 }
