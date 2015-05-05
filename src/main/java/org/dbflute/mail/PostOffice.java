@@ -15,14 +15,19 @@
  */
 package org.dbflute.mail;
 
+import java.io.InputStream;
+
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.exception.SMailDelivertyCategoryNotFoundException;
+import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.DfTypeUtil;
+import org.dbflute.util.Srl;
 
 /**
  * @author jflute
@@ -47,6 +52,7 @@ public class PostOffice {
     //                                                                        Deliver Mail
     //                                                                        ============
     public void deliver(Postcard postcard) {
+        postcard.officeCheck();
         readOutsideBodyIfNeeds(postcard);
         proofreadIfNeeds(postcard);
         final SMailPostalMotorbike motorbike = fetchMotorbike(postcard);
@@ -55,19 +61,53 @@ public class PostOffice {
     }
 
     protected void readOutsideBodyIfNeeds(Postcard postcard) {
-        if (!postcard.isDirectBodyUsed()) {
+        final String bodyFile = postcard.getBodyFile();
+        if (bodyFile != null) {
             final FileTextIO textIO = new FileTextIO().encodeAsUTF8();
-            postcard.setPlainBody(textIO.read(postcard.getPlainBody()));
-            postcard.setHtmlBody(textIO.read(postcard.getHtmlBody()));
+            final boolean classpath = postcard.isFromClasspath();
+            final DirectBodyOption option = postcard.useDirectBody(doRead(textIO, bodyFile, classpath));
+            if (postcard.isAlsoHtmlFile()) {
+                option.alsoDirectHtml(doRead(textIO, deriveHtmlFilePath(bodyFile), classpath));
+            }
         }
     }
 
+    protected String doRead(FileTextIO textIO, String path, boolean classpath) {
+        if (classpath) {
+            final InputStream ins = DfResourceUtil.getResourceStream(path);
+            if (ins == null) {
+                String msg = "Not found the outside file from classpath: " + path;
+                throw new IllegalStateException(msg);
+            }
+            return textIO.read(ins);
+        } else {
+            return textIO.read(path);
+        }
+    }
+
+    protected String deriveHtmlFilePath(String bodyFile) {
+        final String front = Srl.substringLastFront(bodyFile, ".");
+        final String rear = Srl.substringLastRear(bodyFile, ".");
+        return front + "_html." + rear; // e.g. member_registration_html.ml
+    }
+
     protected void proofreadIfNeeds(Postcard postcard) {
-        if (!postcard.isFixedTextUsed()) {
+        if (postcard.isFixedTextUsed()) {
+            postcard.proofreadPlain((reading, variableMap) -> reading);
+            if (postcard.hasHtmlBody()) {
+                postcard.proofreadHtml((reading, variableMap) -> reading);
+            }
+        } else {
             final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
             final SMailTextProofreader proofreader = personnel.selectProofreader(postcard);
-            postcard.setPlainBody(proofreader.proofreader(postcard.getPlainBody(), postcard.getVariableMap()));
-            postcard.setHtmlBody(proofreader.proofreader(postcard.getHtmlBody(), postcard.getVariableMap()));
+            postcard.proofreadPlain((reading, variableMap) -> {
+                return proofreader.proofreader(reading, variableMap);
+            });
+            if (postcard.hasHtmlBody()) {
+                postcard.proofreadHtml((reading, variableMap) -> {
+                    return proofreader.proofreader(reading, variableMap);
+                });
+            }
         }
     }
 

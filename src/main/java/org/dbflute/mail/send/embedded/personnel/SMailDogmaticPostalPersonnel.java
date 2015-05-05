@@ -21,20 +21,34 @@ import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
-import org.dbflute.mail.send.embedded.template.SMailParameterCommentTextProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailParameterCommentTextProofreader;
 
 /**
  * @author jflute
  */
 public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
 
+    protected static final SMailParameterCommentTextProofreader PROOFREADER = new SMailParameterCommentTextProofreader();
+
+    protected boolean training;
+
+    public SMailDogmaticPostalPersonnel asTraining() {
+        training = true;
+        return this;
+    }
+
     @Override
     public SMailTextProofreader selectProofreader(Postcard postcard) {
-        return new SMailParameterCommentTextProofreader();
+        return PROOFREADER;
     }
 
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
-        return new SMailSimpleGlobalPostie(motorbike);
+        final SMailSimpleGlobalPostie postie = new SMailSimpleGlobalPostie(motorbike);
+        return training ? postie.asTraining() : postie;
+    }
+
+    public boolean isTraining() {
+        return training;
     }
 }

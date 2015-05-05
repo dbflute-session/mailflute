@@ -25,6 +25,8 @@ import org.dbflute.mail.send.SMailMessage;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jflute
@@ -32,10 +34,13 @@ import org.dbflute.mail.send.exception.SMailTransportFailureException;
  */
 public abstract class SMailSimpleBasePostie implements SMailPostie {
 
+    private static final Logger logger = LoggerFactory.getLogger(SMailSimpleBasePostie.class);
+
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final SMailPostalMotorbike motorbike;
+    protected boolean training;
 
     // ===================================================================================
     //                                                                         Constructor
@@ -44,12 +49,17 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
         this.motorbike = motorbike;
     }
 
+    public SMailSimpleBasePostie asTraining() {
+        training = true;
+        return this;
+    }
+
     // ===================================================================================
     //                                                                             Deliver
     //                                                                             =======
     @Override
     public void deliver(Postcard postcard) {
-        // TODO jflute mailflute: postie's retry
+        // TODO jflute mailflute: [E] postie's retry
         final SMailMessage message = createMailMessage(motorbike);
         message.setFrom(postcard.getFrom());
         for (Address to : postcard.getToList()) {
@@ -63,13 +73,21 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
         }
         final String encoding = getEncoding();
         message.setSubject(postcard.getSubject(), encoding);
-        message.setPlainBody(postcard.getPlainBody(), encoding);
-        message.setHtmlBody(postcard.getHtmlBody(), encoding);
+        message.setPlainBody(postcard.getProofreadingPlain(), encoding);
+        message.setHtmlBody(postcard.getProofreadingHtml(), encoding);
 
         try {
-            Transport.send(message.getMimeMessage());
+            send(message);
         } catch (MessagingException e) {
             throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
+        }
+    }
+
+    protected void send(SMailMessage message) throws MessagingException {
+        if (training) {
+            logger.debug("your message:\n" + message.getPlainText());
+        } else {
+            Transport.send(message.getMimeMessage());
         }
     }
 
@@ -82,4 +100,11 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
     }
 
     protected abstract String getEncoding();
+
+    // ===================================================================================
+    //                                                                            Accessor
+    //                                                                            ========
+    public boolean isTraining() {
+        return training;
+    }
 }

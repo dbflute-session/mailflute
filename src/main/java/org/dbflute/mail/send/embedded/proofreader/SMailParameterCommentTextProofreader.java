@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.embedded.template;
+package org.dbflute.mail.send.embedded.proofreader;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,7 +33,20 @@ public class SMailParameterCommentTextProofreader implements SMailTextProofreade
 
     @Override
     public String proofreader(String templateText, Map<String, Object> variableMap) {
-        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, true);
+        // TODO jflute mailflute: [A] option of line separator
+        // TODO jflute mailflute: [B] option of test value unused
+        // TODO jflute mailflute: [C] option of embedded only variable
+        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, true) {
+            @Override
+            protected String trimSqlAtFirst(String sql) {
+                return sql; // keep body
+            }
+
+            @Override
+            protected String removeLastTerminalMark(String sql) {
+                return sql; // keep body
+            }
+        }.overlookNativeBinding();
         final Node node = analyzer.analyze();
         final SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
         for (Entry<String, Object> entry : variableMap.entrySet()) {

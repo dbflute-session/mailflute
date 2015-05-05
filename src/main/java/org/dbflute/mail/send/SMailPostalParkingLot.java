@@ -50,4 +50,8 @@ public class SMailPostalParkingLot {
         LOG.info("...Registering postal motorbike: {}, {}", category, motorbike);
         sessionMap.put(category, motorbike);
     }
+
+    public void registerMotorbikeAsMain(SMailPostalMotorbike motorbike) {
+        registerMotorbike(DEFAULT_CATEGORY, motorbike);
+    }
 }

@@ -35,15 +35,15 @@ public class SMailMessage {
     //                                                                           =========
     protected final MimeMessage message;
 
+    // save for debug
+    protected String plainText;
+    protected String htmlText;
+
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
     public SMailMessage(Session session) {
         message = new MimeMessage(session);
-    }
-
-    public MimeMessage getMimeMessage() {
-        return message;
     }
 
     // ===================================================================================
@@ -100,6 +100,7 @@ public class SMailMessage {
 
     public void setPlainBody(String plainBody, String encoding) {
         try {
+            plainText = plainBody;
             message.setText(plainBody, encoding, "plain");
         } catch (MessagingException e) {
             String msg = "Failed to set plain body: encoding=" + encoding + " message=" + message;
@@ -109,10 +110,34 @@ public class SMailMessage {
 
     public void setHtmlBody(String htmlBody, String encoding) {
         try {
+            htmlText = htmlBody;
             message.setText(htmlBody, encoding, "html");
         } catch (MessagingException e) {
             String msg = "Failed to set plain body: encoding=" + encoding + " message=" + message;
             throw new SMailMessageSettingFailureException(msg, e);
         }
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return "message:{" + message + ", " + plainText + "}";
+    }
+
+    // ===================================================================================
+    //                                                                            Accessor
+    //                                                                            ========
+    public MimeMessage getMimeMessage() {
+        return message;
+    }
+
+    public String getPlainText() {
+        return plainText;
+    }
+
+    public String getHtmlText() {
+        return htmlText;
     }
 }

@@ -28,18 +28,15 @@ public class SMailDeliveryDepartment {
     //                                                                           =========
     protected final SMailPostalParkingLot parkingLot; // not null
     protected final SMailPostalPersonnel personnel; // not null
-    protected final SMailTextProofreader proofreader; // not null
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel, SMailTextProofreader proofreader) {
+    public SMailDeliveryDepartment(SMailPostalParkingLot parkingLot, SMailPostalPersonnel personnel) {
         assertArgumentNotNull("parkingLot", parkingLot);
         assertArgumentNotNull("personnel", personnel);
-        assertArgumentNotNull("proofreader", proofreader);
         this.parkingLot = parkingLot;
         this.personnel = personnel;
-        this.proofreader = proofreader;
     }
 
     // ===================================================================================
@@ -56,7 +53,7 @@ public class SMailDeliveryDepartment {
     //                                                                      ==============
     @Override
     public String toString() {
-        return DfTypeUtil.toClassTitle(this) + ":{" + parkingLot + ", " + personnel + ", " + proofreader + "}";
+        return DfTypeUtil.toClassTitle(this) + ":{" + parkingLot + ", " + personnel + "}";
     }
 
     // ===================================================================================
@@ -68,9 +65,5 @@ public class SMailDeliveryDepartment {
 
     public SMailPostalPersonnel getPersonnel() {
         return personnel;
-    }
-
-    public SMailTextProofreader getProofreader() {
-        return proofreader;
     }
 }
