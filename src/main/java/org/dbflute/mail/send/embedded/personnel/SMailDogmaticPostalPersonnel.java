@@ -15,13 +15,19 @@
  */
 package org.dbflute.mail.send.embedded.personnel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
-import org.dbflute.mail.send.embedded.proofreader.SMailParameterCommentTextProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailConfigProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailConfigResolver;
+import org.dbflute.mail.send.embedded.proofreader.SMailPmcommentProofreader;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -30,18 +36,37 @@ import org.dbflute.util.DfTypeUtil;
 public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
 
     // ===================================================================================
-    //                                                                          Definition
-    //                                                                          ==========
-    protected static final SMailParameterCommentTextProofreader proofreader = new SMailParameterCommentTextProofreader();
-
-    // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
+    protected final SMailTextProofreader proofreader;
     protected boolean training;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
+    public SMailDogmaticPostalPersonnel(SMailConfigResolver configResolver) {
+        this.proofreader = createProofreader(configResolver);
+    }
+
+    protected SMailTextProofreader createProofreader(SMailConfigResolver configResolver) {
+        return new SMailBatchProofreader(prepareProofreaderList(configResolver));
+    }
+
+    protected List<SMailTextProofreader> prepareProofreaderList(SMailConfigResolver configResolver) {
+        final List<SMailTextProofreader> readerList = new ArrayList<SMailTextProofreader>(4);
+        readerList.add(newMailConfigProofreader(configResolver));
+        readerList.add(newMailPmcommentProofreader());
+        return readerList;
+    }
+
+    protected SMailConfigProofreader newMailConfigProofreader(SMailConfigResolver configResolver) {
+        return new SMailConfigProofreader(configResolver);
+    }
+
+    protected SMailPmcommentProofreader newMailPmcommentProofreader() {
+        return new SMailPmcommentProofreader();
+    }
+
     public SMailDogmaticPostalPersonnel asTraining() {
         training = true;
         return this;

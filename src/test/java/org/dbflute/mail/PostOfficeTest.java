@@ -15,33 +15,39 @@
  */
 package org.dbflute.mail;
 
+import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalParkingLot;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.embedded.personnel.SMailDogmaticPostalPersonnel;
-import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
+import org.dbflute.mail.send.embedded.proofreader.SMailConfigResolver;
 import org.dbflute.utflute.core.PlainTestCase;
+import org.dbflute.util.DfResourceUtil;
 
 /**
  * @author jflute
  */
 public class PostOfficeTest extends PlainTestCase {
 
+    private static final String SIMPLE_GREETING_ML = "mail/office/simple_greeting.ml";
+
     public void test_deliver_bodyFile() throws Exception {
         // ## Arrange ##
         PostOffice office = prepareOffice();
         Postcard postcard = new Postcard();
-        postcard.useBodyFile("mail/office/simple_greeting.ml").fromClasspath();
-        postcard.useTemplateBody(preparePmb().getParameterMap());
+        Map<String, Object> map = prepareVariableMap();
+        postcard.useBodyFile(SIMPLE_GREETING_ML).useTemplateText(map);
 
         // ## Act ##
         office.deliver(postcard);
 
         // ## Assert ##
-        String plain = postcard.getProofreadingPlain();
-        assertContainsAll(plain, "jflute", "Thanks");
-        assertNull(postcard.getProofreadingHtml());
+        doAssertParameter(postcard, map);
     }
 
     public void test_deliver_directBody() throws Exception {
@@ -49,15 +55,20 @@ public class PostOfficeTest extends PlainTestCase {
         String plainBody = preparePlainBody();
         PostOffice office = prepareOffice();
         Postcard postcard = new Postcard();
-        postcard.useDirectBody(plainBody);
-        postcard.useTemplateBody(preparePmb().getParameterMap());
+        Map<String, Object> map = prepareVariableMap();
+        postcard.useDirectBody(plainBody).useTemplateText(map);
 
         // ## Act ##
         office.deliver(postcard);
 
         // ## Assert ##
+        doAssertParameter(postcard, map);
+    }
+
+    protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb) {
         String plain = postcard.getProofreadingPlain();
-        assertContainsAll(plain, "jflute", "Thanks");
+        Object birthdate = pmb.get("birthdate");
+        assertContainsAll(plain, "jflute", "abc@example.com", "Today is " + birthdate + ".", "Thanks");
         assertNull(postcard.getProofreadingHtml());
     }
 
@@ -68,28 +79,27 @@ public class PostOfficeTest extends PlainTestCase {
         SMailPostalParkingLot parkingLot = new SMailPostalParkingLot();
         SMailPostalMotorbike motorbike = new SMailPostalMotorbike();
         parkingLot.registerMotorbikeAsMain(motorbike);
-        SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel().asTraining();
+        Map<String, String> configMap = new LinkedHashMap<String, String>();
+        configMap.put("mail.from", "abc@example.com");
+        configMap.put("mail.to", "stu@example.com");
+        SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel(new SMailConfigResolver() {
+            public String get(String key) {
+                return configMap.get(key);
+            }
+        }).asTraining();
         SMailDeliveryDepartment deliveryDepartment = new SMailDeliveryDepartment(parkingLot, personnel);
         return new PostOffice(deliveryDepartment);
     }
 
     protected String preparePlainBody() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Hello, /*$pmb.memberName*/\n");
-        sb.append("\n");
-        sb.append("How are you?\n");
-        sb.append("/*IF pmb.birthdate != null*/\n");
-        sb.append("Happy birthdate! Today is /*$pmb.birthdate*/.\n");
-        sb.append("/*END*/\n");
-        sb.append("\n");
-        sb.append("Thanks");
-        return sb.toString();
+        final InputStream ins = DfResourceUtil.getResourceStream(SIMPLE_GREETING_ML);
+        return new FileTextIO().encodeAsUTF8().read(ins);
     }
 
-    protected SimpleMapPmb<Object> preparePmb() {
-        SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
-        pmb.addParameter("memberName", "jflute");
-        pmb.addParameter("birthdate", currentLocalDate());
-        return pmb;
+    protected Map<String, Object> prepareVariableMap() {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("memberName", "jflute");
+        map.put("birthdate", currentLocalDate());
+        return map;
     }
 }

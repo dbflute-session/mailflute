@@ -64,24 +64,24 @@ public class PostOffice {
         final String bodyFile = postcard.getBodyFile();
         if (bodyFile != null) {
             final FileTextIO textIO = new FileTextIO().encodeAsUTF8();
-            final boolean classpath = postcard.isFromClasspath();
-            final DirectBodyOption option = postcard.useDirectBody(doRead(textIO, bodyFile, classpath));
+            final boolean filesystem = postcard.isFromFilesystem();
+            final DirectBodyOption option = postcard.useDirectBody(doRead(textIO, bodyFile, filesystem));
             if (postcard.isAlsoHtmlFile()) {
-                option.alsoDirectHtml(doRead(textIO, deriveHtmlFilePath(bodyFile), classpath));
+                option.alsoDirectHtml(doRead(textIO, deriveHtmlFilePath(bodyFile), filesystem));
             }
         }
     }
 
-    protected String doRead(FileTextIO textIO, String path, boolean classpath) {
-        if (classpath) {
+    protected String doRead(FileTextIO textIO, String path, boolean filesystem) {
+        if (filesystem) {
+            return textIO.read(path);
+        } else { // from class-path as default, mainly here
             final InputStream ins = DfResourceUtil.getResourceStream(path);
             if (ins == null) {
                 String msg = "Not found the outside file from classpath: " + path;
                 throw new IllegalStateException(msg);
             }
             return textIO.read(ins);
-        } else {
-            return textIO.read(path);
         }
     }
 
@@ -92,7 +92,7 @@ public class PostOffice {
     }
 
     protected void proofreadIfNeeds(Postcard postcard) {
-        if (postcard.isFixedTextUsed()) {
+        if (postcard.isWholeFixedTextUsed()) {
             postcard.proofreadPlain((reading, variableMap) -> reading);
             if (postcard.hasHtmlBody()) {
                 postcard.proofreadHtml((reading, variableMap) -> reading);

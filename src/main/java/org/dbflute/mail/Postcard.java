@@ -45,13 +45,13 @@ public class Postcard {
     // either required: bodyFile or plain/html body
     protected String bodyFile; // either required, also deriving HTML
     protected boolean alsoHtmlFile; // derive HTML file path from bodyFile
-    protected boolean fromClassppath;
+    protected boolean fromFilesystem;
     protected String plainBody; // null when body file used, direct text
     protected String htmlBody; // null when body file used, path or direct text
 
     // either required
-    protected boolean fixedBodyUsed; // optional , may be sometimes used
-    protected Map<String, Object> variableMap; // optional, lazy loaded
+    protected Map<String, Object> templateVariableMap; // optional, lazy loaded
+    protected boolean wholeFixedTextUsed; // optional , may be sometimes used
 
     // post office work
     protected String proofreadingPlain;
@@ -121,9 +121,17 @@ public class Postcard {
             return this;
         }
 
-        public BodyFileOption fromClasspath() {
-            fromClassppath = true;
+        public BodyFileOption fromFilesystem() {
+            fromFilesystem = true;
             return this;
+        }
+
+        public void useTemplateText(Map<String, Object> variableMap) {
+            Postcard.this.templateVariableMap = variableMap;
+        }
+
+        public void useWholeFixedText() {
+            wholeFixedTextUsed = true;
         }
     }
 
@@ -140,17 +148,14 @@ public class Postcard {
         public void alsoDirectHtml(String directHtml) {
             htmlBody = directHtml;
         }
-    }
 
-    // -----------------------------------------------------
-    //                                     Fixed or Template
-    //                                     -----------------
-    public void useFixedBody() {
-        fixedBodyUsed = true;
-    }
+        public void useTemplateText(Map<String, Object> variableMap) {
+            Postcard.this.templateVariableMap = variableMap;
+        }
 
-    public void useTemplateBody(Map<String, Object> variableMap) {
-        this.variableMap = variableMap;
+        public void useWholeFixedText() {
+            wholeFixedTextUsed = true;
+        }
     }
 
     // ===================================================================================
@@ -166,20 +171,25 @@ public class Postcard {
             String msg = "Cannot set html body only (without plain body): htmlBody=" + htmlBody;
             throw new IllegalStateException(msg);
         }
-        if ((!fixedBodyUsed && variableMap == null) || (fixedBodyUsed && variableMap != null)) {
-            String msg = "You can set either fixed body or template body: fixedBodyUsed=" + fixedBodyUsed + " variableMap=" + variableMap;
+        if ((!wholeFixedTextUsed && templateVariableMap == null) || (wholeFixedTextUsed && templateVariableMap != null)) {
+            String msg = "You can set either fixed body or template body:";
+            msg = msg + " fixedBodyUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
+            throw new IllegalStateException(msg);
+        }
+        if (templateVariableMap != null && templateVariableMap.isEmpty()) {
+            String msg = "Empty variable map for template text: variableMap=" + templateVariableMap;
             throw new IllegalStateException(msg);
         }
     }
 
     public void proofreadPlain(BiFunction<String, Map<String, Object>, String> proofreader) {
         proofreadingPlain = proofreadingPlain != null ? proofreadingPlain : plainBody;
-        this.proofreadingPlain = proofreader.apply(proofreadingPlain, getVariableMap());
+        this.proofreadingPlain = proofreader.apply(proofreadingPlain, getTemplaetVariableMap());
     }
 
     public void proofreadHtml(BiFunction<String, Map<String, Object>, String> proofreader) {
         proofreadingHtml = proofreadingHtml != null ? proofreadingHtml : htmlBody;
-        this.proofreadingHtml = proofreader.apply(proofreadingHtml, getVariableMap());
+        this.proofreadingHtml = proofreader.apply(proofreadingHtml, getTemplaetVariableMap());
     }
 
     // ===================================================================================
@@ -195,10 +205,6 @@ public class Postcard {
     //                                                                              ======
     public DeliveryCategory getDeliveryCategory() {
         return deliveryCategory;
-    }
-
-    public boolean isFixedTextUsed() {
-        return fixedBodyUsed;
     }
 
     public Address getFrom() {
@@ -229,8 +235,8 @@ public class Postcard {
         return alsoHtmlFile;
     }
 
-    public boolean isFromClasspath() {
-        return fromClassppath;
+    public boolean isFromFilesystem() {
+        return fromFilesystem;
     }
 
     public String getPlainBody() {
@@ -245,8 +251,12 @@ public class Postcard {
         return htmlBody != null;
     }
 
-    public Map<String, Object> getVariableMap() {
-        return variableMap != null ? variableMap : DfCollectionUtil.emptyMap();
+    public Map<String, Object> getTemplaetVariableMap() {
+        return templateVariableMap != null ? templateVariableMap : DfCollectionUtil.emptyMap();
+    }
+
+    public boolean isWholeFixedTextUsed() {
+        return wholeFixedTextUsed;
     }
 
     public String getProofreadingPlain() {

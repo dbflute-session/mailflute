@@ -29,7 +29,7 @@ import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
  * @author jflute
  * @since 0.4.0 (2015/05/05 Tuesday at nakameguro)
  */
-public class SMailParameterCommentTextProofreader implements SMailTextProofreader {
+public class SMailPmcommentProofreader implements SMailTextProofreader {
 
     protected static final CommandContextCreator contextCreator;
     static {
