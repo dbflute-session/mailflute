@@ -32,7 +32,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    protected static final SMailParameterCommentTextProofreader PROOFREADER = new SMailParameterCommentTextProofreader();
+    protected static final SMailParameterCommentTextProofreader proofreader = new SMailParameterCommentTextProofreader();
 
     // ===================================================================================
     //                                                                           Attribute
@@ -52,7 +52,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                              ======
     @Override
     public SMailTextProofreader selectProofreader(Postcard postcard) {
-        return PROOFREADER;
+        return proofreader;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     @Override
     public String toString() {
         final String hash = Integer.toHexString(hashCode());
-        return DfTypeUtil.toClassTitle(this) + ":{" + PROOFREADER + (training ? ", *training" : "") + "}@" + hash;
+        return DfTypeUtil.toClassTitle(this) + ":{" + proofreader + (training ? ", *training" : "") + "}@" + hash;
     }
 
     // ===================================================================================

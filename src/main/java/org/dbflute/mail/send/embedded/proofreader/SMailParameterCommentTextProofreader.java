@@ -31,36 +31,35 @@ import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
  */
 public class SMailParameterCommentTextProofreader implements SMailTextProofreader {
 
+    protected static final CommandContextCreator contextCreator;
+    static {
+        final String[] argNames = new String[] { "pmb" };
+        final Class<?>[] argTypes = new Class<?>[] { SimpleMapPmb.class };
+        contextCreator = new CommandContextCreator(argNames, argTypes);
+    }
+
     @Override
     public String proofreader(String templateText, Map<String, Object> variableMap) {
         // TODO jflute mailflute: [A] option of line separator
-        // TODO jflute mailflute: [B] option of test value unused
-        // TODO jflute mailflute: [C] option of embedded only variable
+        @SuppressWarnings("deprecation")
         final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, true) {
-            @Override
-            protected String trimSqlAtFirst(String sql) {
+            protected String filterAtFirst(String sql) {
                 return sql; // keep body
             }
-
-            @Override
-            protected String removeLastTerminalMark(String sql) {
-                return sql; // keep body
-            }
-        }.overlookNativeBinding();
+        }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded();
         final Node node = analyzer.analyze();
         final SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
         for (Entry<String, Object> entry : variableMap.entrySet()) {
             pmb.addParameter(entry.getKey(), entry.getValue());
         }
-        final CommandContextCreator creator = createCommandContextCreator();
-        final CommandContext context = creator.createCommandContext(new Object[] { pmb });
-        node.accept(context);
-        final String filteredText = context.getSql();
+        final CommandContext ctx = prepareContextCreator().createCommandContext(new Object[] { pmb });
+        node.accept(ctx);
+        final String filteredText = ctx.getSql();
         return filteredText;
     }
 
-    protected CommandContextCreator createCommandContextCreator() {
-        return new CommandContextCreator(new String[] { "pmb" }, new Class<?>[] { SimpleMapPmb.class });
+    protected CommandContextCreator prepareContextCreator() {
+        return contextCreator;
     }
 
     @Override
