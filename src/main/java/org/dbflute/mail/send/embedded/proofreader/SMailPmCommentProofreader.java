@@ -16,7 +16,6 @@
 package org.dbflute.mail.send.embedded.proofreader;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.twowaysql.SqlAnalyzer;
@@ -29,7 +28,7 @@ import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
  * @author jflute
  * @since 0.4.0 (2015/05/05 Tuesday at nakameguro)
  */
-public class SMailPmcommentProofreader implements SMailTextProofreader {
+public class SMailPmCommentProofreader implements SMailTextProofreader {
 
     protected static final CommandContextCreator contextCreator;
     static {
@@ -46,12 +45,10 @@ public class SMailPmcommentProofreader implements SMailTextProofreader {
             protected String filterAtFirst(String sql) {
                 return sql; // keep body
             }
-        }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded();
+        }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded(); // adjust for mail
         final Node node = analyzer.analyze();
         final SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
-        for (Entry<String, Object> entry : variableMap.entrySet()) {
-            pmb.addParameter(entry.getKey(), entry.getValue());
-        }
+        variableMap.forEach((key, value) -> pmb.addParameter(key, value));
         final CommandContext ctx = prepareContextCreator().createCommandContext(new Object[] { pmb });
         node.accept(ctx);
         final String filteredText = ctx.getSql();

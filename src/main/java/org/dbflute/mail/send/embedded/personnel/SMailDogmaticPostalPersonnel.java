@@ -27,7 +27,7 @@ import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailConfigProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailConfigResolver;
-import org.dbflute.mail.send.embedded.proofreader.SMailPmcommentProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -63,8 +63,8 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return new SMailConfigProofreader(configResolver);
     }
 
-    protected SMailPmcommentProofreader newMailPmcommentProofreader() {
-        return new SMailPmcommentProofreader();
+    protected SMailPmCommentProofreader newMailPmcommentProofreader() {
+        return new SMailPmCommentProofreader();
     }
 
     public SMailDogmaticPostalPersonnel asTraining() {
