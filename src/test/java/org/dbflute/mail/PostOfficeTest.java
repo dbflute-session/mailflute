@@ -33,10 +33,10 @@ import org.dbflute.util.DfResourceUtil;
  */
 public class PostOfficeTest extends PlainTestCase {
 
-    private static final String BODY_ONLY_ML = "mail/office/body_only.ml";
-    private static final String HEADER_SUBJECT_ML = "mail/office/header_subject.ml";
-    private static final String OPTION_HTMLEXISTS_ML = "mail/office/option_htmlexists.ml";
-    private static final String OPTION_HTMLNOFILE_ML = "mail/office/option_htmlnofile.ml";
+    private static final String BODY_ONLY_ML = "mail/office/body_only.dfmail";
+    private static final String HEADER_SUBJECT_ML = "mail/office/header_subject.dfmail";
+    private static final String OPTION_HTMLEXISTS_ML = "mail/office/option_htmlexists.dfmail";
+    private static final String OPTION_HTMLNOFILE_ML = "mail/office/option_htmlnofile.dfmail";
 
     public void test_deliver_bodyFile_bodyOnly() throws Exception {
         // ## Arrange ##
