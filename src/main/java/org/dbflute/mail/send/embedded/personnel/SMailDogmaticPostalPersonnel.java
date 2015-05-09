@@ -22,12 +22,13 @@ import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
-import org.dbflute.mail.send.embedded.proofreader.SMailConfigProofreader;
-import org.dbflute.mail.send.embedded.proofreader.SMailConfigResolver;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
+import org.dbflute.mail.send.embedded.receptionist.SMailConventionFileReceptionist;
+import org.dbflute.mail.send.embedded.receptionist.SMailNoTaskReceptionist;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -44,26 +45,25 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailDogmaticPostalPersonnel(SMailConfigResolver configResolver) {
-        this.proofreader = createProofreader(configResolver);
+    public SMailDogmaticPostalPersonnel() {
+        proofreader = createProofreader();
     }
 
-    protected SMailTextProofreader createProofreader(SMailConfigResolver configResolver) {
-        return new SMailBatchProofreader(prepareProofreaderList(configResolver));
-    }
-
-    protected List<SMailTextProofreader> prepareProofreaderList(SMailConfigResolver configResolver) {
+    protected SMailTextProofreader createProofreader() {
         final List<SMailTextProofreader> readerList = new ArrayList<SMailTextProofreader>(4);
-        readerList.add(newMailConfigProofreader(configResolver));
-        readerList.add(newMailPmcommentProofreader());
-        return readerList;
+        setupProofreader(readerList);
+        return new SMailBatchProofreader(readerList);
     }
 
-    protected SMailConfigProofreader newMailConfigProofreader(SMailConfigResolver configResolver) {
-        return new SMailConfigProofreader(configResolver);
+    protected void setupProofreader(List<SMailTextProofreader> readerList) { // you can add yours
+        readerList.add(createTemplateProofreader());
     }
 
-    protected SMailPmCommentProofreader newMailPmcommentProofreader() {
+    protected SMailTextProofreader createTemplateProofreader() { // you can change it e.g. Velocity
+        return newMailPmCommentProofreader();
+    }
+
+    protected SMailPmCommentProofreader newMailPmCommentProofreader() {
         return new SMailPmCommentProofreader();
     }
 
@@ -75,11 +75,45 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // ===================================================================================
     //                                                                              Select
     //                                                                              ======
+    // -----------------------------------------------------
+    //                                          Receptionist
+    //                                          ------------
+    @Override
+    public SMailReceptionist selectReceptionist(Postcard postcard) {
+        if (postcard.hasBodyFile()) {
+            return createBodyFileReceptionist();
+        } else {
+            return createDirectBodyReceptionist();
+        }
+    }
+
+    protected SMailReceptionist createBodyFileReceptionist() { // you can change it e.g. from database
+        return newMailConventionFileReceptionist();
+    }
+
+    protected SMailConventionFileReceptionist newMailConventionFileReceptionist() {
+        return new SMailConventionFileReceptionist();
+    }
+
+    protected SMailReceptionist createDirectBodyReceptionist() {
+        return newMailNoTaskReceptionist();
+    }
+
+    protected SMailNoTaskReceptionist newMailNoTaskReceptionist() {
+        return new SMailNoTaskReceptionist();
+    }
+
+    // -----------------------------------------------------
+    //                                           Proofreader
+    //                                           -----------
     @Override
     public SMailTextProofreader selectProofreader(Postcard postcard) {
         return proofreader;
     }
 
+    // -----------------------------------------------------
+    //                                                Postie
+    //                                                ------
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
         final SMailSimpleGlobalPostie postie = newSMailSimpleGlobalPostie(motorbike);

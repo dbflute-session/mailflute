@@ -109,8 +109,8 @@ public class Postcard {
     // -----------------------------------------------------
     //                                             Body File
     //                                             ---------
-    public BodyFileOption useBodyFile(String plainFile) {
-        this.bodyFile = plainFile;
+    public BodyFileOption useBodyFile(String bodyFile) {
+        this.bodyFile = bodyFile;
         return new BodyFileOption();
     }
 
@@ -138,8 +138,8 @@ public class Postcard {
     // -----------------------------------------------------
     //                                           Direct Body
     //                                           -----------
-    public DirectBodyOption useDirectBody(String directPlain) {
-        this.plainBody = directPlain;
+    public DirectBodyOption useDirectBody(String plainBody) {
+        this.plainBody = plainBody;
         return new DirectBodyOption();
     }
 
@@ -182,14 +182,32 @@ public class Postcard {
         }
     }
 
+    public void officePlusHtml() {
+        alsoHtmlFile = true;
+    }
+
     public void proofreadPlain(BiFunction<String, Map<String, Object>, String> proofreader) {
-        proofreadingPlain = proofreadingPlain != null ? proofreadingPlain : plainBody;
-        this.proofreadingPlain = proofreader.apply(proofreadingPlain, getTemplaetVariableMap());
+        this.proofreadingPlain = proofreader.apply(getProofreadingOrOriginalPlain(), getTemplaetVariableMap());
     }
 
     public void proofreadHtml(BiFunction<String, Map<String, Object>, String> proofreader) {
-        proofreadingHtml = proofreadingHtml != null ? proofreadingHtml : htmlBody;
-        this.proofreadingHtml = proofreader.apply(proofreadingHtml, getTemplaetVariableMap());
+        this.proofreadingHtml = proofreader.apply(getProofreadingOrOriginalHtml(), getTemplaetVariableMap());
+    }
+
+    public String toCompletePlainText() {
+        return getProofreadingOrOriginalPlain();
+    }
+
+    public String toCompleteHtmlText() {
+        return getProofreadingOrOriginalHtml();
+    }
+
+    protected String getProofreadingOrOriginalPlain() {
+        return proofreadingPlain != null ? proofreadingPlain : plainBody;
+    }
+
+    protected String getProofreadingOrOriginalHtml() {
+        return proofreadingHtml != null ? proofreadingHtml : htmlBody;
     }
 
     // ===================================================================================
@@ -231,6 +249,10 @@ public class Postcard {
         return bodyFile;
     }
 
+    public boolean hasBodyFile() {
+        return bodyFile != null;
+    }
+
     public boolean isAlsoHtmlFile() {
         return alsoHtmlFile;
     }
@@ -243,12 +265,16 @@ public class Postcard {
         return plainBody;
     }
 
+    public boolean hasHtmlBody() {
+        return htmlBody != null;
+    }
+
     public String getHtmlBody() {
         return htmlBody;
     }
 
-    public boolean hasHtmlBody() {
-        return htmlBody != null;
+    public boolean hasTemplaetVariable() {
+        return templateVariableMap != null;
     }
 
     public Map<String, Object> getTemplaetVariableMap() {
@@ -257,13 +283,5 @@ public class Postcard {
 
     public boolean isWholeFixedTextUsed() {
         return wholeFixedTextUsed;
-    }
-
-    public String getProofreadingPlain() {
-        return proofreadingPlain;
-    }
-
-    public String getProofreadingHtml() {
-        return proofreadingHtml;
     }
 }

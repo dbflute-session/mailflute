@@ -25,7 +25,6 @@ import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalParkingLot;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.embedded.personnel.SMailDogmaticPostalPersonnel;
-import org.dbflute.mail.send.embedded.proofreader.SMailConfigResolver;
 import org.dbflute.utflute.core.PlainTestCase;
 import org.dbflute.util.DfResourceUtil;
 
@@ -34,42 +33,94 @@ import org.dbflute.util.DfResourceUtil;
  */
 public class PostOfficeTest extends PlainTestCase {
 
-    private static final String SIMPLE_GREETING_ML = "mail/office/simple_greeting.ml";
+    private static final String BODY_ONLY_ML = "mail/office/body_only.ml";
+    private static final String HEADER_SUBJECT_ML = "mail/office/header_subject.ml";
+    private static final String OPTION_HTMLEXISTS_ML = "mail/office/option_htmlexists.ml";
+    private static final String OPTION_HTMLNOFILE_ML = "mail/office/option_htmlnofile.ml";
 
-    public void test_deliver_bodyFile() throws Exception {
+    public void test_deliver_bodyFile_bodyOnly() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        Map<String, Object> map = prepareVariableMap();
+        postcard.useBodyFile(BODY_ONLY_ML).useTemplateText(map);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        doAssertParameter(postcard, map, subject, false);
+    }
+
+    public void test_deliver_bodyFile_headerSubject() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        Map<String, Object> map = prepareVariableMap();
+        postcard.useBodyFile(HEADER_SUBJECT_ML).useTemplateText(map);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        doAssertParameter(postcard, map, "Welcome to your test code reading, jflute", false);
+    }
+
+    public void test_deliver_bodyFile_optionPlusHtml_exists() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        Map<String, Object> map = prepareVariableMap();
+        postcard.useBodyFile(OPTION_HTMLEXISTS_ML).useTemplateText(map);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        doAssertParameter(postcard, map, "Welcome to your test code reading, jflute", true);
+    }
+
+    public void test_deliver_bodyFile_optionPlusHtml_noFile() throws Exception {
         // ## Arrange ##
         PostOffice office = prepareOffice();
         Postcard postcard = new Postcard();
-        Map<String, Object> map = prepareVariableMap();
-        postcard.useBodyFile(SIMPLE_GREETING_ML).useTemplateText(map);
+        postcard.useBodyFile(OPTION_HTMLNOFILE_ML).useTemplateText(prepareVariableMap());
 
         // ## Act ##
-        office.deliver(postcard);
-
-        // ## Assert ##
-        doAssertParameter(postcard, map);
+        try {
+            office.deliver(postcard);
+            // ## Assert ##
+            fail();
+        } catch (IllegalStateException e) {
+            log(e.getMessage());
+        }
     }
 
     public void test_deliver_directBody() throws Exception {
         // ## Arrange ##
         String plainBody = preparePlainBody();
-        PostOffice office = prepareOffice();
         Postcard postcard = new Postcard();
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
         Map<String, Object> map = prepareVariableMap();
         postcard.useDirectBody(plainBody).useTemplateText(map);
 
         // ## Act ##
-        office.deliver(postcard);
+        prepareOffice().deliver(postcard);
 
         // ## Assert ##
-        doAssertParameter(postcard, map);
+        doAssertParameter(postcard, map, subject, false);
     }
 
-    protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb) {
-        String plain = postcard.getProofreadingPlain();
+    protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb, String subject, boolean hasHtml) {
+        String plain = postcard.toCompletePlainText();
         Object birthdate = pmb.get("birthdate");
-        assertContainsAll(plain, "jflute", "abc@example.com", "Today is " + birthdate + ".", "Thanks");
-        assertNull(postcard.getProofreadingHtml());
+        assertContainsAll(plain, "jflute", "Today is " + birthdate + ".", "Thanks");
+        if (hasHtml) {
+            assertContainsAll(postcard.toCompleteHtmlText(), "jflute", "Today is " + birthdate + ".", "Thanks");
+        } else {
+            assertNull(postcard.toCompleteHtmlText());
+        }
+        assertEquals(postcard.getSubject(), subject);
     }
 
     // ===================================================================================
@@ -79,20 +130,13 @@ public class PostOfficeTest extends PlainTestCase {
         SMailPostalParkingLot parkingLot = new SMailPostalParkingLot();
         SMailPostalMotorbike motorbike = new SMailPostalMotorbike();
         parkingLot.registerMotorbikeAsMain(motorbike);
-        Map<String, String> configMap = new LinkedHashMap<String, String>();
-        configMap.put("mail.from", "abc@example.com");
-        configMap.put("mail.to", "stu@example.com");
-        SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel(new SMailConfigResolver() {
-            public String get(String key) {
-                return configMap.get(key);
-            }
-        }).asTraining();
+        SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel().asTraining();
         SMailDeliveryDepartment deliveryDepartment = new SMailDeliveryDepartment(parkingLot, personnel);
         return new PostOffice(deliveryDepartment);
     }
 
     protected String preparePlainBody() {
-        final InputStream ins = DfResourceUtil.getResourceStream(SIMPLE_GREETING_ML);
+        final InputStream ins = DfResourceUtil.getResourceStream(BODY_ONLY_ML);
         return new FileTextIO().encodeAsUTF8().read(ins);
     }
 

@@ -13,14 +13,15 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.embedded.proofreader;
+package org.dbflute.mail.send;
+
+import org.dbflute.mail.Postcard;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/06 Wednesday nakameguro)
+ * @since 0.4.0 (2015/05/09 Saturday at nakameguro)
  */
-@FunctionalInterface
-public interface SMailConfigResolver {
+public interface SMailReceptionist {
 
-    String get(String key);
+    void readBodyFile(Postcard postcard);
 }

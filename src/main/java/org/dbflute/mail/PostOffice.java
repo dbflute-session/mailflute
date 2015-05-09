@@ -15,19 +15,13 @@
  */
 package org.dbflute.mail;
 
-import java.io.InputStream;
-
-import org.dbflute.helper.filesystem.FileTextIO;
-import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
-import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.SMailTextProofreader;
-import org.dbflute.mail.send.exception.SMailDelivertyCategoryNotFoundException;
-import org.dbflute.util.DfResourceUtil;
+import org.dbflute.mail.send.embedded.proofreader.SMailSubjectHeaderProofreader;
 import org.dbflute.util.DfTypeUtil;
-import org.dbflute.util.Srl;
 
 /**
  * @author jflute
@@ -53,81 +47,57 @@ public class PostOffice {
     //                                                                        ============
     public void deliver(Postcard postcard) {
         postcard.officeCheck();
-        readOutsideBodyIfNeeds(postcard);
+
+        final SMailReceptionist receptionist = fetchReceptionist(postcard);
+        receptionist.readBodyFile(postcard);
+
         proofreadIfNeeds(postcard);
+
         final SMailPostalMotorbike motorbike = fetchMotorbike(postcard);
-        final SMailPostie postie = callPostie(postcard, motorbike);
+        final SMailPostie postie = fetchPostie(postcard, motorbike);
         postie.deliver(postcard);
     }
 
-    protected void readOutsideBodyIfNeeds(Postcard postcard) {
-        final String bodyFile = postcard.getBodyFile();
-        if (bodyFile != null) {
-            final FileTextIO textIO = new FileTextIO().encodeAsUTF8();
-            final boolean filesystem = postcard.isFromFilesystem();
-            final DirectBodyOption option = postcard.useDirectBody(doRead(textIO, bodyFile, filesystem));
-            if (postcard.isAlsoHtmlFile()) {
-                option.alsoDirectHtml(doRead(textIO, deriveHtmlFilePath(bodyFile), filesystem));
-            }
-        }
-    }
-
-    protected String doRead(FileTextIO textIO, String path, boolean filesystem) {
-        if (filesystem) {
-            return textIO.read(path);
-        } else { // from class-path as default, mainly here
-            final InputStream ins = DfResourceUtil.getResourceStream(path);
-            if (ins == null) {
-                String msg = "Not found the outside file from classpath: " + path;
-                throw new IllegalStateException(msg);
-            }
-            return textIO.read(ins);
-        }
-    }
-
-    protected String deriveHtmlFilePath(String bodyFile) {
-        final String front = Srl.substringLastFront(bodyFile, ".");
-        final String rear = Srl.substringLastRear(bodyFile, ".");
-        return front + "_html." + rear; // e.g. member_registration_html.ml
-    }
-
+    // ===================================================================================
+    //                                                                           Proofread
+    //                                                                           =========
     protected void proofreadIfNeeds(Postcard postcard) {
-        if (postcard.isWholeFixedTextUsed()) {
-            postcard.proofreadPlain((reading, variableMap) -> reading);
+        if (postcard.hasTemplaetVariable()) {
+            final SMailTextProofreader proofreader = fetchProofreader(postcard);
+            postcard.proofreadPlain((reading, varMap) -> proofreader.proofreader(reading, varMap));
             if (postcard.hasHtmlBody()) {
-                postcard.proofreadHtml((reading, variableMap) -> reading);
-            }
-        } else {
-            final SMailPostalPersonnel personnel = deliveryDepartment.getPersonnel();
-            final SMailTextProofreader proofreader = personnel.selectProofreader(postcard);
-            postcard.proofreadPlain((reading, variableMap) -> {
-                return proofreader.proofreader(reading, variableMap);
-            });
-            if (postcard.hasHtmlBody()) {
-                postcard.proofreadHtml((reading, variableMap) -> {
-                    return proofreader.proofreader(reading, variableMap);
-                });
+                postcard.proofreadHtml((reading, varMap) -> proofreader.proofreader(reading, varMap));
             }
         }
+        proofreadSubjectHeader(postcard); // fixed proofreading
+    }
+
+    protected void proofreadSubjectHeader(Postcard postcard) {
+        final SMailSubjectHeaderProofreader proofreader = newMailSubjectHeaderProofreader(postcard);
+        postcard.proofreadPlain((plainText, variableMap) -> proofreader.proofreader(plainText, variableMap));
+    }
+
+    protected SMailSubjectHeaderProofreader newMailSubjectHeaderProofreader(Postcard postcard) {
+        return new SMailSubjectHeaderProofreader(postcard);
+    }
+
+    // ===================================================================================
+    //                                                                        Fetch Member
+    //                                                                        ============
+    protected SMailReceptionist fetchReceptionist(Postcard postcard) {
+        return deliveryDepartment.getPersonnel().selectReceptionist(postcard);
+    }
+
+    protected SMailTextProofreader fetchProofreader(Postcard postcard) {
+        return deliveryDepartment.getPersonnel().selectProofreader(postcard);
     }
 
     protected SMailPostalMotorbike fetchMotorbike(Postcard postcard) {
-        final DeliveryCategory category = postcard.getDeliveryCategory();
-        final SMailPostalMotorbike motorbike = deliveryDepartment.getParkingLot().findMotorbike(category);
-        if (motorbike == null) {
-            String msg = "Not found the motorbike for the category: " + category;
-            throw new SMailDelivertyCategoryNotFoundException(msg);
-        }
-        return motorbike;
+        return deliveryDepartment.getParkingLot().findMotorbike(postcard.getDeliveryCategory());
     }
 
-    protected SMailPostie callPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
-        final SMailPostie postie = deliveryDepartment.getPersonnel().selectPostie(postcard, motorbike);
-        if (postie == null) {
-            String msg = "Not found the postie for the postcard: " + postcard + ", " + motorbike;
-            throw new SMailDelivertyCategoryNotFoundException(msg);
-        }
-        return postie;
+    protected SMailPostie fetchPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
+        return deliveryDepartment.getPersonnel().selectPostie(postcard, motorbike);
     }
 
     // ===================================================================================

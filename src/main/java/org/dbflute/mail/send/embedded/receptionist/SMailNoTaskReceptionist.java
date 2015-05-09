@@ -13,18 +13,19 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send;
+package org.dbflute.mail.send.embedded.receptionist;
 
 import org.dbflute.mail.Postcard;
+import org.dbflute.mail.send.SMailReceptionist;
 
 /**
  * @author jflute
+ * @since 0.4.0 (2015/05/09 Saturday at nakameguro)
  */
-public interface SMailPostalPersonnel {
-    
-    SMailReceptionist selectReceptionist(Postcard postcard);
+public class SMailNoTaskReceptionist implements SMailReceptionist {
 
-    SMailTextProofreader selectProofreader(Postcard postcard);
-
-    SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike);
+    @Override
+    public void readBodyFile(Postcard postcard) {
+        // no task
+    }
 }
