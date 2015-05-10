@@ -33,10 +33,10 @@ import org.dbflute.util.DfResourceUtil;
  */
 public class PostOfficeTest extends PlainTestCase {
 
-    private static final String BODY_ONLY_ML = "mail/office/body_only.dfmail";
-    private static final String HEADER_SUBJECT_ML = "mail/office/header_subject.dfmail";
-    private static final String OPTION_HTMLEXISTS_ML = "mail/office/option_htmlexists.dfmail";
-    private static final String OPTION_HTMLNOFILE_ML = "mail/office/option_htmlnofile.dfmail";
+    private static final String BODY_ONLY_ML = "/office/body_only.dfmail";
+    private static final String HEADER_SUBJECT_ML = "/office/header_subject.dfmail";
+    private static final String OPTION_HTMLEXISTS_ML = "/office/option_htmlexists.dfmail";
+    private static final String OPTION_HTMLNOFILE_ML = "/office/option_htmlnofile.dfmail";
 
     public void test_deliver_bodyFile_bodyOnly() throws Exception {
         // ## Arrange ##
@@ -136,7 +136,8 @@ public class PostOfficeTest extends PlainTestCase {
     }
 
     protected String preparePlainBody() {
-        final InputStream ins = DfResourceUtil.getResourceStream(BODY_ONLY_ML);
+        final String baseDir = SMailDogmaticPostalPersonnel.CLASSPATH_BASEDIR;
+        final InputStream ins = DfResourceUtil.getResourceStream(baseDir + BODY_ONLY_ML);
         return new FileTextIO().encodeAsUTF8().read(ins);
     }
 
