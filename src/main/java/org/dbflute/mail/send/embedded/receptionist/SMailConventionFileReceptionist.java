@@ -39,6 +39,13 @@ public class SMailConventionFileReceptionist implements SMailReceptionist {
     protected static final String LF = "\n";
     protected static final String CRLF = "\r\n";
 
+    protected String classpathBasePath;
+
+    public SMailConventionFileReceptionist asClasspathBaseDir(String classpathBaseDir) {
+        this.classpathBasePath = classpathBaseDir;
+        return this;
+    }
+
     // ===================================================================================
     //                                                                       Read BodyFile
     //                                                                       =============
@@ -85,16 +92,22 @@ public class SMailConventionFileReceptionist implements SMailReceptionist {
     //                                                                       Actually Read
     //                                                                       =============
     protected String doRead(FileTextIO textIO, String path, boolean filesystem) {
+        // TODO jflute mailflute: [D] file text cache
         if (filesystem) {
             // TODO jflute mailflute: [D] file not found error message
             return textIO.read(path);
         } else { // from class-path as default, mainly here
-            final InputStream ins = DfResourceUtil.getResourceStream(path);
+            final String realPath = adjustBasePath(path);
+            final InputStream ins = DfResourceUtil.getResourceStream(realPath);
             if (ins == null) {
-                String msg = "Not found the outside file from classpath: " + path;
+                String msg = "Not found the outside file from classpath: " + realPath;
                 throw new IllegalStateException(msg);
             }
             return textIO.read(ins);
         }
+    }
+
+    protected String adjustBasePath(String path) {
+        return (classpathBasePath != null ? classpathBasePath : "") + path;
     }
 }

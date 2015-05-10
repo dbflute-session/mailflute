@@ -37,8 +37,15 @@ import org.dbflute.util.DfTypeUtil;
 public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
 
     // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
+    public static final String CLASSPATH_BASEDIR = "mail";
+
+    // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
+    protected final SMailReceptionist bodyFileReceptionist;
+    protected final SMailReceptionist directBodyReceptionist;
     protected final SMailTextProofreader proofreader;
     protected boolean training;
 
@@ -46,9 +53,33 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                         Constructor
     //                                                                         ===========
     public SMailDogmaticPostalPersonnel() {
+        bodyFileReceptionist = createBodyFileReceptionist();
+        directBodyReceptionist = createDirectBodyReceptionist();
         proofreader = createProofreader();
     }
 
+    // -----------------------------------------------------
+    //                                          Receptionist
+    //                                          ------------
+    protected SMailReceptionist createBodyFileReceptionist() { // you can change it e.g. from database
+        return newMailConventionFileReceptionist().asClasspathBaseDir(CLASSPATH_BASEDIR);
+    }
+
+    protected SMailConventionFileReceptionist newMailConventionFileReceptionist() {
+        return new SMailConventionFileReceptionist();
+    }
+
+    protected SMailReceptionist createDirectBodyReceptionist() {
+        return newMailNoTaskReceptionist();
+    }
+
+    protected SMailNoTaskReceptionist newMailNoTaskReceptionist() {
+        return new SMailNoTaskReceptionist();
+    }
+
+    // -----------------------------------------------------
+    //                                           Proofreader
+    //                                           -----------
     protected SMailTextProofreader createProofreader() {
         final List<SMailTextProofreader> readerList = new ArrayList<SMailTextProofreader>(4);
         setupProofreader(readerList);
@@ -67,6 +98,9 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return new SMailPmCommentProofreader();
     }
 
+    // -----------------------------------------------------
+    //                                              Training
+    //                                              --------
     public SMailDogmaticPostalPersonnel asTraining() {
         training = true;
         return this;
@@ -80,27 +114,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                          ------------
     @Override
     public SMailReceptionist selectReceptionist(Postcard postcard) {
-        if (postcard.hasBodyFile()) {
-            return createBodyFileReceptionist();
-        } else {
-            return createDirectBodyReceptionist();
-        }
-    }
-
-    protected SMailReceptionist createBodyFileReceptionist() { // you can change it e.g. from database
-        return newMailConventionFileReceptionist();
-    }
-
-    protected SMailConventionFileReceptionist newMailConventionFileReceptionist() {
-        return new SMailConventionFileReceptionist();
-    }
-
-    protected SMailReceptionist createDirectBodyReceptionist() {
-        return newMailNoTaskReceptionist();
-    }
-
-    protected SMailNoTaskReceptionist newMailNoTaskReceptionist() {
-        return new SMailNoTaskReceptionist();
+        return postcard.hasBodyFile() ? bodyFileReceptionist : directBodyReceptionist;
     }
 
     // -----------------------------------------------------
@@ -129,8 +143,12 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                      ==============
     @Override
     public String toString() {
-        final String hash = Integer.toHexString(hashCode());
-        return DfTypeUtil.toClassTitle(this) + ":{" + proofreader + (training ? ", *training" : "") + "}@" + hash;
+        final StringBuilder sb = new StringBuilder();
+        sb.append(DfTypeUtil.toClassTitle(this));
+        sb.append(":{").append(bodyFileReceptionist).append(", ").append(directBodyReceptionist);
+        sb.append(", ").append(proofreader).append((training ? ", *training" : ""));
+        sb.append("}@").append(Integer.toHexString(hashCode()));
+        return sb.toString();
     }
 
     // ===================================================================================
