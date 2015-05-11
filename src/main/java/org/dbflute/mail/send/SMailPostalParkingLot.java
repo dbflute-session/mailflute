@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.dbflute.mail.DeliveryCategory;
+import org.dbflute.mail.Postcard;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -40,7 +41,8 @@ public class SMailPostalParkingLot {
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
-    public SMailPostalMotorbike findMotorbike(DeliveryCategory category) {
+    public SMailPostalMotorbike findMotorbike(Postcard postcard) {
+        final DeliveryCategory category = postcard.getDeliveryCategory();
         return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
     }
 

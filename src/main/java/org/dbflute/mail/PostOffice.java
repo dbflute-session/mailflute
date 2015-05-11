@@ -49,9 +49,9 @@ public class PostOffice {
         postcard.officeCheck();
 
         final SMailReceptionist receptionist = fetchReceptionist(postcard);
-        receptionist.readBodyFile(postcard);
+        receptionist.readBodyFile(postcard); // make body text (may be from body file)
 
-        proofreadIfNeeds(postcard);
+        proofreadIfNeeds(postcard); // make complete text
 
         final SMailPostalMotorbike motorbike = fetchMotorbike(postcard);
         final SMailPostie postie = fetchPostie(postcard, motorbike);
@@ -62,7 +62,7 @@ public class PostOffice {
     //                                                                           Proofread
     //                                                                           =========
     protected void proofreadIfNeeds(Postcard postcard) {
-        if (postcard.hasTemplaetVariable()) {
+        if (postcard.hasTemplateVariable()) {
             final SMailTextProofreader proofreader = fetchProofreader(postcard);
             postcard.proofreadPlain((reading, varMap) -> proofreader.proofreader(reading, varMap));
             if (postcard.hasHtmlBody()) {
@@ -93,7 +93,7 @@ public class PostOffice {
     }
 
     protected SMailPostalMotorbike fetchMotorbike(Postcard postcard) {
-        return deliveryDepartment.getParkingLot().findMotorbike(postcard.getDeliveryCategory());
+        return deliveryDepartment.getParkingLot().findMotorbike(postcard);
     }
 
     protected SMailPostie fetchPostie(Postcard postcard, SMailPostalMotorbike motorbike) {

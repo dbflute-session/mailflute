@@ -78,7 +78,7 @@ public class SMailPostalMotorbike {
     public String toString() {
         final String host = session.getProperty(MAIL_SMTP_HOST);
         final String port = session.getProperty(MAIL_SMTP_PORT);
-        return "motobike:{host=" + host + ", port=" + port + "}";
+        return "motorbike:{host=" + host + ", port=" + port + "}";
     }
 
     // ===================================================================================

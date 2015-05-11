@@ -44,7 +44,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailReceptionist bodyFileReceptionist;
+    protected final SMailReceptionist outsideBodyReceptionist;
     protected final SMailReceptionist directBodyReceptionist;
     protected final SMailTextProofreader proofreader;
     protected boolean training;
@@ -53,7 +53,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                         Constructor
     //                                                                         ===========
     public SMailDogmaticPostalPersonnel() {
-        bodyFileReceptionist = createBodyFileReceptionist();
+        outsideBodyReceptionist = createOutsideBodyReceptionist();
         directBodyReceptionist = createDirectBodyReceptionist();
         proofreader = createProofreader();
     }
@@ -61,7 +61,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // -----------------------------------------------------
     //                                          Receptionist
     //                                          ------------
-    protected SMailReceptionist createBodyFileReceptionist() { // you can change it e.g. from database
+    protected SMailReceptionist createOutsideBodyReceptionist() { // you can change it e.g. from database
         return newMailConventionFileReceptionist().asClasspathBaseDir(CLASSPATH_BASEDIR);
     }
 
@@ -114,7 +114,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                          ------------
     @Override
     public SMailReceptionist selectReceptionist(Postcard postcard) {
-        return postcard.hasBodyFile() ? bodyFileReceptionist : directBodyReceptionist;
+        return postcard.hasBodyFile() ? outsideBodyReceptionist : directBodyReceptionist;
     }
 
     // -----------------------------------------------------
@@ -145,7 +145,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(DfTypeUtil.toClassTitle(this));
-        sb.append(":{").append(bodyFileReceptionist).append(", ").append(directBodyReceptionist);
+        sb.append(":{").append(outsideBodyReceptionist).append(", ").append(directBodyReceptionist);
         sb.append(", ").append(proofreader).append((training ? ", *training" : ""));
         sb.append("}@").append(Integer.toHexString(hashCode()));
         return sb.toString();

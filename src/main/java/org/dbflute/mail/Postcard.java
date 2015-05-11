@@ -273,7 +273,7 @@ public class Postcard {
         return htmlBody;
     }
 
-    public boolean hasTemplaetVariable() {
+    public boolean hasTemplateVariable() {
         return templateVariableMap != null;
     }
 
