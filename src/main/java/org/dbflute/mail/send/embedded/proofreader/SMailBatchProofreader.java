@@ -42,6 +42,13 @@ public class SMailBatchProofreader implements SMailTextProofreader {
     }
 
     @Override
+    public void workingDispose() {
+        for (SMailTextProofreader proofreader : readerList) {
+            proofreader.workingDispose();
+        }
+    }
+
+    @Override
     public String toString() {
         return "batch:{" + readerList + "}";
     }

@@ -21,10 +21,12 @@ import org.dbflute.mail.Postcard;
  * @author jflute
  */
 public interface SMailPostalPersonnel {
-    
+
     SMailReceptionist selectReceptionist(Postcard postcard);
 
     SMailTextProofreader selectProofreader(Postcard postcard);
 
     SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike);
+
+    void workingDispose();
 }

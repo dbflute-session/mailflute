@@ -16,16 +16,13 @@
 package org.dbflute.mail.send.embedded.receptionist;
 
 import org.dbflute.mail.Postcard;
-import org.dbflute.mail.send.SMailReceptionist;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/09 Saturday at nakameguro)
+ * @since 0.4.0 (2015/05/16 Saturday at nakameguro)
  */
-public class SMailNoTaskReceptionist implements SMailReceptionist {
+@FunctionalInterface
+public interface SMailDynamicTextAssist {
 
-    @Override
-    public void readBodyFile(Postcard postcard) {
-        // no task
-    }
+    String assist(Postcard postcard, String path, boolean filesystem);
 }

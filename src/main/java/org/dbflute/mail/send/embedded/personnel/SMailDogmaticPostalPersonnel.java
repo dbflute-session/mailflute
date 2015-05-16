@@ -27,8 +27,7 @@ import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
-import org.dbflute.mail.send.embedded.receptionist.SMailConventionFileReceptionist;
-import org.dbflute.mail.send.embedded.receptionist.SMailNoTaskReceptionist;
+import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -44,8 +43,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailReceptionist outsideBodyReceptionist;
-    protected final SMailReceptionist directBodyReceptionist;
+    protected final SMailReceptionist receptionist;
     protected final SMailTextProofreader proofreader;
     protected boolean training;
 
@@ -53,28 +51,24 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                         Constructor
     //                                                                         ===========
     public SMailDogmaticPostalPersonnel() {
-        outsideBodyReceptionist = createOutsideBodyReceptionist();
-        directBodyReceptionist = createDirectBodyReceptionist();
+        receptionist = createOutsideBodyReceptionist();
         proofreader = createProofreader();
+    }
+
+    public void workingDispose() {
+        receptionist.workingDispose();
+        proofreader.workingDispose();
     }
 
     // -----------------------------------------------------
     //                                          Receptionist
     //                                          ------------
     protected SMailReceptionist createOutsideBodyReceptionist() { // you can change it e.g. from database
-        return newMailConventionFileReceptionist().asClasspathBaseDir(CLASSPATH_BASEDIR);
+        return newMailConventionReceptionist().asClasspathBase(CLASSPATH_BASEDIR);
     }
 
-    protected SMailConventionFileReceptionist newMailConventionFileReceptionist() {
-        return new SMailConventionFileReceptionist();
-    }
-
-    protected SMailReceptionist createDirectBodyReceptionist() {
-        return newMailNoTaskReceptionist();
-    }
-
-    protected SMailNoTaskReceptionist newMailNoTaskReceptionist() {
-        return new SMailNoTaskReceptionist();
+    protected SMailConventionReceptionist newMailConventionReceptionist() {
+        return new SMailConventionReceptionist();
     }
 
     // -----------------------------------------------------
@@ -114,7 +108,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                          ------------
     @Override
     public SMailReceptionist selectReceptionist(Postcard postcard) {
-        return postcard.hasBodyFile() ? outsideBodyReceptionist : directBodyReceptionist;
+        return receptionist;
     }
 
     // -----------------------------------------------------
@@ -145,7 +139,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(DfTypeUtil.toClassTitle(this));
-        sb.append(":{").append(outsideBodyReceptionist).append(", ").append(directBodyReceptionist);
+        sb.append(":{").append(receptionist);
         sb.append(", ").append(proofreader).append((training ? ", *training" : ""));
         sb.append("}@").append(Integer.toHexString(hashCode()));
         return sb.toString();

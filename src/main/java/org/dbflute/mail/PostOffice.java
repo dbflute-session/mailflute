@@ -20,7 +20,7 @@ import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.SMailTextProofreader;
-import org.dbflute.mail.send.embedded.proofreader.SMailSubjectHeaderProofreader;
+import org.dbflute.mail.send.embedded.proofreader.SMailBodyMetaProofreader;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -49,7 +49,7 @@ public class PostOffice {
         postcard.officeCheck();
 
         final SMailReceptionist receptionist = fetchReceptionist(postcard);
-        receptionist.readBodyFile(postcard); // make body text (may be from body file)
+        receptionist.accept(postcard); // make body text (may be from body file)
 
         proofreadIfNeeds(postcard); // make complete text
 
@@ -73,12 +73,12 @@ public class PostOffice {
     }
 
     protected void proofreadSubjectHeader(Postcard postcard) {
-        final SMailSubjectHeaderProofreader proofreader = newMailSubjectHeaderProofreader(postcard);
+        final SMailBodyMetaProofreader proofreader = newMailSubjectHeaderProofreader(postcard);
         postcard.proofreadPlain((plainText, variableMap) -> proofreader.proofreader(plainText, variableMap));
     }
 
-    protected SMailSubjectHeaderProofreader newMailSubjectHeaderProofreader(Postcard postcard) {
-        return new SMailSubjectHeaderProofreader(postcard);
+    protected SMailBodyMetaProofreader newMailSubjectHeaderProofreader(Postcard postcard) {
+        return new SMailBodyMetaProofreader(postcard);
     }
 
     // ===================================================================================
@@ -98,6 +98,13 @@ public class PostOffice {
 
     protected SMailPostie fetchPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
         return deliveryDepartment.getPersonnel().selectPostie(postcard, motorbike);
+    }
+
+    // ===================================================================================
+    //                                                                             Dispose
+    //                                                                             =======
+    public void workingDispose() {
+        deliveryDepartment.workingDispose();
     }
 
     // ===================================================================================

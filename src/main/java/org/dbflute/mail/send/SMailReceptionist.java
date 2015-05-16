@@ -23,5 +23,7 @@ import org.dbflute.mail.Postcard;
  */
 public interface SMailReceptionist {
 
-    void readBodyFile(Postcard postcard);
+    void accept(Postcard postcard);
+
+    void workingDispose();
 }

@@ -13,17 +13,21 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send;
-
-import java.util.Map;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
- * @since 0.1.0 (2015/02/28 Saturday at nakameguro)
+ * @since 0.4.0 (2015/05/16 Saturday)
  */
-public interface SMailTextProofreader {
+public class SMailBodyMetaParseFailureException extends RuntimeException {
 
-    String proofreader(String templateText, Map<String, Object> variableMap);
+    private static final long serialVersionUID = 1L;
 
-    void workingDispose();
+    public SMailBodyMetaParseFailureException(String msg) {
+        super(msg);
+    }
+
+    public SMailBodyMetaParseFailureException(String msg, Throwable e) {
+        super(msg, e);
+    }
 }

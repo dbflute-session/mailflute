@@ -15,23 +15,36 @@
  */
 package org.dbflute.mail.send.embedded.proofreader;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.util.Srl;
+import org.dbflute.util.Srl.ScopeInfo;
 
 /**
  * @author jflute
  * @since 0.4.0 (2015/05/09 Saturday at nakameguro)
  */
-public class SMailSubjectHeaderProofreader implements SMailTextProofreader {
+public class SMailBodyMetaProofreader implements SMailTextProofreader {
 
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
+    public static final String META_DELIMITER = ">>>";
     public static final String SUBJECT_LABEL = "subject:";
-    public static final String HEADER_DELIMITER = ">>>";
+    public static final String OPTION_LABEL = "option:";
+    public static final String PLUS_HTML_OPTION = "+html";
+    public static final String PROPDEF_PREFIX = "-- !!";
+    public static final Set<String> optionSet;
+    static {
+        final Set<String> set = new LinkedHashSet<String>();
+        set.add(PLUS_HTML_OPTION);
+        optionSet = Collections.unmodifiableSet(set);
+    }
     protected static final String LF = "\n";
     protected static final String CRLF = "\r\n";
 
@@ -43,7 +56,7 @@ public class SMailSubjectHeaderProofreader implements SMailTextProofreader {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSubjectHeaderProofreader(Postcard postcard) { // used by post office
+    public SMailBodyMetaProofreader(Postcard postcard) { // used by post office
         this.postcard = postcard;
     }
 
@@ -52,38 +65,37 @@ public class SMailSubjectHeaderProofreader implements SMailTextProofreader {
     //                                                                           =========
     @Override
     public String proofreader(String templateText, Map<String, Object> variableMap) {
-        // TODO jflute mailflute: [D] subject error message
+        return doProofreader(removeUTF8BomIfNeeds(templateText)); // filter just in case
+    }
+
+    protected String doProofreader(String templateText) {
         // _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
         // subject: Welcome to your sign up, /*pmb.memberName*/
         // >>>
         // Hello, /*pmb.memberName*/
         // ...
         // _/_/_/_/_/_/_/_/_/_/
-        final String filtered = removeUTF8BomIfNeeds(templateText);
+        // no check here, already checked by receptionist
+        // and parameters may be resolved here so not to have malfunction
+        // TODO jflute mailflute: [D] subject error message
         final String subjectLabel = SUBJECT_LABEL;
-        final String delimiter = HEADER_DELIMITER;
-        if (filtered.startsWith(subjectLabel) && filtered.contains(delimiter)) {
+        final String delimiter = META_DELIMITER;
+        if (templateText.startsWith(subjectLabel) && templateText.contains(delimiter)) {
             if (postcard.getSubject() != null) {
                 String msg = "Subject for the mail already exists but also defined at body file: " + postcard;
                 throw new IllegalStateException(msg);
             }
-            final String header = Srl.replace(Srl.extractScopeFirst(filtered, subjectLabel, delimiter).getContent().trim(), CRLF, LF);
-            final String subject;
-            if (header.contains(LF)) {
-                subject = Srl.substringFirstFront(header, LF);
-                final String headerRear = Srl.substringFirstRear(header, LF);
-                checkHeaderRear(headerRear);
-            } else {
-                subject = header;
-            }
+            final ScopeInfo scopeFirst = Srl.extractScopeFirst(templateText, subjectLabel, delimiter);
+            final String meta = Srl.replace(scopeFirst.getContent().trim(), CRLF, LF);
+            final String subject = meta.contains(LF) ? Srl.substringFirstFront(meta, LF) : meta;
             postcard.setSubject(subject);
-            final String rear = Srl.substringFirstRear(filtered, delimiter);
+            final String rear = Srl.substringFirstRear(templateText, delimiter);
             final String realText;
             if (rear.startsWith(LF)) {
                 realText = rear.substring(LF.length());
             } else if (rear.startsWith(CRLF)) {
                 realText = rear.substring(CRLF.length());
-            } else {
+            } else { // e.g. >>> Hello, ...
                 realText = rear;
             }
             return realText;
@@ -92,12 +104,8 @@ public class SMailSubjectHeaderProofreader implements SMailTextProofreader {
                 String msg = "Not found the subject for the mail: " + postcard;
                 throw new IllegalStateException(msg);
             }
-            return templateText; // without filter, keep plain for writer
+            return templateText;
         }
-    }
-
-    protected void checkHeaderRear(String headerRear) {
-        // TODO jflute mailflute: [D] header check
     }
 
     protected String removeUTF8BomIfNeeds(String plainText) {
@@ -105,10 +113,17 @@ public class SMailSubjectHeaderProofreader implements SMailTextProofreader {
     }
 
     // ===================================================================================
+    //                                                                             Dispose
+    //                                                                             =======
+    @Override
+    public void workingDispose() {
+    }
+
+    // ===================================================================================
     //                                                                      Basic Override
     //                                                                      ==============
     @Override
     public String toString() {
-        return "proofreader:{subject_header}";
+        return "proofreader:{body_meta}";
     }
 }

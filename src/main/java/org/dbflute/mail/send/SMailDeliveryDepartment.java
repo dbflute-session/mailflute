@@ -39,13 +39,17 @@ public class SMailDeliveryDepartment {
         this.personnel = personnel;
     }
 
-    // ===================================================================================
-    //                                                                       Assert Helper
-    //                                                                       =============
     protected void assertArgumentNotNull(String title, Object value) {
         if (value == null) {
             throw new IllegalStateException("The argument '" + title + "' should not be null.");
         }
+    }
+
+    // ===================================================================================
+    //                                                                             Dispose
+    //                                                                             =======
+    public void workingDispose() {
+        personnel.workingDispose();
     }
 
     // ===================================================================================

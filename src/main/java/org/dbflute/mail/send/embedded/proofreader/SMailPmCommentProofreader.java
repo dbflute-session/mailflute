@@ -60,6 +60,10 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
     }
 
     @Override
+    public void workingDispose() {
+    }
+
+    @Override
     public String toString() {
         return "proofreader:{pmcomment}";
     }

@@ -59,7 +59,8 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
     //                                                                             =======
     @Override
     public void deliver(Postcard postcard) {
-        // TODO jflute mailflute: [E] postie's retry
+        // TODO jflute mailflute: [C] postie's retry
+        // TODO jflute mailflute: [C] postie's async
         final SMailMessage message = createMailMessage(motorbike);
         message.setFrom(postcard.getFrom());
         for (Address to : postcard.getToList()) {
@@ -90,7 +91,7 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
 
     protected void send(SMailMessage message) throws MessagingException {
         if (training) {
-            // TODO jflute mailflute: improvement debug mail message (2015/05/11)
+            // TODO jflute mailflute: [B] improvement debug mail message (2015/05/11)
             logger.debug("your message:\n" + message.getPlainText());
         } else {
             Transport.send(message.getMimeMessage());
