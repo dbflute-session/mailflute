@@ -79,7 +79,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         final String plainText;
         final String bodyFile = postcard.getBodyFile();
         if (bodyFile != null) {
-            if (postcard.getHtmlBody() == null) {
+            if (postcard.getHtmlBody() != null) {
                 String msg = "Cannot use direct HTML body when body file is specified: " + postcard;
                 throw new IllegalStateException(msg);
             }
@@ -104,7 +104,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       Actually Read
     //                                                                       =============
     protected String readText(Postcard postcard, String path, boolean filesystem) {
-        final String assisted = dynamicTextAssist.assist(postcard, path, filesystem); // e.g. from database
+        final String assisted = assistDynamicText(postcard, path, filesystem); // e.g. from database
         if (assisted != null) {
             return assisted;
         }
@@ -120,6 +120,10 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }
         textCacheMap.put(cacheKey, read);
         return textCacheMap.get(cacheKey);
+    }
+
+    protected String assistDynamicText(Postcard postcard, String path, boolean filesystem) {
+        return dynamicTextAssist != null ? dynamicTextAssist.assist(postcard, path, filesystem) : null;
     }
 
     protected String doReadText(Postcard postcard, String path, boolean filesystem) {
@@ -182,8 +186,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         if (fileText.contains(delimiter)) {
             final String meta = Srl.substringFirstFront(fileText, delimiter);
             final List<String> splitList = Srl.splitList(meta, LF);
-            final String firstLine = splitList.get(0);
-            if (!firstLine.startsWith(SUBJECT_LABEL)) {
+            if (!splitList.get(0).startsWith(SUBJECT_LABEL)) {
                 throwMailFluteBodyMetaSubjectNotFoundException(bodyFile, fileText);
             }
             // TODO jflute mailflute: [D] check '>>>' delimiter's line separator
@@ -202,7 +205,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                         throwMailFluteBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
                     }
                     if (line.startsWith(OPTION_LABEL)) {
-                        final String options = Srl.substringFirstRear(firstLine, OPTION_LABEL);
+                        final String options = Srl.substringFirstRear(line, OPTION_LABEL);
                         final List<String> optionList = Srl.splitListTrimmed(options, ".");
                         for (String option : optionList) {
                             if (!optionSet.contains(option)) {
