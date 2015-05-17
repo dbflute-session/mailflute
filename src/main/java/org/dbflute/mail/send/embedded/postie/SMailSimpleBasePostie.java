@@ -91,7 +91,7 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
 
     protected void send(SMailMessage message) throws MessagingException {
         if (training) {
-            // TODO jflute mailflute: [B] improvement debug mail message (2015/05/11)
+            // TODO jflute mailflute: [B] mail logging (2015/05/11)
             logger.debug("your message:\n" + message.getPlainText());
         } else {
             Transport.send(message.getMimeMessage());
