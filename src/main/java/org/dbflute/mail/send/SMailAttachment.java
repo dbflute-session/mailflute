@@ -13,24 +13,29 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.embedded.postie;
+package org.dbflute.mail.send;
 
-import org.dbflute.mail.send.SMailPostalMotorbike;
+import java.io.InputStream;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/05 Tuesday)
+ * @since 0.4.0 (2015/05/18 Monday)
  */
-public class SMailSimpleGlobalPostie extends SMailSimpleBasePostie {
+public class SMailAttachment {
 
-    private static final String UTF8 = "UTF-8";
+    protected final String filenameOnHeader;
+    protected final InputStream reourceStream;
 
-    public SMailSimpleGlobalPostie(SMailPostalMotorbike motorbike) {
-        super(motorbike);
+    public SMailAttachment(String filenameOnHeader, InputStream reourceStream) {
+        this.filenameOnHeader = filenameOnHeader;
+        this.reourceStream = reourceStream;
     }
 
-    @Override
-    protected String getEncoding() {
-        return UTF8;
+    public String getFilenameOnHeader() {
+        return filenameOnHeader;
+    }
+
+    public InputStream getReourceStream() {
+        return reourceStream;
     }
 }

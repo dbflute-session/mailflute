@@ -32,9 +32,13 @@ import org.slf4j.LoggerFactory;
  * @author jflute
  * @since 0.4.0 (2015/05/05 Tuesday)
  */
-public abstract class SMailSimpleBasePostie implements SMailPostie {
+public class SMailSimplePostie implements SMailPostie {
 
-    private static final Logger logger = LoggerFactory.getLogger(SMailSimpleBasePostie.class);
+    // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
+    private static final Logger logger = LoggerFactory.getLogger(SMailSimplePostie.class);
+    private static final String DEFAULT_ENCODING = "UTF-8";
 
     // ===================================================================================
     //                                                                           Attribute
@@ -45,11 +49,11 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSimpleBasePostie(SMailPostalMotorbike motorbike) {
+    public SMailSimplePostie(SMailPostalMotorbike motorbike) {
         this.motorbike = motorbike;
     }
 
-    public SMailSimpleBasePostie asTraining() {
+    public SMailSimplePostie asTraining() {
         training = true;
         return this;
     }
@@ -89,6 +93,21 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
         }
     }
 
+    // TODO jflute mailflute: [B] attachment
+    //protected void attach(Postcard postcard, SMailAttachment attachment) {
+    //    final MimeMultipart multipart = new MimeMultipart();
+    //    try {
+    //        multipart.setSubType("mixed");
+    //        final MimeBodyPart bodyPart = new MimeBodyPart();
+    //        //ByteBuffer buf = ByteBuffer.wrap(postcard.getPlainBody().getBytes("UTF-8"));
+    //        DataSource source = new ByteArrayDataSource(buf.array(), "application/octet-stream");
+    //        bodyPart.setDataHandler(new DataHandler(source));
+    //        multipart.addBodyPart(bodyPart);
+    //    } catch (MessagingException e) {
+    //        throw new IllegalStateException("Failed to attach the file:" + attachment, e);
+    //    }
+    //}
+
     protected void send(SMailMessage message) throws MessagingException {
         if (training) {
             // TODO jflute mailflute: [B] mail logging (2015/05/11)
@@ -106,7 +125,9 @@ public abstract class SMailSimpleBasePostie implements SMailPostie {
         return motorbike.getNativeSession();
     }
 
-    protected abstract String getEncoding();
+    protected String getEncoding() {
+        return DEFAULT_ENCODING;
+    };
 
     // ===================================================================================
     //                                                                            Accessor

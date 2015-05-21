@@ -24,7 +24,7 @@ import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.SMailTextProofreader;
-import org.dbflute.mail.send.embedded.postie.SMailSimpleGlobalPostie;
+import org.dbflute.mail.send.embedded.postie.SMailSimplePostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
@@ -124,12 +124,12 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                ------
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
-        final SMailSimpleGlobalPostie postie = newSMailSimpleGlobalPostie(motorbike);
+        final SMailSimplePostie postie = newSMailSimplePostie(motorbike);
         return training ? postie.asTraining() : postie;
     }
 
-    protected SMailSimpleGlobalPostie newSMailSimpleGlobalPostie(SMailPostalMotorbike motorbike) {
-        return new SMailSimpleGlobalPostie(motorbike);
+    protected SMailSimplePostie newSMailSimplePostie(SMailPostalMotorbike motorbike) {
+        return new SMailSimplePostie(motorbike);
     }
 
     // ===================================================================================

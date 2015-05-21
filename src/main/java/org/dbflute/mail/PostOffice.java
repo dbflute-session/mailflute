@@ -45,7 +45,6 @@ public class PostOffice {
     // ===================================================================================
     //                                                                        Deliver Mail
     //                                                                        ============
-    // TODO jflute mailflute: [B] attachment
     public void deliver(Postcard postcard) {
         postcard.officeCheck();
 
