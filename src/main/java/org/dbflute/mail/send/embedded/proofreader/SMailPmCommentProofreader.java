@@ -30,39 +30,75 @@ import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
  */
 public class SMailPmCommentProofreader implements SMailTextProofreader {
 
-    protected static final CommandContextCreator contextCreator;
-    static {
-        final String[] argNames = new String[] { "pmb" };
-        final Class<?>[] argTypes = new Class<?>[] { SimpleMapPmb.class };
-        contextCreator = new CommandContextCreator(argNames, argTypes);
+    // ===================================================================================
+    //                                                                           Proofread
+    //                                                                           =========
+    @Override
+    public String proofread(String templateText, Map<String, Object> variableMap) {
+        final SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
+        variableMap.forEach((key, value) -> pmb.addParameter(key, value));
+        return evaluate(templateText, pmb);
     }
 
-    @Override
-    public String proofreader(String templateText, Map<String, Object> variableMap) {
-        // TODO jflute mailflute: [A] option of line separator
-        @SuppressWarnings("deprecation")
-        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, true) {
+    // ===================================================================================
+    //                                                                            Evaluate
+    //                                                                            ========
+    // TODO jflute mailflute: [A] adjustment of line separator
+    // very similar to simple template manager of LastaFlute but no recycle to be independent
+    protected String evaluate(String templateText, Object pmb) {
+        final Node node = analyze(templateText);
+        final CommandContext ctx = prepareContext(pmb);
+        node.accept(ctx);
+        return ctx.getSql();
+    }
+
+    protected Node analyze(String templateText) {
+        return createSqlAnalyzer(templateText, true).analyze();
+    }
+
+    protected SqlAnalyzer createSqlAnalyzer(String templateText, boolean blockNullParameter) {
+        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, blockNullParameter) {
             protected String filterAtFirst(String sql) {
                 return sql; // keep body
             }
-        }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded(); // adjust for mail
-        final Node node = analyzer.analyze();
-        final SimpleMapPmb<Object> pmb = new SimpleMapPmb<Object>();
-        variableMap.forEach((key, value) -> pmb.addParameter(key, value));
-        final CommandContext ctx = prepareContextCreator().createCommandContext(new Object[] { pmb });
-        node.accept(ctx);
-        final String filteredText = ctx.getSql();
-        return filteredText;
+        }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded(); // adjust for plain template
+        return analyzer;
     }
 
-    protected CommandContextCreator prepareContextCreator() {
-        return contextCreator;
+    protected CommandContext prepareContext(Object pmb) {
+        final Object filteredPmb = filterPmb(pmb);
+        final String[] argNames = new String[] { "pmb" };
+        final Class<?>[] argTypes = new Class<?>[] { filteredPmb.getClass() };
+        final CommandContextCreator creator = newCommandContextCreator(argNames, argTypes);
+        return creator.createCommandContext(new Object[] { filteredPmb });
     }
 
+    protected static CommandContextCreator newCommandContextCreator(String[] argNames, Class<?>[] argTypes) {
+        return new CommandContextCreator(argNames, argTypes);
+    }
+
+    protected Object filterPmb(Object pmb) {
+        if (pmb instanceof Map<?, ?>) {
+            @SuppressWarnings("unchecked")
+            final Map<String, Object> variableMap = ((Map<String, Object>) pmb);
+            final SimpleMapPmb<Object> mapPmb = new SimpleMapPmb<Object>();
+            variableMap.forEach((key, value) -> mapPmb.addParameter(key, value));
+            return mapPmb;
+        } else {
+            return pmb;
+        }
+    }
+
+    // ===================================================================================
+    //                                                                             Dispose
+    //                                                                             =======
     @Override
     public void workingDispose() {
     }
 
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
     @Override
     public String toString() {
         return "proofreader:{pmcomment}";

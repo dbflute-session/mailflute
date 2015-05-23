@@ -33,10 +33,10 @@ public class SMailBatchProofreader implements SMailTextProofreader {
     }
 
     @Override
-    public String proofreader(String templateText, Map<String, Object> variableMap) {
+    public String proofread(String templateText, Map<String, Object> variableMap) {
         String filteredText = templateText;
         for (SMailTextProofreader proofreader : readerList) {
-            filteredText = proofreader.proofreader(filteredText, variableMap);
+            filteredText = proofreader.proofread(filteredText, variableMap);
         }
         return filteredText;
     }

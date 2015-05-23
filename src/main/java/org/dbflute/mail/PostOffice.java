@@ -64,9 +64,9 @@ public class PostOffice {
     protected void proofreadIfNeeds(Postcard postcard) {
         if (postcard.hasTemplateVariable()) {
             final SMailTextProofreader proofreader = fetchProofreader(postcard);
-            postcard.proofreadPlain((reading, varMap) -> proofreader.proofreader(reading, varMap));
+            postcard.proofreadPlain((reading, varMap) -> proofreader.proofread(reading, varMap));
             if (postcard.hasHtmlBody()) {
-                postcard.proofreadHtml((reading, varMap) -> proofreader.proofreader(reading, varMap));
+                postcard.proofreadHtml((reading, varMap) -> proofreader.proofread(reading, varMap));
             }
         }
         proofreadSubjectHeader(postcard); // fixed proofreading
@@ -74,7 +74,7 @@ public class PostOffice {
 
     protected void proofreadSubjectHeader(Postcard postcard) {
         final SMailBodyMetaProofreader proofreader = newMailSubjectHeaderProofreader(postcard);
-        postcard.proofreadPlain((plainText, variableMap) -> proofreader.proofreader(plainText, variableMap));
+        postcard.proofreadPlain((plainText, variableMap) -> proofreader.proofread(plainText, variableMap));
     }
 
     protected SMailBodyMetaProofreader newMailSubjectHeaderProofreader(Postcard postcard) {

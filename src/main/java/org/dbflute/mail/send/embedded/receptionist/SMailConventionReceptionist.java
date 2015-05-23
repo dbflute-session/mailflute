@@ -148,7 +148,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     }
 
     protected String adjustBasePath(String path) {
-        return (classpathBasePath != null ? classpathBasePath : "") + path;
+        return (classpathBasePath != null ? classpathBasePath + "/" : "") + path;
     }
 
     // ===================================================================================

@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public interface SMailTextProofreader {
 
-    String proofreader(String templateText, Map<String, Object> variableMap);
+    String proofread(String templateText, Map<String, Object> variableMap);
 
     void workingDispose();
 }

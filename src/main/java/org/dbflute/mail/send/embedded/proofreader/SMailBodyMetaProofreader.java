@@ -64,7 +64,7 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
     //                                                                           Proofread
     //                                                                           =========
     @Override
-    public String proofreader(String templateText, Map<String, Object> variableMap) {
+    public String proofread(String templateText, Map<String, Object> variableMap) {
         return doProofreader(removeUTF8BomIfNeeds(templateText)); // filter just in case
     }
 
