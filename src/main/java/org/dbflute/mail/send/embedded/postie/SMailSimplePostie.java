@@ -93,7 +93,7 @@ public class SMailSimplePostie implements SMailPostie {
         }
     }
 
-    // TODO jflute mailflute: [B] attachment
+    // TODO jflute mailflute: [A] attachment
     //protected void attach(Postcard postcard, SMailAttachment attachment) {
     //    final MimeMultipart multipart = new MimeMultipart();
     //    try {
@@ -110,7 +110,7 @@ public class SMailSimplePostie implements SMailPostie {
 
     protected void send(SMailMessage message) throws MessagingException {
         if (training) {
-            // TODO jflute mailflute: [B] mail logging (2015/05/11)
+            // TODO jflute mailflute: [B] mail logging, eml file (2015/05/11)
             logger.debug("your message:\n" + message.getPlainText());
         } else {
             Transport.send(message.getMimeMessage());
