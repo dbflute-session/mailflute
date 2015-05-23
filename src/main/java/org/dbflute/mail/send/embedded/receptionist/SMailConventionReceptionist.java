@@ -55,8 +55,12 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                           =========
     protected String classpathBasePath; // used when from classpath, e.g. mail
     protected SMailDynamicTextAssist dynamicTextAssist; // e.g. from database, without text cache if specified
-    protected final FileTextIO textIO = new FileTextIO().encodeAsUTF8().removeUTF8Bom();
     protected final Map<String, String> textCacheMap = new ConcurrentHashMap<String, String>();
+    protected final FileTextIO textIO = createFileTextIO();
+
+    protected FileTextIO createFileTextIO() {
+        return new FileTextIO().encodeAsUTF8().removeUTF8Bom().replaceCrLfToLf();
+    }
 
     // ===================================================================================
     //                                                                         Constructor

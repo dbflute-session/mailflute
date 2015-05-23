@@ -27,17 +27,25 @@ import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.embedded.personnel.SMailDogmaticPostalPersonnel;
 import org.dbflute.utflute.core.PlainTestCase;
 import org.dbflute.util.DfResourceUtil;
+import org.dbflute.util.Srl;
 
 /**
  * @author jflute
  */
 public class PostOfficeTest extends PlainTestCase {
 
+    // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
     private static final String BODY_ONLY_ML = "/office/body_only.dfmail";
     private static final String HEADER_SUBJECT_ML = "/office/header_subject.dfmail";
     private static final String OPTION_HTMLEXISTS_ML = "/office/option_htmlexists.dfmail";
     private static final String OPTION_HTMLNOFILE_ML = "/office/option_htmlnofile.dfmail";
+    private static final String VARIOUS_LINES_ML = "/office/various_lines.dfmail";
 
+    // ===================================================================================
+    //                                                                           Body File
+    //                                                                           =========
     public void test_deliver_bodyFile_bodyOnly() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
@@ -111,6 +119,15 @@ public class PostOfficeTest extends PlainTestCase {
         doAssertParameter(postcard, map, subject, false);
     }
 
+    // -----------------------------------------------------
+    //                                          Small Assist
+    //                                          ------------
+    protected String preparePlainBody() {
+        final String baseDir = SMailDogmaticPostalPersonnel.CLASSPATH_BASEDIR;
+        final InputStream ins = DfResourceUtil.getResourceStream(baseDir + BODY_ONLY_ML);
+        return new FileTextIO().encodeAsUTF8().read(ins);
+    }
+
     protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb, String subject, boolean hasHtml) {
         String plain = postcard.toCompletePlainText();
         Object birthdate = pmb.get("birthdate");
@@ -123,6 +140,36 @@ public class PostOfficeTest extends PlainTestCase {
         assertEquals(postcard.getSubject(), subject);
     }
 
+    protected Map<String, Object> prepareVariableMap() {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("memberName", "jflute");
+        map.put("birthdate", currentLocalDate());
+        return map;
+    }
+
+    // ===================================================================================
+    //                                                                       Line Handling
+    //                                                                       =============
+    public void test_deliver_various_lines() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("sea", "exists");
+        map.put("land", null);
+        map.put("iks", newArrayList("a", "b", "c"));
+        map.put("amba", null);
+        postcard.useBodyFile(VARIOUS_LINES_ML).useTemplateText(map);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        String plain = postcard.toCompletePlainText();
+        assertEquals(Srl.removeEmptyLine(plain).length(), plain.length()); // expects no empty line
+    }
+
     // ===================================================================================
     //                                                                         Test Helper
     //                                                                         ===========
@@ -133,18 +180,5 @@ public class PostOfficeTest extends PlainTestCase {
         SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel().asTraining();
         SMailDeliveryDepartment deliveryDepartment = new SMailDeliveryDepartment(parkingLot, personnel);
         return new PostOffice(deliveryDepartment);
-    }
-
-    protected String preparePlainBody() {
-        final String baseDir = SMailDogmaticPostalPersonnel.CLASSPATH_BASEDIR;
-        final InputStream ins = DfResourceUtil.getResourceStream(baseDir + BODY_ONLY_ML);
-        return new FileTextIO().encodeAsUTF8().read(ins);
-    }
-
-    protected Map<String, Object> prepareVariableMap() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put("memberName", "jflute");
-        map.put("birthdate", currentLocalDate());
-        return map;
     }
 }

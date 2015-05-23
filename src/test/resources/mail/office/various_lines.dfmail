@@ -1,0 +1,35 @@
+before existing line IF
+/*IF pmb.sea != null*/
+sea
+/*END*/
+before existing inline IF
+/*IF pmb.sea != null*/sea/*END*/
+before non-existing line IF
+/*IF pmb.land != null*/
+land
+/*END*/
+before non-existing inline IF
+/*IF pmb.land != null*/land/*END*/
+before existing line FOR
+/*FOR pmb.iks*/
+iks /*#current*/
+/*END*/
+before existing inline FOR
+/*FOR pmb.iks*/iks /*#current*//*END*/
+before non-existing line FOR
+/*FOR pmb.amba*/
+amba /*#current*/
+/*END*/
+before non-existing inline FOR
+/*FOR pmb.amba*/amba /*#current*//*END*/
+before non-existing inline IF
+/*IF pmb.sea != null*//*IF pmb.sea != null*/double sea/*END*//*END*/
+before existing indent IF
+  /*IF pmb.sea != null*/
+  indent sea
+  /*END*/
+before existing indent FOR
+  /*FOR pmb.iks*/
+  indent iks /*#current*/
+  /*END*/
+thanks
