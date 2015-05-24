@@ -15,7 +15,9 @@
  */
 package org.dbflute.mail;
 
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -41,6 +43,7 @@ public class Postcard {
     protected List<Address> ccList; // optional, lazy loaded
     protected List<Address> bccList; // optional, lazy loaded
     protected String subject; // required or optional (e.g. from template file)
+    protected Map<String, InputStream> attachmentMap; // optional, lozy loaded
 
     // either required: bodyFile or plain/html body
     protected String bodyFile; // either required, also deriving HTML
@@ -104,6 +107,16 @@ public class Postcard {
     //                                               -------
     public void setSubject(String subject) {
         this.subject = subject;
+    }
+
+    // -----------------------------------------------------
+    //                                            Attachment
+    //                                            ----------
+    public void attach(String filename, InputStream stream) {
+        if (attachmentMap == null) {
+            attachmentMap = new LinkedHashMap<String, InputStream>(4);
+        }
+        attachmentMap.put(filename, stream);
     }
 
     // -----------------------------------------------------
@@ -243,6 +256,10 @@ public class Postcard {
 
     public String getSubject() {
         return subject;
+    }
+
+    public Map<String, InputStream> getAttachmentMap() {
+        return attachmentMap != null ? attachmentMap : DfCollectionUtil.emptyMap();
     }
 
     public String getBodyFile() {
