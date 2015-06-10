@@ -24,6 +24,7 @@ import java.util.function.BiFunction;
 
 import javax.mail.Address;
 
+import org.dbflute.mail.send.SMailAttachment;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfTypeUtil;
 
@@ -43,7 +44,7 @@ public class Postcard {
     protected List<Address> ccList; // optional, lazy loaded
     protected List<Address> bccList; // optional, lazy loaded
     protected String subject; // required or optional (e.g. from template file)
-    protected Map<String, InputStream> attachmentMap; // optional, lozy loaded
+    protected Map<String, SMailAttachment> attachmentMap; // optional, lozy loaded
 
     // either required: bodyFile or plain/html body
     protected String bodyFile; // either required, also deriving HTML
@@ -112,11 +113,19 @@ public class Postcard {
     // -----------------------------------------------------
     //                                            Attachment
     //                                            ----------
-    public void attach(String filename, InputStream stream) {
+    public void attach(String filenameOnHeader, String contentType, InputStream stream) {
         if (attachmentMap == null) {
-            attachmentMap = new LinkedHashMap<String, InputStream>(4);
+            attachmentMap = new LinkedHashMap<String, SMailAttachment>(4);
         }
-        attachmentMap.put(filename, stream);
+        if (attachmentMap.containsKey(filenameOnHeader)) {
+            String msg = "Already exists the attachment file: " + filenameOnHeader + ", " + contentType + ", existing=" + attachmentMap;
+            throw new IllegalStateException(msg);
+        }
+        attachmentMap.put(filenameOnHeader, createAttachment(filenameOnHeader, contentType, stream));
+    }
+
+    protected SMailAttachment createAttachment(String filenameOnHeader, String contentType, InputStream stream) {
+        return new SMailAttachment(filenameOnHeader, contentType, stream);
     }
 
     // -----------------------------------------------------
@@ -258,7 +267,7 @@ public class Postcard {
         return subject;
     }
 
-    public Map<String, InputStream> getAttachmentMap() {
+    public Map<String, SMailAttachment> getAttachmentMap() {
         return attachmentMap != null ? attachmentMap : DfCollectionUtil.emptyMap();
     }
 

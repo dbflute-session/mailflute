@@ -23,16 +23,54 @@ import java.io.InputStream;
  */
 public class SMailAttachment {
 
+    // ===================================================================================
+    //                                                                           Attribute
+    //                                                                           =========
     protected final String filenameOnHeader;
+    protected final String contentType;
     protected final InputStream reourceStream;
 
-    public SMailAttachment(String filenameOnHeader, InputStream reourceStream) {
+    // ===================================================================================
+    //                                                                         Constructor
+    //                                                                         ===========
+    public SMailAttachment(String filenameOnHeader, String contentType, InputStream resourceStream) {
+        assertArgumentNotNull("filenameOnHeader", filenameOnHeader);
+        assertArgumentNotNull("contentType", contentType);
+        assertArgumentNotNull("reourceStream", resourceStream);
         this.filenameOnHeader = filenameOnHeader;
-        this.reourceStream = reourceStream;
+        this.contentType = contentType;
+        this.reourceStream = resourceStream;
     }
 
+    // ===================================================================================
+    //                                                                        Small Helper
+    //                                                                        ============
+    protected void assertArgumentNotNull(String variableName, Object value) {
+        if (variableName == null) {
+            throw new IllegalArgumentException("The variableName should not be null.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("The argument '" + variableName + "' should not be null.");
+        }
+    }
+
+    // ===================================================================================
+    //                                                                      Basic Override
+    //                                                                      ==============
+    @Override
+    public String toString() {
+        return "{" + filenameOnHeader + ", " + contentType + ", " + reourceStream + "}";
+    }
+
+    // ===================================================================================
+    //                                                                            Accessor
+    //                                                                            ========
     public String getFilenameOnHeader() {
         return filenameOnHeader;
+    }
+
+    public String getContentType() {
+        return contentType;
     }
 
     public InputStream getReourceStream() {
