@@ -29,6 +29,7 @@ import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
 import org.dbflute.mail.send.supplement.SMailAddressFilter;
+import org.dbflute.mail.send.supplement.SMailLoggingStrategy;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfTypeUtil;
 
@@ -48,6 +49,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     protected final SMailReceptionist receptionist;
     protected final SMailTextProofreader proofreader;
     protected final OptionalThing<SMailAddressFilter> addressFilter;
+    protected final OptionalThing<SMailLoggingStrategy> loggingStrategy;
     protected boolean training;
 
     // ===================================================================================
@@ -57,6 +59,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         receptionist = createOutsideBodyReceptionist();
         proofreader = createProofreader();
         addressFilter = createAddressFilter();
+        loggingStrategy = createLoggingStrategy();
     }
 
     public void workingDispose() {
@@ -104,6 +107,13 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     }
 
     // -----------------------------------------------------
+    //                                      Logging Strategy
+    //                                      ----------------
+    protected OptionalThing<SMailLoggingStrategy> createLoggingStrategy() {
+        return OptionalThing.empty();
+    }
+
+    // -----------------------------------------------------
     //                                              Training
     //                                              --------
     public SMailDogmaticPostalPersonnel asTraining() {
@@ -138,6 +148,9 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         final SMailSimplePostie postie = newSMailSimplePostie(motorbike);
         addressFilter.ifPresent(filter -> {
             postie.withAddressFilter(filter);
+        });
+        loggingStrategy.ifPresent(strategy -> {
+            postie.withLoggingStrategy(strategy);
         });
         return training ? postie.asTraining() : postie;
     }

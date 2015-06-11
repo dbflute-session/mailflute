@@ -19,6 +19,9 @@ import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
@@ -49,6 +52,7 @@ public class PostOfficeTest extends PlainTestCase {
     public void test_deliver_bodyFile_bodyOnly() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
         Map<String, Object> map = prepareVariableMap();
@@ -64,6 +68,7 @@ public class PostOfficeTest extends PlainTestCase {
     public void test_deliver_bodyFile_headerSubject() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         Map<String, Object> map = prepareVariableMap();
         postcard.useBodyFile(HEADER_SUBJECT_ML).useTemplateText(map);
 
@@ -77,6 +82,7 @@ public class PostOfficeTest extends PlainTestCase {
     public void test_deliver_bodyFile_optionPlusHtml_exists() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         Map<String, Object> map = prepareVariableMap();
         postcard.useBodyFile(OPTION_HTMLEXISTS_ML).useTemplateText(map);
 
@@ -91,6 +97,7 @@ public class PostOfficeTest extends PlainTestCase {
         // ## Arrange ##
         PostOffice office = prepareOffice();
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         postcard.useBodyFile(OPTION_HTMLNOFILE_ML).useTemplateText(prepareVariableMap());
 
         // ## Act ##
@@ -107,6 +114,7 @@ public class PostOfficeTest extends PlainTestCase {
         // ## Arrange ##
         String plainBody = preparePlainBody();
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
         Map<String, Object> map = prepareVariableMap();
@@ -153,6 +161,7 @@ public class PostOfficeTest extends PlainTestCase {
     public void test_deliver_various_lines() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
         Map<String, Object> map = new LinkedHashMap<String, Object>();
@@ -173,6 +182,11 @@ public class PostOfficeTest extends PlainTestCase {
     // ===================================================================================
     //                                                                         Test Helper
     //                                                                         ===========
+    protected void prepareMockAddress(Postcard postcard) throws AddressException {
+        postcard.setFrom(new InternetAddress("sea@example.com"));
+        postcard.addTo(new InternetAddress("land@example.com"));
+    }
+
     protected PostOffice prepareOffice() {
         SMailPostalParkingLot parkingLot = new SMailPostalParkingLot();
         SMailPostalMotorbike motorbike = new SMailPostalMotorbike();

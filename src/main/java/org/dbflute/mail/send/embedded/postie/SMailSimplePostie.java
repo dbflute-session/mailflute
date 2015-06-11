@@ -42,8 +42,8 @@ import org.dbflute.mail.send.exception.SMailTransportFailureException;
 import org.dbflute.mail.send.supplement.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.SMailAddressFilterNone;
 import org.dbflute.mail.send.supplement.SMailAttachment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dbflute.mail.send.supplement.SMailLoggingStrategy;
+import org.dbflute.mail.send.supplement.SMailLoggingStrategyDebugOnly;
 
 /**
  * @author jflute
@@ -54,14 +54,15 @@ public class SMailSimplePostie implements SMailPostie {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final Logger logger = LoggerFactory.getLogger(SMailSimplePostie.class);
     private static final SMailAddressFilterNone noneAddressFilter = new SMailAddressFilterNone();
+    private static final SMailLoggingStrategy debugOnlyLoggingStrategy = new SMailLoggingStrategyDebugOnly();
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final SMailPostalMotorbike motorbike; // not null
     protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
+    protected SMailLoggingStrategy loggingStrategy = debugOnlyLoggingStrategy; // not null
     protected boolean training;
 
     // ===================================================================================
@@ -75,6 +76,12 @@ public class SMailSimplePostie implements SMailPostie {
     public SMailSimplePostie withAddressFilter(SMailAddressFilter addressFilter) {
         assertArgumentNotNull("addressFilter", addressFilter);
         this.addressFilter = addressFilter;
+        return this;
+    }
+
+    public SMailSimplePostie withLoggingStrategy(SMailLoggingStrategy loggingStrategy) {
+        assertArgumentNotNull("loggingStrategy", loggingStrategy);
+        this.loggingStrategy = loggingStrategy;
         return this;
     }
 
@@ -106,12 +113,7 @@ public class SMailSimplePostie implements SMailPostie {
     }
 
     protected void send(Postcard postcard, SMailPostingMessage message) {
-        // TODO jflute mailflute: [B] mail logging, eml file (2015/05/11)
-        if (logger.isDebugEnabled()) {
-            final String state = training ? "as training" : "actually";
-            final String disp = message.toDisplay();
-            logger.debug("...Sending mail message {}:\n{}", state, disp);
-        }
+        logMailMessage(postcard, message);
         if (!training) {
             try {
                 Transport.send(message.getMimeMessage());
@@ -119,6 +121,11 @@ public class SMailSimplePostie implements SMailPostie {
                 throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
             }
         }
+    }
+
+    protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
+        // TODO jflute mailflute: [B] eml file (2015/05/11)
+        loggingStrategy.log(postcard, message, training);
     }
 
     // ===================================================================================

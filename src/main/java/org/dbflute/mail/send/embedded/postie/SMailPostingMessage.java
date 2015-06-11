@@ -16,6 +16,7 @@
 package org.dbflute.mail.send.embedded.postie;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.mail.Address;
@@ -43,7 +44,9 @@ public class SMailPostingMessage {
     //                                                                           =========
     protected final MimeMessage message;
 
-    // save for debug
+    // -----------------------------------------------------
+    //                                     Saved for Display
+    //                                     -----------------
     protected Address fromAddress;
     protected List<Address> toAddressList;
     protected List<Address> ccAddressList;
@@ -216,15 +219,34 @@ public class SMailPostingMessage {
         return message;
     }
 
-    public String getSubject() {
+    // -----------------------------------------------------
+    //                                     Saved for Display
+    //                                     -----------------
+    public Address getSavedFromAddress() { // basically not null but consider null
+        return fromAddress;
+    }
+
+    public List<Address> getSavedToAddressList() {
+        return toAddressList != null ? toAddressList : Collections.emptyList();
+    }
+
+    public List<Address> getSavedCcAddressList() {
+        return ccAddressList != null ? ccAddressList : Collections.emptyList();
+    }
+
+    public List<Address> getBSavedccAddressList() {
+        return bccAddressList != null ? bccAddressList : Collections.emptyList();
+    }
+
+    public String getSavedSubject() { // basically not null but consider null
         return subject;
     }
 
-    public String getPlainText() {
+    public String getSavedPlainText() { // basically not null but consider null
         return plainText;
     }
 
-    public String getHtmlText() {
+    public String getSavedHtmlText() { // formally null allowed
         return htmlText;
     }
 }
