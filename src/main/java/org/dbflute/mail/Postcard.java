@@ -24,7 +24,7 @@ import java.util.function.BiFunction;
 
 import javax.mail.Address;
 
-import org.dbflute.mail.send.SMailAttachment;
+import org.dbflute.mail.send.supplement.SMailAttachment;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfTypeUtil;
 
@@ -84,21 +84,21 @@ public class Postcard {
 
     public void addTo(Address address) {
         if (toList == null) {
-            toList = new ArrayList<Address>();
+            toList = new ArrayList<Address>(2);
         }
         toList.add(address);
     }
 
     public void addCc(Address address) {
         if (ccList == null) {
-            ccList = new ArrayList<Address>();
+            ccList = new ArrayList<Address>(2);
         }
         ccList.add(address);
     }
 
     public void addBcc(Address address) {
         if (bccList == null) {
-            bccList = new ArrayList<Address>();
+            bccList = new ArrayList<Address>(2);
         }
         bccList.add(address);
     }
@@ -185,6 +185,12 @@ public class Postcard {
     //                                                                     ===============
     public void officeCheck() {
         // TODO jflute mailflute: [D] postcard exception
+        if (from == null) {
+            throw new IllegalStateException("Not found the from address in the postcard: subject=" + subject);
+        }
+        if (toList == null || toList.isEmpty()) {
+            throw new IllegalStateException("Not found the to address in the postcard: subject=" + subject + ", toList=" + toList);
+        }
         if ((bodyFile == null && plainBody == null) || (bodyFile != null && plainBody != null)) {
             String msg = "Set either body file or plain body: bodyFile=" + bodyFile + " plainBody=" + plainBody;
             throw new IllegalStateException(msg);

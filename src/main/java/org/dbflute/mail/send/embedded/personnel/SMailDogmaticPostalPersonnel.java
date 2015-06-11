@@ -28,6 +28,8 @@ import org.dbflute.mail.send.embedded.postie.SMailSimplePostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
+import org.dbflute.mail.send.supplement.SMailAddressFilter;
+import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -45,6 +47,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                           =========
     protected final SMailReceptionist receptionist;
     protected final SMailTextProofreader proofreader;
+    protected final OptionalThing<SMailAddressFilter> addressFilter;
     protected boolean training;
 
     // ===================================================================================
@@ -53,6 +56,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     public SMailDogmaticPostalPersonnel() {
         receptionist = createOutsideBodyReceptionist();
         proofreader = createProofreader();
+        addressFilter = createAddressFilter();
     }
 
     public void workingDispose() {
@@ -93,6 +97,13 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     }
 
     // -----------------------------------------------------
+    //                                        Address Filter
+    //                                        --------------
+    protected OptionalThing<SMailAddressFilter> createAddressFilter() {
+        return OptionalThing.empty();
+    }
+
+    // -----------------------------------------------------
     //                                              Training
     //                                              --------
     public SMailDogmaticPostalPersonnel asTraining() {
@@ -125,6 +136,9 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
         final SMailSimplePostie postie = newSMailSimplePostie(motorbike);
+        addressFilter.ifPresent(filter -> {
+            postie.withAddressFilter(filter);
+        });
         return training ? postie.asTraining() : postie;
     }
 

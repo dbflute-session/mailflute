@@ -36,11 +36,12 @@ import javax.mail.internet.MimeUtility;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.dbflute.mail.Postcard;
-import org.dbflute.mail.send.SMailAttachment;
-import org.dbflute.mail.send.SMailMessage;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
+import org.dbflute.mail.send.supplement.SMailAddressFilter;
+import org.dbflute.mail.send.supplement.SMailAddressFilterNone;
+import org.dbflute.mail.send.supplement.SMailAttachment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,19 +55,27 @@ public class SMailSimplePostie implements SMailPostie {
     //                                                                          Definition
     //                                                                          ==========
     private static final Logger logger = LoggerFactory.getLogger(SMailSimplePostie.class);
-    private static final String DEFAULT_ENCODING = "UTF-8";
+    private static final SMailAddressFilterNone noneAddressFilter = new SMailAddressFilterNone();
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final SMailPostalMotorbike motorbike;
+    protected final SMailPostalMotorbike motorbike; // not null
+    protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
     protected boolean training;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
     public SMailSimplePostie(SMailPostalMotorbike motorbike) {
+        assertArgumentNotNull("motorbike", motorbike);
         this.motorbike = motorbike;
+    }
+
+    public SMailSimplePostie withAddressFilter(SMailAddressFilter addressFilter) {
+        assertArgumentNotNull("addressFilter", addressFilter);
+        this.addressFilter = addressFilter;
+        return this;
     }
 
     public SMailSimplePostie asTraining() {
@@ -81,84 +90,89 @@ public class SMailSimplePostie implements SMailPostie {
     public void deliver(Postcard postcard) {
         // TODO jflute mailflute: [C] postie's retry
         // TODO jflute mailflute: [C] postie's async
-        final SMailMessage message = createMailMessage(motorbike);
-        message.setFrom(postcard.getFrom());
-        for (Address to : postcard.getToList()) {
-            message.addTo(to);
-        }
-        for (Address cc : postcard.getCcList()) {
-            message.addCc(cc);
-        }
-        for (Address bcc : postcard.getBccList()) {
-            message.addBcc(bcc);
-        }
-        final String encoding = getEncoding();
-        message.setSubject(postcard.getSubject(), encoding);
+        final SMailPostingMessage message = createMailMessage(motorbike);
+        prepareAddress(postcard, message);
+        prepareSubject(postcard, message);
         prepareBody(postcard, message);
-        try {
-            send(message);
-        } catch (MessagingException e) {
-            throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
-        }
+        send(postcard, message);
     }
 
-    // TODO jflute mailflute: [A] attachment
-    // TODO jflute mailflute: [A] address hook
-    //protected void attach(Postcard postcard, SMailAttachment attachment) {
-    //    final MimeMultipart multipart = new MimeMultipart();
-    //    try {
-    //        multipart.setSubType("mixed");
-    //        final MimeBodyPart bodyPart = new MimeBodyPart();
-    //        //ByteBuffer buf = ByteBuffer.wrap(postcard.getPlainBody().getBytes("UTF-8"));
-    //        DataSource source = new ByteArrayDataSource(buf.array(), "application/octet-stream");
-    //        bodyPart.setDataHandler(new DataHandler(source));
-    //        multipart.addBodyPart(bodyPart);
-    //    } catch (MessagingException e) {
-    //        throw new IllegalStateException("Failed to attach the file:" + attachment, e);
-    //    }
-    //}
-
-    protected void send(SMailMessage message) throws MessagingException {
-        if (training) {
-            // TODO jflute mailflute: [B] mail logging, eml file (2015/05/11)
-            logger.debug("your message:\n" + message.getPlainText());
-        } else {
-            Transport.send(message.getMimeMessage());
-        }
-    }
-
-    protected SMailMessage createMailMessage(SMailPostalMotorbike motorbike) {
-        return new SMailMessage(extractNativeSession(motorbike));
+    protected SMailPostingMessage createMailMessage(SMailPostalMotorbike motorbike) {
+        return new SMailPostingMessage(extractNativeSession(motorbike));
     }
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
         return motorbike.getNativeSession();
     }
 
-    protected String getEncoding() {
-        return DEFAULT_ENCODING;
-    };
+    protected void send(Postcard postcard, SMailPostingMessage message) {
+        // TODO jflute mailflute: [B] mail logging, eml file (2015/05/11)
+        if (logger.isDebugEnabled()) {
+            final String state = training ? "as training" : "actually";
+            final String disp = message.toDisplay();
+            logger.debug("...Sending mail message {}:\n{}", state, disp);
+        }
+        if (!training) {
+            try {
+                Transport.send(message.getMimeMessage());
+            } catch (MessagingException e) {
+                throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
+            }
+        }
+    }
+
+    // ===================================================================================
+    //                                                                     Prepare Address
+    //                                                                     ===============
+    protected void prepareAddress(Postcard postcard, SMailPostingMessage message) {
+        final Address fromAddress = postcard.getFrom();
+        if (fromAddress == null) {
+            throw new IllegalStateException("Not found the from address in the postcard: " + postcard);
+        }
+        message.setFrom(addressFilter.filterFrom(postcard, fromAddress));
+        for (Address to : postcard.getToList()) {
+            message.addTo(addressFilter.filterTo(postcard, to));
+        }
+        for (Address cc : postcard.getCcList()) {
+            message.addCc(addressFilter.filterCc(postcard, cc));
+        }
+        for (Address bcc : postcard.getBccList()) {
+            message.addBcc(addressFilter.filterBcc(postcard, bcc));
+        }
+    }
+
+    // ===================================================================================
+    //                                                                     Prepare Subject
+    //                                                                     ===============
+    protected void prepareSubject(Postcard postcard, SMailPostingMessage message) {
+        message.setSubject(postcard.getSubject(), getSubjectEncoding());
+    }
+
+    protected String getSubjectEncoding() {
+        return getBasicEncoding();
+    }
 
     // ===================================================================================
     //                                                                        Prepare Body
     //                                                                        ============
-    protected void prepareBody(Postcard postcard, SMailMessage message) {
+    protected void prepareBody(Postcard postcard, SMailPostingMessage message) {
         final String plainText = postcard.toCompletePlainText();
+        final String htmlText = postcard.toCompleteHtmlText();
+        message.savePlainTextForDisplay(plainText);
+        message.saveHtmlTextForDisplay(htmlText);
         final Map<String, SMailAttachment> attachmentMap = postcard.getAttachmentMap();
         final MimeMessage nativeMessage = message.getMimeMessage();
         if (attachmentMap.isEmpty()) { // normally here
             setupTextPart(nativeMessage, plainText, TextType.PLAIN); // plain is required
-            final String htmlText = postcard.toCompleteHtmlText();
             if (htmlText != null) { // HTML is optional
                 setupTextPart(nativeMessage, htmlText, TextType.HTML);
             }
         } else { // with attachment
-            final String html = postcard.toCompleteHtmlText();
-            if (html != null) {
+            if (htmlText != null) {
                 throw new IllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
             }
             try {
-                final MimeMultipart multipart = createTextWithAttachmentMultipart(plainText, attachmentMap, nativeMessage);
+                final MimeMultipart multipart = createTextWithAttachmentMultipart(plainText, attachmentMap);
                 nativeMessage.setContent(multipart);
             } catch (MessagingException e) {
                 String msg = "Failed to set attachment multipart content: " + postcard;
@@ -167,16 +181,24 @@ public class SMailSimplePostie implements SMailPostie {
         }
     }
 
-    protected MimeMultipart createTextWithAttachmentMultipart(String plain, Map<String, SMailAttachment> attachmentMap,
-            MimeMessage nativeMessage) throws MessagingException {
-        final MimeMultipart multipart = new MimeMultipart();
+    protected MimeMultipart createTextWithAttachmentMultipart(String plain, Map<String, SMailAttachment> attachmentMap)
+            throws MessagingException {
+        final MimeMultipart multipart = newMimeMultipart();
         multipart.setSubType("mixed");
-        multipart.addBodyPart((BodyPart) setupTextPart(nativeMessage, plain, TextType.PLAIN));
+        multipart.addBodyPart((BodyPart) setupTextPart(newMimeBodyPart(), plain, TextType.PLAIN));
         for (Entry<String, SMailAttachment> entry : attachmentMap.entrySet()) {
             final SMailAttachment attachment = entry.getValue();
             multipart.addBodyPart((BodyPart) setupAttachmentPart(attachment));
         }
         return multipart;
+    }
+
+    protected MimeMultipart newMimeMultipart() {
+        return new MimeMultipart();
+    }
+
+    protected MimeBodyPart newMimeBodyPart() {
+        return new MimeBodyPart();
     }
 
     // ===================================================================================
@@ -233,7 +255,7 @@ public class SMailSimplePostie implements SMailPostie {
     //                                                                     ===============
     protected MimePart setupAttachmentPart(SMailAttachment attachment) {
         assertArgumentNotNull("attachment", attachment);
-        final MimePart part = new MimeBodyPart();
+        final MimePart part = newMimeBodyPart();
         final String contentType = buildAttachmentContentType(attachment);
         final DataSource source = prepareAttachmentDataSource(attachment);
         try {
