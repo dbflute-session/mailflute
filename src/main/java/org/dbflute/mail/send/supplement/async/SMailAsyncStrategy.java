@@ -13,17 +13,13 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.exception;
+package org.dbflute.mail.send.supplement.async;
 
 /**
  * @author jflute
- * @since 0.1.0 (2015/01/20 Tuesday)
+ * @since 0.4.0 (2015/06/12 Friday)
  */
-public class SMailMessageSendFailureException extends RuntimeException {
+public interface SMailAsyncStrategy {
 
-    private static final long serialVersionUID = 1L;
-
-    public SMailMessageSendFailureException(String msg, Throwable e) {
-        super(msg, e);
-    }
+    void async(Runnable runnable);
 }

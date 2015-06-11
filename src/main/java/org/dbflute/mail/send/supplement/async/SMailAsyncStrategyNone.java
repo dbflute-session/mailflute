@@ -13,23 +13,16 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.supplement;
-
-import javax.mail.Address;
-
-import org.dbflute.mail.Postcard;
+package org.dbflute.mail.send.supplement.async;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/06/11 Thursday)
+ * @since 0.4.0 (2015/06/12 Friday)
  */
-public interface SMailAddressFilter {
+public class SMailAsyncStrategyNone implements SMailAsyncStrategy {
 
-    Address filterFrom(Postcard postcard, Address address);
-
-    Address filterTo(Postcard postcard, Address address);
-
-    Address filterCc(Postcard postcard, Address address);
-
-    Address filterBcc(Postcard postcard, Address address);
+    @Override
+    public void async(Runnable runnable) {
+        runnable.run();
+    }
 }

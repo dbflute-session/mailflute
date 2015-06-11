@@ -13,35 +13,20 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.supplement;
-
-import javax.mail.Address;
+package org.dbflute.mail.send.supplement.logging;
 
 import org.dbflute.mail.Postcard;
+import org.dbflute.mail.send.embedded.postie.SMailPostingMessage;
 
 /**
  * @author jflute
  * @since 0.4.0 (2015/06/11 Thursday)
  */
-public class SMailAddressFilterNone implements SMailAddressFilter {
+public interface SMailLoggingStrategy {
 
-    @Override
-    public Address filterFrom(Postcard postcard, Address address) {
-        return address;
-    }
+    void logMailMessage(Postcard postcard, SMailPostingMessage message, boolean training);
 
-    @Override
-    public Address filterTo(Postcard postcard, Address address) {
-        return address;
-    }
+    void logRetrySuccess(Postcard postcard, SMailPostingMessage message, boolean training, int challengeCount, Exception firstCause);
 
-    @Override
-    public Address filterCc(Postcard postcard, Address address) {
-        return address;
-    }
-
-    @Override
-    public Address filterBcc(Postcard postcard, Address address) {
-        return address;
-    }
+    void logSuppressedCause(Postcard postcard, SMailPostingMessage message, boolean training, Exception suppressedCause);
 }

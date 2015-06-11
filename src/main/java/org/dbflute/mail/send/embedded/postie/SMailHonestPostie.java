@@ -35,57 +35,69 @@ import javax.mail.internet.MimePart;
 import javax.mail.internet.MimeUtility;
 import javax.mail.util.ByteArrayDataSource;
 
+import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
-import org.dbflute.mail.send.supplement.SMailAddressFilter;
-import org.dbflute.mail.send.supplement.SMailAddressFilterNone;
 import org.dbflute.mail.send.supplement.SMailAttachment;
-import org.dbflute.mail.send.supplement.SMailLoggingStrategy;
-import org.dbflute.mail.send.supplement.SMailLoggingStrategyDebugOnly;
+import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
+import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
+import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
+import org.dbflute.mail.send.supplement.filter.SMailAddressFilterNone;
+import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
+import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
 
 /**
  * @author jflute
  * @since 0.4.0 (2015/05/05 Tuesday)
  */
-public class SMailSimplePostie implements SMailPostie {
+public class SMailHonestPostie implements SMailPostie {
 
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final SMailAddressFilterNone noneAddressFilter = new SMailAddressFilterNone();
-    private static final SMailLoggingStrategy debugOnlyLoggingStrategy = new SMailLoggingStrategyDebugOnly();
+    private static final SMailAddressFilter noneAddressFilter = new SMailAddressFilterNone();
+    private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
+    private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final SMailPostalMotorbike motorbike; // not null
     protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
-    protected SMailLoggingStrategy loggingStrategy = debugOnlyLoggingStrategy; // not null
+    protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
+    protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected boolean training;
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailSimplePostie(SMailPostalMotorbike motorbike) {
+    public SMailHonestPostie(SMailPostalMotorbike motorbike) {
         assertArgumentNotNull("motorbike", motorbike);
         this.motorbike = motorbike;
     }
 
-    public SMailSimplePostie withAddressFilter(SMailAddressFilter addressFilter) {
+    public SMailHonestPostie withAddressFilter(SMailAddressFilter addressFilter) {
         assertArgumentNotNull("addressFilter", addressFilter);
         this.addressFilter = addressFilter;
         return this;
     }
 
-    public SMailSimplePostie withLoggingStrategy(SMailLoggingStrategy loggingStrategy) {
+    public SMailHonestPostie withAsyncStrategy(SMailAsyncStrategy asyncStrategy) {
+        assertArgumentNotNull("asyncStrategy", asyncStrategy);
+        this.asyncStrategy = asyncStrategy;
+        return this;
+    }
+
+    public SMailHonestPostie withLoggingStrategy(SMailLoggingStrategy loggingStrategy) {
         assertArgumentNotNull("loggingStrategy", loggingStrategy);
         this.loggingStrategy = loggingStrategy;
         return this;
     }
 
-    public SMailSimplePostie asTraining() {
+    public SMailHonestPostie asTraining() {
         training = true;
         return this;
     }
@@ -95,8 +107,6 @@ public class SMailSimplePostie implements SMailPostie {
     //                                                                             =======
     @Override
     public void deliver(Postcard postcard) {
-        // TODO jflute mailflute: [C] postie's retry
-        // TODO jflute mailflute: [C] postie's async
         final SMailPostingMessage message = createMailMessage(motorbike);
         prepareAddress(postcard, message);
         prepareSubject(postcard, message);
@@ -110,22 +120,6 @@ public class SMailSimplePostie implements SMailPostie {
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
         return motorbike.getNativeSession();
-    }
-
-    protected void send(Postcard postcard, SMailPostingMessage message) {
-        logMailMessage(postcard, message);
-        if (!training) {
-            try {
-                Transport.send(message.getMimeMessage());
-            } catch (MessagingException e) {
-                throw new SMailTransportFailureException("Failed to send mail: " + postcard, e);
-            }
-        }
-    }
-
-    protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
-        // TODO jflute mailflute: [B] eml file (2015/05/11)
-        loggingStrategy.log(postcard, message, training);
     }
 
     // ===================================================================================
@@ -220,7 +214,7 @@ public class SMailSimplePostie implements SMailPostie {
             part.setHeader("Content-Transfer-Encoding", "7bit");
             part.setHeader("Content-Type", "text/" + textType.code() + "; charset=\"" + encoding + "\"");
         } catch (MessagingException e) {
-            throw new IllegalStateException("Failed to set headers: " + encoding, e);
+            throw new SMailMessageSettingFailureException("Failed to set headers: " + encoding, e);
         }
         return part;
     }
@@ -234,7 +228,7 @@ public class SMailSimplePostie implements SMailPostie {
         try {
             buffer = ByteBuffer.wrap(text.getBytes(encoding));
         } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException("Unknown encoding: " + encoding, e);
+            throw new SMailMessageSettingFailureException("Unknown encoding: " + encoding, e);
         }
         return buffer;
     }
@@ -271,7 +265,7 @@ public class SMailSimplePostie implements SMailPostie {
             part.addHeader("Content-Type", contentType);
             part.addHeader("Content-Disposition", buildAttachmentContentDisposition(attachment));
         } catch (MessagingException e) {
-            throw new IllegalStateException("Failed to set headers: " + attachment, e);
+            throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
         }
         return part;
     }
@@ -281,7 +275,7 @@ public class SMailSimplePostie implements SMailPostie {
         try {
             source = new ByteArrayDataSource(attachment.getReourceStream(), "application/octet-stream");
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to create data source: " + attachment, e);
+            throw new SMailMessageSettingFailureException("Failed to create data source: " + attachment, e);
         }
         return source;
     }
@@ -293,7 +287,7 @@ public class SMailSimplePostie implements SMailPostie {
             final String filename = attachment.getFilenameOnHeader();
             encodedFilename = MimeUtility.encodeText(filename, filenameEncoding, "B"); // uses 'B' for various characters
         } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException("Unknown encoding: " + filenameEncoding, e);
+            throw new SMailMessageSettingFailureException("Unknown encoding: " + filenameEncoding, e);
         }
         final StringBuilder sb = new StringBuilder();
         final String contentType = attachment.getContentType();
@@ -315,6 +309,95 @@ public class SMailSimplePostie implements SMailPostie {
 
     protected String getAttachmentTextFileEncoding() {
         return getBasicEncoding();
+    }
+
+    // ===================================================================================
+    //                                                                        Send Message
+    //                                                                        ============
+    protected void send(Postcard postcard, SMailPostingMessage message) {
+        try {
+            if (postcard.isAsync()) {
+                asyncStrategy.async(() -> doSend(postcard, message));
+            } else {
+                doSend(postcard, message);
+            }
+        } catch (RuntimeException e) {
+            if (postcard.isSuppressSendFailure()) {
+                loggingStrategy.logSuppressedCause(postcard, message, training, e);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    protected void doSend(Postcard postcard, SMailPostingMessage message) {
+        logMailMessage(postcard, message);
+        if (!training) {
+            retryableSend(postcard, message);
+        }
+    }
+
+    protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
+        // TODO jflute mailflute: [B] eml file (2015/05/11)
+        loggingStrategy.logMailMessage(postcard, message, training);
+    }
+
+    protected void retryableSend(Postcard postcard, SMailPostingMessage message) {
+        final int retryCount = postcard.getRetryCount(); // not negative, zero means no retry
+        final long intervalMillis = postcard.getIntervalMillis(); // not negative
+        int challengeCount = 0;
+        Exception firstCause = null;
+        while (true) {
+            if (challengeCount > retryCount) { // over retry limit, cannot send
+                if (firstCause != null) { // just in case
+                    handleSendFailure(postcard, message, firstCause);
+                }
+                break;
+            }
+            try {
+                if (challengeCount > 0) { // means retry sending
+                    waitBeforeRetrySending(intervalMillis);
+                }
+                actuallySend(message);
+                if (challengeCount > 0) { // means retry success
+                    noticeRetrySuccess(postcard, message, challengeCount, firstCause);
+                }
+                break;
+            } catch (RuntimeException | MessagingException e) {
+                if (firstCause == null) { // first cause may be most important
+                    firstCause = e;
+                }
+            }
+            ++challengeCount;
+        }
+    }
+
+    protected void actuallySend(SMailPostingMessage message) throws MessagingException {
+        Transport.send(message.getMimeMessage());
+    }
+
+    protected void waitBeforeRetrySending(long intervalMillis) {
+        if (intervalMillis > 0) {
+            try {
+                Thread.sleep(intervalMillis);
+            } catch (InterruptedException ignored) {}
+        }
+    }
+
+    protected void noticeRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
+        loggingStrategy.logRetrySuccess(postcard, message, training, challengeCount, firstCause);
+    }
+
+    protected void handleSendFailure(Postcard postcard, SMailPostingMessage message, Exception e) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Failed to send the mail message.");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        br.addItem("Posting Message");
+        br.addElement(Integer.hashCode(message.hashCode()));
+        br.addElement(message);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailTransportFailureException(msg, e);
     }
 
     // ===================================================================================

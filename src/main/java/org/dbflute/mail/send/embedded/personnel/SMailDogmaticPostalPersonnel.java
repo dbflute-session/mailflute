@@ -24,12 +24,13 @@ import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.SMailTextProofreader;
-import org.dbflute.mail.send.embedded.postie.SMailSimplePostie;
+import org.dbflute.mail.send.embedded.postie.SMailHonestPostie;
 import org.dbflute.mail.send.embedded.proofreader.SMailBatchProofreader;
 import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
-import org.dbflute.mail.send.supplement.SMailAddressFilter;
-import org.dbflute.mail.send.supplement.SMailLoggingStrategy;
+import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
+import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
+import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfTypeUtil;
 
@@ -48,8 +49,17 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                           =========
     protected final SMailReceptionist receptionist;
     protected final SMailTextProofreader proofreader;
+
+    // -----------------------------------------------------
+    //                                           Deep Option
+    //                                           -----------
     protected final OptionalThing<SMailAddressFilter> addressFilter;
+    protected final OptionalThing<SMailAsyncStrategy> asyncStrategy;
     protected final OptionalThing<SMailLoggingStrategy> loggingStrategy;
+
+    // -----------------------------------------------------
+    //                                       for Development
+    //                                       ---------------
     protected boolean training;
 
     // ===================================================================================
@@ -59,6 +69,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         receptionist = createOutsideBodyReceptionist();
         proofreader = createProofreader();
         addressFilter = createAddressFilter();
+        asyncStrategy = createAsyncStrategy();
         loggingStrategy = createLoggingStrategy();
     }
 
@@ -100,22 +111,23 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     }
 
     // -----------------------------------------------------
-    //                                        Address Filter
-    //                                        --------------
+    //                                           Deep Option
+    //                                           -----------
     protected OptionalThing<SMailAddressFilter> createAddressFilter() {
         return OptionalThing.empty();
     }
 
-    // -----------------------------------------------------
-    //                                      Logging Strategy
-    //                                      ----------------
+    protected OptionalThing<SMailAsyncStrategy> createAsyncStrategy() {
+        return OptionalThing.empty();
+    }
+
     protected OptionalThing<SMailLoggingStrategy> createLoggingStrategy() {
         return OptionalThing.empty();
     }
 
     // -----------------------------------------------------
-    //                                              Training
-    //                                              --------
+    //                                       for Development
+    //                                       ---------------
     public SMailDogmaticPostalPersonnel asTraining() {
         training = true;
         return this;
@@ -145,9 +157,12 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                ------
     @Override
     public SMailPostie selectPostie(Postcard postcard, SMailPostalMotorbike motorbike) {
-        final SMailSimplePostie postie = newSMailSimplePostie(motorbike);
+        final SMailHonestPostie postie = newSMailHonestPostie(motorbike);
         addressFilter.ifPresent(filter -> {
             postie.withAddressFilter(filter);
+        });
+        asyncStrategy.ifPresent(strategy -> {
+            postie.withAsyncStrategy(strategy);
         });
         loggingStrategy.ifPresent(strategy -> {
             postie.withLoggingStrategy(strategy);
@@ -155,8 +170,8 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return training ? postie.asTraining() : postie;
     }
 
-    protected SMailSimplePostie newSMailSimplePostie(SMailPostalMotorbike motorbike) {
-        return new SMailSimplePostie(motorbike);
+    protected SMailHonestPostie newSMailHonestPostie(SMailPostalMotorbike motorbike) {
+        return new SMailHonestPostie(motorbike);
     }
 
     // ===================================================================================

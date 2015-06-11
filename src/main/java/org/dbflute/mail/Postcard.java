@@ -16,6 +16,7 @@
 package org.dbflute.mail;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,7 +33,9 @@ import org.dbflute.util.DfTypeUtil;
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday at higashi-ginza)
  */
-public class Postcard {
+public class Postcard implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     // ===================================================================================
     //                                                                           Attribute
@@ -60,6 +63,12 @@ public class Postcard {
     // post office work
     protected String proofreadingPlain;
     protected String proofreadingHtml;
+
+    // postie option
+    protected boolean async;
+    protected int retryCount;
+    protected long intervalMillis;
+    protected boolean suppressSendFailure;
 
     // ===================================================================================
     //                                                                         Constructor
@@ -178,6 +187,31 @@ public class Postcard {
         public void useWholeFixedText() {
             wholeFixedTextUsed = true;
         }
+    }
+
+    // ===================================================================================
+    //                                                                       Postie Option
+    //                                                                       =============
+    public Postcard async() {
+        async = true;
+        return this;
+    }
+
+    public Postcard retry(int retryCount, long intervalMillis) {
+        if (retryCount <= 0) {
+            throw new IllegalArgumentException("The arguyment 'retryCount' should be positive integer: " + retryCount);
+        }
+        if (intervalMillis <= 0) {
+            throw new IllegalArgumentException("The arguyment 'intervalMillis' should be positive long: " + intervalMillis);
+        }
+        this.retryCount = retryCount;
+        this.intervalMillis = intervalMillis;
+        return this;
+    }
+
+    public Postcard suppressSendFailure() {
+        suppressSendFailure = true;
+        return this;
     }
 
     // ===================================================================================
@@ -315,5 +349,24 @@ public class Postcard {
 
     public boolean isWholeFixedTextUsed() {
         return wholeFixedTextUsed;
+    }
+
+    // -----------------------------------------------------
+    //                                         Postie Option
+    //                                         -------------
+    public boolean isAsync() {
+        return async;
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public long getIntervalMillis() {
+        return intervalMillis;
+    }
+
+    public boolean isSuppressSendFailure() {
+        return suppressSendFailure;
     }
 }

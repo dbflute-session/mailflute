@@ -13,27 +13,23 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.supplement;
+package org.dbflute.mail.send.supplement.filter;
+
+import javax.mail.Address;
 
 import org.dbflute.mail.Postcard;
-import org.dbflute.mail.send.embedded.postie.SMailPostingMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jflute
  * @since 0.4.0 (2015/06/11 Thursday)
  */
-public class SMailLoggingStrategyDebugOnly implements SMailLoggingStrategy {
+public interface SMailAddressFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(SMailLoggingStrategyDebugOnly.class);
+    Address filterFrom(Postcard postcard, Address address);
 
-    @Override
-    public void log(Postcard postcard, SMailPostingMessage message, boolean training) {
-        if (logger.isErrorEnabled()) {
-            final String state = training ? "as training" : "actually";
-            final String disp = message.toDisplay();
-            logger.debug("...Sending mail message {}:\n{}", state, disp);
-        }
-    }
+    Address filterTo(Postcard postcard, Address address);
+
+    Address filterCc(Postcard postcard, Address address);
+
+    Address filterBcc(Postcard postcard, Address address);
 }
