@@ -16,7 +16,7 @@
 package org.dbflute.mail.send.supplement.logging;
 
 import org.dbflute.mail.CardView;
-import org.dbflute.mail.send.supplement.SMailPostingMessage;
+import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
 import org.dbflute.util.Srl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,16 +38,16 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                        Mail Message
     //                                                                        ============
     @Override
-    public void logMailMessage(CardView view, SMailPostingMessage message, boolean training) {
+    public void logMailMessage(CardView view, SMailPostingDiscloser discloser, boolean training) {
         if (messageLogger.isInfoEnabled()) {
-            messageLogger.info(buildMailMessageDisp(view, message, training));
+            messageLogger.info(buildMailMessageDisp(view, discloser, training));
         }
     }
 
-    protected String buildMailMessageDisp(CardView view, SMailPostingMessage message, boolean training) {
+    protected String buildMailMessageDisp(CardView view, SMailPostingDiscloser discloser, boolean training) {
         final String state = training ? "as training" : "actually";
-        final String hash = toHash(message);
-        final String disp = message.toDisplay();
+        final String hash = toHash(discloser);
+        final String disp = discloser.toDisplay();
         return "...Sending mail " + state + ": #" + hash + "\n" + disp;
     }
 
@@ -55,15 +55,15 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                       Retry Success
     //                                                                       =============
     @Override
-    public void logRetrySuccess(CardView view, SMailPostingMessage message, boolean training, int challengeCount, Exception firstCause) {
+    public void logRetrySuccess(CardView view, SMailPostingDiscloser discloser, boolean training, int challengeCount, Exception firstCause) {
         if (normalLogger.isInfoEnabled()) {
-            normalLogger.info(buildRetrySuccessDisp(view, message, training, challengeCount, firstCause));
+            normalLogger.info(buildRetrySuccessDisp(view, discloser, training, challengeCount, firstCause));
         }
     }
 
-    protected String buildRetrySuccessDisp(CardView view, SMailPostingMessage message, boolean training, int challengeCount,
+    protected String buildRetrySuccessDisp(CardView view, SMailPostingDiscloser discloser, boolean training, int challengeCount,
             Exception firstCause) {
-        final String hash = toHash(message);
+        final String hash = toHash(discloser);
         final String causeExp = buildCauseExp(firstCause);
         return "Successful mail by retry: #" + hash + " challengeCount=" + challengeCount + " postcard=" + view + " cause=" + causeExp;
     }
@@ -77,21 +77,20 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                    Suppressed Cause
     //                                                                    ================
     @Override
-    public void logSuppressedCause(CardView view, SMailPostingMessage message, boolean training, Exception suppressedCause) {
+    public void logSuppressedCause(CardView view, SMailPostingDiscloser discloser, boolean training, Exception suppressedCause) {
         if (normalLogger.isWarnEnabled()) {
-            normalLogger.warn(buildSuppressedCauseDisp(view, message, training, suppressedCause), suppressedCause);
+            normalLogger.warn(buildSuppressedCauseDisp(view, discloser, training, suppressedCause), suppressedCause);
         }
     }
 
-    protected String buildSuppressedCauseDisp(CardView view, SMailPostingMessage message, boolean training, Exception suppressedCause) {
-        final String hash = toHash(message);
-        return "Failed to send the mail but continued: #" + hash + " " + view;
+    protected String buildSuppressedCauseDisp(CardView view, SMailPostingDiscloser discloser, boolean training, Exception suppressedCause) {
+        return "Failed to send the mail but continued: #" + toHash(discloser) + " " + view;
     }
 
     // ===================================================================================
     //                                                                        Assist Logic
     //                                                                        ============
-    protected String toHash(SMailPostingMessage message) {
-        return Integer.toHexString(message.hashCode());
+    protected String toHash(SMailPostingDiscloser discloser) {
+        return discloser.toHash();
     }
 }

@@ -13,7 +13,7 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.supplement;
+package org.dbflute.mail.send.embedded.postie;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +29,7 @@ import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
+import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author Takeshi Kato
  * @since 0.1.0 (2015/01/20 Tuesday)
  */
-public class SMailPostingMessage {
+public class SMailPostingMessage implements SMailPostingDiscloser {
 
     // ===================================================================================
     //                                                                          Definition
@@ -195,6 +196,7 @@ public class SMailPostingMessage {
     // ===================================================================================
     //                                                                  Display Expression
     //                                                                  ==================
+    @Override
     public String toDisplay() {
         final StringBuilder sb = new StringBuilder();
         sb.append("/= = = = = = = = = = = = = = = = = = = = = = = = = = Mail Message");
@@ -224,8 +226,17 @@ public class SMailPostingMessage {
     }
 
     // ===================================================================================
+    //                                                                     Hash Expression
+    //                                                                     ===============
+    @Override
+    public String toHash() {
+        return Integer.toHexString(hashCode());
+    }
+
+    // ===================================================================================
     //                                                                       Make EML File
     //                                                                       =============
+    @Override
     public void makeEmlFile(String path) {
         ByteArrayOutputStream ous = null;
         try {
