@@ -15,7 +15,7 @@
  */
 package org.dbflute.mail.send.supplement.logging;
 
-import org.dbflute.mail.Postcard;
+import org.dbflute.mail.CardView;
 import org.dbflute.mail.send.embedded.postie.SMailPostingMessage;
 
 /**
@@ -24,9 +24,9 @@ import org.dbflute.mail.send.embedded.postie.SMailPostingMessage;
  */
 public interface SMailLoggingStrategy {
 
-    void logMailMessage(Postcard postcard, SMailPostingMessage message, boolean training);
+    void logMailMessage(CardView view, SMailPostingMessage message, boolean training);
 
-    void logRetrySuccess(Postcard postcard, SMailPostingMessage message, boolean training, int challengeCount, Exception firstCause);
+    void logRetrySuccess(CardView view, SMailPostingMessage message, boolean training, int challengeCount, Exception firstCause);
 
-    void logSuppressedCause(Postcard postcard, SMailPostingMessage message, boolean training, Exception suppressedCause);
+    void logSuppressedCause(CardView view, SMailPostingMessage message, boolean training, Exception suppressedCause);
 }

@@ -17,7 +17,8 @@ package org.dbflute.mail.send.supplement.filter;
 
 import javax.mail.Address;
 
-import org.dbflute.mail.Postcard;
+import org.dbflute.mail.CardView;
+import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
@@ -25,11 +26,11 @@ import org.dbflute.mail.Postcard;
  */
 public interface SMailAddressFilter {
 
-    Address filterFrom(Postcard postcard, Address address);
+    Address filterFrom(CardView view, Address address);
 
-    Address filterTo(Postcard postcard, Address address);
+    OptionalThing<Address> filterTo(CardView view, Address address);
 
-    Address filterCc(Postcard postcard, Address address);
+    OptionalThing<Address> filterCc(CardView view, Address address);
 
-    Address filterBcc(Postcard postcard, Address address);
+    OptionalThing<Address> filterBcc(CardView view, Address address);
 }

@@ -15,6 +15,8 @@
  */
 package org.dbflute.mail.send.supplement.async;
 
+import org.dbflute.mail.CardView;
+
 /**
  * @author jflute
  * @since 0.4.0 (2015/06/12 Friday)
@@ -22,7 +24,7 @@ package org.dbflute.mail.send.supplement.async;
 public class SMailAsyncStrategyNone implements SMailAsyncStrategy {
 
     @Override
-    public void async(Runnable runnable) {
+    public void async(CardView view, Runnable runnable) {
         runnable.run();
     }
 }

@@ -15,34 +15,16 @@
  */
 package org.dbflute.mail.send.supplement.filter;
 
-import javax.mail.Address;
-
 import org.dbflute.mail.CardView;
-import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/06/11 Thursday)
+ * @since 0.4.0 (2015/06/12 Friday)
  */
-public class SMailAddressFilterNone implements SMailAddressFilter {
+public class SMailSubjectFilterNone implements SMailSubjectFilter {
 
     @Override
-    public Address filterFrom(CardView view, Address address) {
-        return address;
-    }
-
-    @Override
-    public OptionalThing<Address> filterTo(CardView view, Address address) {
-        return OptionalThing.of(address);
-    }
-
-    @Override
-    public OptionalThing<Address> filterCc(CardView view, Address address) {
-        return OptionalThing.of(address);
-    }
-
-    @Override
-    public OptionalThing<Address> filterBcc(CardView view, Address address) {
-        return OptionalThing.of(address);
+    public String filterSubject(CardView view, String subject) {
+        return subject;
     }
 }

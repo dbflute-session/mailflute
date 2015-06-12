@@ -15,11 +15,13 @@
  */
 package org.dbflute.mail.send.supplement.async;
 
+import org.dbflute.mail.CardView;
+
 /**
  * @author jflute
  * @since 0.4.0 (2015/06/12 Friday)
  */
 public interface SMailAsyncStrategy {
 
-    void async(Runnable runnable);
+    void async(CardView view, Runnable runnable);
 }

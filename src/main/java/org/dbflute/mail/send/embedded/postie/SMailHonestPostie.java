@@ -46,8 +46,11 @@ import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilterNone;
+import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
+import org.dbflute.mail.send.supplement.filter.SMailSubjectFilterNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
+import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
@@ -59,6 +62,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                          Definition
     //                                                                          ==========
     private static final SMailAddressFilter noneAddressFilter = new SMailAddressFilterNone();
+    private static final SMailSubjectFilterNone noneSubjectFilter = new SMailSubjectFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
 
@@ -67,6 +71,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                           =========
     protected final SMailPostalMotorbike motorbike; // not null
     protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
+    protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected boolean training;
@@ -82,6 +87,12 @@ public class SMailHonestPostie implements SMailPostie {
     public SMailHonestPostie withAddressFilter(SMailAddressFilter addressFilter) {
         assertArgumentNotNull("addressFilter", addressFilter);
         this.addressFilter = addressFilter;
+        return this;
+    }
+
+    public SMailHonestPostie withSubjectFilter(SMailSubjectFilter subjectFilter) {
+        assertArgumentNotNull("subjectFilter", subjectFilter);
+        this.subjectFilter = subjectFilter;
         return this;
     }
 
@@ -130,15 +141,47 @@ public class SMailHonestPostie implements SMailPostie {
         if (fromAddress == null) {
             throw new IllegalStateException("Not found the from address in the postcard: " + postcard);
         }
-        message.setFrom(addressFilter.filterFrom(postcard, fromAddress));
+        final Address filteredFrom = addressFilter.filterFrom(postcard, fromAddress);
+        message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
+        boolean existsToAddress = false;
         for (Address to : postcard.getToList()) {
-            message.addTo(addressFilter.filterTo(postcard, to));
+            final OptionalThing<Address> opt = addressFilter.filterTo(postcard, to);
+            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addTo(address));
+            if (opt.isPresent()) {
+                existsToAddress = true;
+            }
         }
+        verifyFilteredToAddressExists(postcard, existsToAddress);
         for (Address cc : postcard.getCcList()) {
-            message.addCc(addressFilter.filterCc(postcard, cc));
+            final OptionalThing<Address> opt = addressFilter.filterCc(postcard, cc);
+            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addCc(address));
         }
         for (Address bcc : postcard.getBccList()) {
-            message.addBcc(addressFilter.filterBcc(postcard, bcc));
+            final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, bcc);
+            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addBcc(address));
+        }
+    }
+
+    protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {
+        if (filteredFrom == null) {
+            String msg = "The filtered from-address should not be null: " + postcard;
+            throw new IllegalStateException(msg);
+        }
+        return filteredFrom;
+    }
+
+    protected OptionalThing<Address> verifyFilteredOptionalAddress(Postcard postcard, OptionalThing<Address> opt) {
+        if (opt == null) {
+            String msg = "The filtered optional should not be null: postcard=" + postcard;
+            throw new IllegalStateException(msg);
+        }
+        return opt;
+    }
+
+    protected void verifyFilteredToAddressExists(Postcard postcard, boolean existsToAddress) {
+        if (!existsToAddress) {
+            String msg = "Empty to-address by filtering: specifiedToAddress=" + postcard.getToList();
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -146,8 +189,11 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     Prepare Subject
     //                                                                     ===============
     protected void prepareSubject(Postcard postcard, SMailPostingMessage message) {
-        // TODO jflute mailflute: [B] subject filter (2015/05/11)
-        message.setSubject(postcard.getSubject(), getSubjectEncoding());
+        message.setSubject(getSubject(postcard), getSubjectEncoding());
+    }
+
+    protected String getSubject(Postcard postcard) {
+        return subjectFilter.filterSubject(postcard, postcard.getSubject());
     }
 
     protected String getSubjectEncoding() {
@@ -318,7 +364,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected void send(Postcard postcard, SMailPostingMessage message) {
         try {
             if (postcard.isAsync()) {
-                asyncStrategy.async(() -> doSend(postcard, message));
+                asyncStrategy.async(postcard, () -> doSend(postcard, message));
             } else {
                 doSend(postcard, message);
             }
@@ -338,14 +384,20 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
+    // -----------------------------------------------------
+    //                                               Logging
+    //                                               -------
     protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
         // TODO jflute mailflute: [B] eml file (2015/05/11)
         loggingStrategy.logMailMessage(postcard, message, training);
     }
 
+    // -----------------------------------------------------
+    //                                             Retryable
+    //                                             ---------
     protected void retryableSend(Postcard postcard, SMailPostingMessage message) {
-        final int retryCount = postcard.getRetryCount(); // not negative, zero means no retry
-        final long intervalMillis = postcard.getIntervalMillis(); // not negative
+        final int retryCount = getRetryCount(postcard); // not negative, zero means no retry
+        final long intervalMillis = getIntervalMillis(postcard); // not negative
         int challengeCount = 0;
         Exception firstCause = null;
         while (true) {
@@ -373,8 +425,12 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected void actuallySend(SMailPostingMessage message) throws MessagingException {
-        Transport.send(message.getMimeMessage());
+    protected int getRetryCount(Postcard postcard) { // you can override if all mails needs retry
+        return postcard.getRetryCount();
+    }
+
+    protected long getIntervalMillis(Postcard postcard) { // you can as well
+        return postcard.getIntervalMillis();
     }
 
     protected void waitBeforeRetrySending(long intervalMillis) {
@@ -383,6 +439,10 @@ public class SMailHonestPostie implements SMailPostie {
                 Thread.sleep(intervalMillis);
             } catch (InterruptedException ignored) {}
         }
+    }
+
+    protected void actuallySend(SMailPostingMessage message) throws MessagingException {
+        Transport.send(message.getMimeMessage());
     }
 
     protected void noticeRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {

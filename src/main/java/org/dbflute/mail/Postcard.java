@@ -33,7 +33,7 @@ import org.dbflute.util.DfTypeUtil;
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday at higashi-ginza)
  */
-public class Postcard implements Serializable {
+public class Postcard implements CardView, Serializable {
 
     private static final long serialVersionUID = 1L;
 
