@@ -42,6 +42,7 @@ import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
 import org.dbflute.mail.send.supplement.SMailAttachment;
+import org.dbflute.mail.send.supplement.SMailPostingMessage;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;

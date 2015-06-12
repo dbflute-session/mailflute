@@ -16,7 +16,7 @@
 package org.dbflute.mail.send.supplement.logging;
 
 import org.dbflute.mail.CardView;
-import org.dbflute.mail.send.embedded.postie.SMailPostingMessage;
+import org.dbflute.mail.send.supplement.SMailPostingMessage;
 
 /**
  * @author jflute

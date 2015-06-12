@@ -13,8 +13,10 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.embedded.postie;
+package org.dbflute.mail.send.supplement;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +27,10 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 
+import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jflute
@@ -37,6 +42,7 @@ public class SMailPostingMessage {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
+    private static final Logger logger = LoggerFactory.getLogger(SMailPostingMessage.class);
     protected static final String LF = "\n";
 
     // ===================================================================================
@@ -215,6 +221,27 @@ public class SMailPostingMessage {
         }
         sb.append(LF).append("= = = = = = = = = =/");
         return sb.toString();
+    }
+
+    // ===================================================================================
+    //                                                                       Make EML File
+    //                                                                       =============
+    public void makeEmlFile(String path) {
+        ByteArrayOutputStream ous = null;
+        try {
+            ous = new ByteArrayOutputStream();
+            message.writeTo(ous);
+            final String eml = ous.toString();
+            new FileTextIO().encodeAsUTF8().write(path, eml);
+        } catch (IOException | MessagingException e) {
+            logger.info("Failed to make EML file to the path: " + path + " subject=" + subject, e);
+        } finally {
+            if (ous != null) {
+                try {
+                    ous.close();
+                } catch (IOException ignored) {}
+            }
+        }
     }
 
     // ===================================================================================
