@@ -146,6 +146,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     Prepare Subject
     //                                                                     ===============
     protected void prepareSubject(Postcard postcard, SMailPostingMessage message) {
+        // TODO jflute mailflute: [B] subject filter (2015/05/11)
         message.setSubject(postcard.getSubject(), getSubjectEncoding());
     }
 
