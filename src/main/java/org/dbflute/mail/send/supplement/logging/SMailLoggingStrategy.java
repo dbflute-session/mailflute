@@ -24,9 +24,9 @@ import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
  */
 public interface SMailLoggingStrategy {
 
-    void logMailMessage(CardView view, SMailPostingDiscloser discloser, boolean training);
+    void logMailMessage(CardView view, SMailPostingDiscloser discloser);
 
-    void logRetrySuccess(CardView view, SMailPostingDiscloser discloser, boolean training, int challengeCount, Exception firstCause);
+    void logRetrySuccess(CardView view, SMailPostingDiscloser discloser, int challengeCount, Exception firstCause);
 
-    void logSuppressedCause(CardView view, SMailPostingDiscloser discloser, boolean training, Exception suppressedCause);
+    void logSuppressedCause(CardView view, SMailPostingDiscloser discloser, Exception suppressedCause);
 }

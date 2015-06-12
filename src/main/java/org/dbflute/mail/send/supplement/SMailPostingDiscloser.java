@@ -27,6 +27,8 @@ import javax.mail.internet.MimeMessage;
  */
 public interface SMailPostingDiscloser {
 
+    boolean isTraining();
+    
     String toDisplay();
 
     String toHash();

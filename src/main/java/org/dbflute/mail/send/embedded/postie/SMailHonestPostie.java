@@ -139,11 +139,15 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected SMailPostingMessage createMailMessage(SMailPostalMotorbike motorbike) {
-        return new SMailPostingMessage(extractNativeSession(motorbike));
+        return new SMailPostingMessage(createMimeMessage(extractNativeSession(motorbike)), training);
     }
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
         return motorbike.getNativeSession();
+    }
+
+    protected MimeMessage createMimeMessage(Session session) {
+        return new MimeMessage(session);
     }
 
     protected boolean isCancel(Postcard postcard) {
@@ -388,7 +392,7 @@ public class SMailHonestPostie implements SMailPostie {
             }
         } catch (RuntimeException e) {
             if (postcard.isSuppressSendFailure()) {
-                loggingStrategy.logSuppressedCause(postcard, message, training, e);
+                loggingStrategy.logSuppressedCause(postcard, message, e);
             } else {
                 throw e;
             }
@@ -407,7 +411,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                               -------
     protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
         // TODO jflute mailflute: [B] eml file (2015/05/11)
-        loggingStrategy.logMailMessage(postcard, message, training);
+        loggingStrategy.logMailMessage(postcard, message);
     }
 
     // -----------------------------------------------------
@@ -464,7 +468,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected void noticeRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
-        loggingStrategy.logRetrySuccess(postcard, message, training, challengeCount, firstCause);
+        loggingStrategy.logRetrySuccess(postcard, message, challengeCount, firstCause);
     }
 
     protected void handleSendFailure(Postcard postcard, SMailPostingMessage message, Exception e) {

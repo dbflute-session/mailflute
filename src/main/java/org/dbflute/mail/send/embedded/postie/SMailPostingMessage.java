@@ -24,7 +24,6 @@ import java.util.List;
 import javax.mail.Address;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
-import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
@@ -50,6 +49,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                                           Attribute
     //                                                                           =========
     protected final MimeMessage message;
+    protected final boolean training;
 
     // -----------------------------------------------------
     //                                     Saved for Display
@@ -66,12 +66,9 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPostingMessage(Session session) {
-        message = newMimeMessage(session);
-    }
-
-    protected MimeMessage newMimeMessage(Session session) {
-        return new MimeMessage(session);
+    public SMailPostingMessage(MimeMessage message, boolean training) {
+        this.message = message;
+        this.training = training;
     }
 
     // ===================================================================================
@@ -268,6 +265,11 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                                            ========
     public MimeMessage getMimeMessage() {
         return message;
+    }
+
+    @Override
+    public boolean isTraining() {
+        return training;
     }
 
     // -----------------------------------------------------
