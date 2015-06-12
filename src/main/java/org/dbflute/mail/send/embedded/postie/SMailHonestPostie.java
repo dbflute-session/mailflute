@@ -46,6 +46,8 @@ import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilterNone;
+import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
+import org.dbflute.mail.send.supplement.filter.SMailCancelFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilterNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
@@ -61,6 +63,7 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
+    private static final SMailCancelFilter noneCancelFilter = new SMailCancelFilterNone();
     private static final SMailAddressFilter noneAddressFilter = new SMailAddressFilterNone();
     private static final SMailSubjectFilterNone noneSubjectFilter = new SMailSubjectFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
@@ -70,6 +73,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                           Attribute
     //                                                                           =========
     protected final SMailPostalMotorbike motorbike; // not null
+    protected SMailCancelFilter cancelFilter = noneCancelFilter; // not null
     protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
     protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
@@ -82,6 +86,12 @@ public class SMailHonestPostie implements SMailPostie {
     public SMailHonestPostie(SMailPostalMotorbike motorbike) {
         assertArgumentNotNull("motorbike", motorbike);
         this.motorbike = motorbike;
+    }
+
+    public SMailHonestPostie withCancelFilter(SMailCancelFilter cancelFilter) {
+        assertArgumentNotNull("cancelFilter", cancelFilter);
+        this.cancelFilter = cancelFilter;
+        return this;
     }
 
     public SMailHonestPostie withAddressFilter(SMailAddressFilter addressFilter) {
@@ -119,6 +129,9 @@ public class SMailHonestPostie implements SMailPostie {
     @Override
     public void deliver(Postcard postcard) {
         final SMailPostingMessage message = createMailMessage(motorbike);
+        if (isCancel(postcard)) {
+            return; // no logging here, only filter knows the reason
+        }
         prepareAddress(postcard, message);
         prepareSubject(postcard, message);
         prepareBody(postcard, message);
@@ -131,6 +144,10 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
         return motorbike.getNativeSession();
+    }
+
+    protected boolean isCancel(Postcard postcard) {
+        return cancelFilter.isCancel(postcard);
     }
 
     // ===================================================================================
