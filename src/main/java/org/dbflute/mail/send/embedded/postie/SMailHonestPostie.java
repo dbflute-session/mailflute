@@ -237,7 +237,7 @@ public class SMailHonestPostie implements SMailPostie {
                 throw new IllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
             }
             try {
-                final MimeMultipart multipart = createTextWithAttachmentMultipart(plainText, attachmentMap);
+                final MimeMultipart multipart = createTextWithAttachmentMultipart(postcard, message, plainText, attachmentMap);
                 nativeMessage.setContent(multipart);
             } catch (MessagingException e) {
                 String msg = "Failed to set attachment multipart content: " + postcard;
@@ -246,14 +246,15 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected MimeMultipart createTextWithAttachmentMultipart(String plain, Map<String, SMailAttachment> attachmentMap)
-            throws MessagingException {
+    protected MimeMultipart createTextWithAttachmentMultipart(Postcard postcard, SMailPostingMessage message, String plain,
+            Map<String, SMailAttachment> attachmentMap) throws MessagingException {
         final MimeMultipart multipart = newMimeMultipart();
         multipart.setSubType("mixed");
         multipart.addBodyPart((BodyPart) setupTextPart(newMimeBodyPart(), plain, TextType.PLAIN));
         for (Entry<String, SMailAttachment> entry : attachmentMap.entrySet()) {
             final SMailAttachment attachment = entry.getValue();
             multipart.addBodyPart((BodyPart) setupAttachmentPart(attachment));
+            message.saveAttachmentForDisplay(attachment.getFilenameOnHeader());
         }
         return multipart;
     }

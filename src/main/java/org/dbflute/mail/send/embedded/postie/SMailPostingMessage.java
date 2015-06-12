@@ -54,6 +54,7 @@ public class SMailPostingMessage {
     protected String subject;
     protected String plainText;
     protected String htmlText;
+    protected List<String> attachmentList; // filenameOnHeader
 
     // ===================================================================================
     //                                                                         Constructor
@@ -170,6 +171,14 @@ public class SMailPostingMessage {
         this.htmlText = htmlText;
     }
 
+    public void saveAttachmentForDisplay(String filenameOnHeader) {
+        // difficult to read the contents of the attachment text file so file name only for now
+        if (attachmentList == null) {
+            attachmentList = new ArrayList<String>(2);
+        }
+        attachmentList.add(filenameOnHeader);
+    }
+
     // -----------------------------------------------------
     //                                          Assist Logic
     //                                          ------------
@@ -199,6 +208,10 @@ public class SMailPostingMessage {
         if (htmlText != null) {
             sb.append(LF).append(" - - - - - - - - - - (HTML)");
             sb.append(LF).append(htmlText);
+        }
+        if (attachmentList != null && !attachmentList.isEmpty()) {
+            sb.append(LF).append(" - - - - - - - - - - (Attachment)");
+            sb.append(LF).append(attachmentList);
         }
         sb.append(LF).append("= = = = = = = = = =/");
         return sb.toString();
@@ -234,7 +247,7 @@ public class SMailPostingMessage {
         return ccAddressList != null ? ccAddressList : Collections.emptyList();
     }
 
-    public List<Address> getBSavedccAddressList() {
+    public List<Address> getSavedBccAddressList() {
         return bccAddressList != null ? bccAddressList : Collections.emptyList();
     }
 
@@ -248,5 +261,9 @@ public class SMailPostingMessage {
 
     public String getSavedHtmlText() { // formally null allowed
         return htmlText;
+    }
+
+    public List<String> getSavedAttachmentList() {
+        return attachmentList != null ? attachmentList : Collections.emptyList();
     }
 }
