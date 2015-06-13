@@ -13,19 +13,21 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.embedded.receptionist;
-
-import java.util.Locale;
-
-import org.dbflute.mail.Postcard;
-import org.dbflute.optional.OptionalThing;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/16 Saturday at nakameguro)
+ * @since 0.4.0 (2015/06/13 Saturday)
  */
-@FunctionalInterface
-public interface SMailDynamicTextAssist {
+public class SMailUserLocaleNotFoundException extends RuntimeException {
 
-    String assist(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale);
+    private static final long serialVersionUID = 1L;
+
+    public SMailUserLocaleNotFoundException(String msg) {
+        super(msg);
+    }
+
+    public SMailUserLocaleNotFoundException(String msg, Throwable e) {
+        super(msg, e);
+    }
 }

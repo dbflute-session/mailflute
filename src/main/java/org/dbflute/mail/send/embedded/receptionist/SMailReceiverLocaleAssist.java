@@ -22,10 +22,10 @@ import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
- * @since 0.4.0 (2015/05/16 Saturday at nakameguro)
+ * @since 0.4.0 (2015/06/13 Saturday at nakameguro)
  */
 @FunctionalInterface
-public interface SMailDynamicTextAssist {
+public interface SMailReceiverLocaleAssist {
 
-    String assist(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale);
+    OptionalThing<Locale> assist(Postcard postcard);
 }

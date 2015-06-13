@@ -17,6 +17,7 @@ package org.dbflute.mail;
 
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.mail.internet.AddressException;
@@ -45,6 +46,8 @@ public class PostOfficeTest extends PlainTestCase {
     private static final String HEADER_SUBJECT_ML = "office/header_subject.dfmail";
     private static final String OPTION_HTMLEXISTS_ML = "office/option_htmlexists.dfmail";
     private static final String OPTION_HTMLNOFILE_ML = "office/option_htmlnofile.dfmail";
+    private static final String RECEIVER_LOCALE_ML = "office/receiver_locale.dfmail";
+    private static final String RECEIVER_LOCALENOFILE_ML = "office/receiver_localenofile.dfmail";
     private static final String VARIOUS_LINES_ML = "office/various_lines.dfmail";
 
     // ===================================================================================
@@ -155,6 +158,60 @@ public class PostOfficeTest extends PlainTestCase {
         map.put("memberName", "jflute");
         map.put("birthdate", currentLocalDate());
         return map;
+    }
+
+    // ===================================================================================
+    //                                                                     Receiver Locale
+    //                                                                     ===============
+    public void test_deliver_receiver_locale_found() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        postcard.useBodyFile(RECEIVER_LOCALE_ML).receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        String plain = postcard.toCompletePlainText();
+        assertContains(plain, "Konnichiha");
+    }
+
+    public void test_deliver_receiver_locale_html() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        postcard.useBodyFile(RECEIVER_LOCALE_ML).alsoHtmlFile().receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        String plain = postcard.toCompletePlainText();
+        assertContains(plain, "Konnichiha");
+        String html = postcard.toCompleteHtmlText();
+        assertContainsAll(html, "<html>", "Konnichiha");
+    }
+
+    public void test_deliver_receiver_locale_notFound() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        postcard.useBodyFile(RECEIVER_LOCALENOFILE_ML).receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        String plain = postcard.toCompletePlainText();
+        assertContains(plain, "Hello");
+        assertNotContains(plain, "Konnichiha");
     }
 
     // ===================================================================================

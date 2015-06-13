@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -58,6 +59,7 @@ public class Postcard implements CardView, Serializable {
     protected boolean fromFilesystem;
     protected String plainBody; // null when body file used, direct text
     protected String htmlBody; // null when body file used, path or direct text
+    protected Locale receiverLocale; // optional, and the locale file is not found, default file
 
     // either required
     protected Map<String, Object> templateVariableMap; // optional, lazy loaded
@@ -160,8 +162,13 @@ public class Postcard implements CardView, Serializable {
             return this;
         }
 
+        public BodyFileOption receiverLocale(Locale receiverLocale) {
+            Postcard.this.receiverLocale = receiverLocale;
+            return this;
+        }
+
         public void useTemplateText(Map<String, Object> variableMap) {
-            Postcard.this.templateVariableMap = variableMap;
+            templateVariableMap = variableMap;
         }
 
         public void useWholeFixedText() {
@@ -184,7 +191,7 @@ public class Postcard implements CardView, Serializable {
         }
 
         public void useTemplateText(Map<String, Object> variableMap) {
-            Postcard.this.templateVariableMap = variableMap;
+            templateVariableMap = variableMap;
         }
 
         public void useWholeFixedText() {
@@ -370,6 +377,10 @@ public class Postcard implements CardView, Serializable {
 
     public boolean isFromFilesystem() {
         return fromFilesystem;
+    }
+
+    public Locale getReceiverLocale() {
+        return receiverLocale;
     }
 
     public String getPlainBody() {

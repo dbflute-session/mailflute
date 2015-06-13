@@ -15,8 +15,10 @@
  */
 package org.dbflute.mail.send.embedded.receptionist;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +32,8 @@ import org.dbflute.mail.send.embedded.proofreader.SMailBodyMetaProofreader;
 import org.dbflute.mail.send.exception.SMailBodyMetaParseFailureException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
+import org.dbflute.mail.send.exception.SMailUserLocaleNotFoundException;
+import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.DfTypeUtil;
 import org.dbflute.util.Srl;
@@ -58,6 +62,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                           =========
     protected String classpathBasePath; // used when from classpath, e.g. mail
     protected SMailDynamicTextAssist dynamicTextAssist; // e.g. from database, without text cache if specified
+    protected SMailReceiverLocaleAssist receiverLocaleAssist; // e.g. null means no locale switch
     protected final Map<String, String> textCacheMap = new ConcurrentHashMap<String, String>();
     protected final FileTextIO textIO = createFileTextIO();
 
@@ -78,6 +83,11 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         return this;
     }
 
+    public SMailConventionReceptionist asReceiverLocale(SMailReceiverLocaleAssist receiverLocaleAssist) {
+        this.receiverLocaleAssist = receiverLocaleAssist;
+        return this;
+    }
+
     // ===================================================================================
     //                                                                       Read BodyFile
     //                                                                       =============
@@ -88,39 +98,58 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         if (bodyFile != null) {
             if (postcard.getHtmlBody() != null) {
                 String msg = "Cannot use direct HTML body when body file is specified: " + postcard;
-                throw new IllegalStateException(msg);
+                throw new SMailIllegalStateException(msg);
             }
             final boolean filesystem = postcard.isFromFilesystem();
-            plainText = readText(postcard, bodyFile, filesystem);
+            final OptionalThing<Locale> receiverLocale = getReceiverLocale(postcard);
+            plainText = readText(postcard, bodyFile, filesystem, receiverLocale);
             analyzeBodyMeta(postcard, bodyFile, plainText);
             final DirectBodyOption option = postcard.useDirectBody(plainText);
             if (postcard.isAlsoHtmlFile()) {
-                option.alsoDirectHtml(readText(postcard, deriveHtmlFilePath(bodyFile), filesystem));
+                option.alsoDirectHtml(readText(postcard, deriveHtmlFilePath(bodyFile), filesystem, receiverLocale));
             }
         } else { // direct body
             plainText = postcard.getPlainBody();
             if (plainText == null) {
                 String msg = "Not found both the body file path and the direct body: " + postcard;
-                throw new IllegalStateException(msg);
+                throw new SMailIllegalStateException(msg);
             }
             analyzeBodyMeta(postcard, bodyFile, plainText);
         }
     }
 
+    protected OptionalThing<Locale> getReceiverLocale(Postcard postcard) {
+        final Locale receiverLocale = postcard.getReceiverLocale();
+        if (receiverLocale != null) {
+            return OptionalThing.of(receiverLocale);
+        }
+        if (receiverLocaleAssist != null) {
+            final OptionalThing<Locale> assistedLocale = receiverLocaleAssist.assist(postcard);
+            if (assistedLocale == null) {
+                String msg = "Not found the user locale from the assist: " + receiverLocaleAssist + ", " + postcard;
+                throw new SMailUserLocaleNotFoundException(msg);
+            }
+            return assistedLocale;
+        }
+        return OptionalThing.ofNullable(null, () -> {
+            throw new SMailIllegalStateException("Not found the locale: " + postcard);
+        });
+    }
+
     // ===================================================================================
     //                                                                       Actually Read
     //                                                                       =============
-    protected String readText(Postcard postcard, String path, boolean filesystem) {
-        final String assisted = assistDynamicText(postcard, path, filesystem); // e.g. from database
+    protected String readText(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
+        final String assisted = assistDynamicText(postcard, path, filesystem, receiverLocale); // e.g. from database
         if (assisted != null) {
             return assisted;
         }
-        final String cacheKey = generateCacheKey(path, filesystem);
+        final String cacheKey = generateCacheKey(path, filesystem, receiverLocale);
         final String cached = textCacheMap.get(cacheKey);
         if (cached != null) {
             return cached;
         }
-        final String read = doReadText(postcard, path, filesystem);
+        final String read = doReadText(postcard, path, filesystem, receiverLocale);
         if (read == null) { // just in case
             String msg = "Not found the text from the path: " + path + ", filesystem=" + filesystem;
             throw new SMailIllegalStateException(msg);
@@ -129,23 +158,73 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         return textCacheMap.get(cacheKey);
     }
 
-    protected String assistDynamicText(Postcard postcard, String path, boolean filesystem) {
-        return dynamicTextAssist != null ? dynamicTextAssist.assist(postcard, path, filesystem) : null;
+    protected String assistDynamicText(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
+        return dynamicTextAssist != null ? dynamicTextAssist.assist(postcard, path, filesystem, receiverLocale) : null;
     }
 
-    protected String doReadText(Postcard postcard, String path, boolean filesystem) {
+    protected String generateCacheKey(String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
+        return path + ":" + filesystem + ":" + receiverLocale;
+    }
+
+    protected String doReadText(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
         final String read;
         if (filesystem) {
-            read = textIO.read(path);
+            final String realPath = receiverLocale.map(locale -> {
+                return deriveLocaleFilePath(path, locale).filter(localeFilePath -> {
+                    return new File(localeFilePath).exists();
+                }).orElse(path);
+            }).orElse(path);
+            read = textIO.read(realPath);
         } else { // from class-path as default, mainly here
-            final String realPath = adjustBasePath(path);
-            final InputStream ins = DfResourceUtil.getResourceStream(realPath);
-            if (ins == null) {
-                throwMailTemplateFromClasspathNotFoundException(postcard, path, realPath);
-            }
+            final InputStream ins = receiverLocale.map(locale -> {
+                return findLocaleFileResourceStream(path, locale).orElseGet(() -> {
+                    return findMainFileResourceStream(postcard, path);
+                });
+            }).orElseGet(() -> {
+                return findMainFileResourceStream(postcard, path);
+            });
             read = textIO.read(ins);
         }
         return read;
+    }
+
+    protected OptionalThing<InputStream> findLocaleFileResourceStream(String path, Locale locale) {
+        return deriveLocaleFilePath(path, locale).map(localeFilePath -> {
+            final String localeRealPath = adjustClasspathBasePath(localeFilePath);
+            return OptionalThing.ofNullable(DfResourceUtil.getResourceStream(localeRealPath), () -> {
+                throw new SMailIllegalStateException("Not found the resource stream for the locale file: " + path + ", " + locale);
+            });
+        }).orElseGet(() -> {
+            return OptionalThing.ofNullable(null, () -> {
+                throw new SMailIllegalStateException("Not found the language from the locale: " + locale);
+            });
+        });
+    }
+
+    protected InputStream findMainFileResourceStream(Postcard postcard, String path) {
+        final String realPath = adjustClasspathBasePath(path);
+        final InputStream ins = DfResourceUtil.getResourceStream(realPath);
+        if (ins == null) {
+            throwMailTemplateFromClasspathNotFoundException(postcard, path, realPath);
+        }
+        return ins;
+    }
+
+    protected String adjustClasspathBasePath(String path) {
+        return (classpathBasePath != null ? classpathBasePath + "/" : "") + path;
+    }
+
+    protected OptionalThing<String> deriveLocaleFilePath(String path, Locale locale) {
+        final String front = Srl.substringLastFront(path, ".");
+        final String rear = Srl.substringLastRear(path, ".");
+        final String lang = locale.getLanguage();
+        if (lang != null && !lang.isEmpty()) {
+            return OptionalThing.of(front + "." + lang.toLowerCase() + "." + rear);
+        } else {
+            return OptionalThing.ofNullable(null, () -> {
+                throw new SMailIllegalStateException("Not found the language from the locale: " + locale);
+            });
+        }
     }
 
     protected void throwMailTemplateFromClasspathNotFoundException(Postcard postcard, String path, String realPath) {
@@ -158,14 +237,6 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         br.addElement("real path  : " + realPath);
         final String msg = br.buildExceptionMessage();
         throw new SMailTemplateNotFoundException(msg);
-    }
-
-    protected String generateCacheKey(String path, boolean filesystem) {
-        return path + ":" + filesystem;
-    }
-
-    protected String adjustBasePath(String path) {
-        return (classpathBasePath != null ? classpathBasePath + "/" : "") + path;
     }
 
     // ===================================================================================
@@ -190,8 +261,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     }
 
     protected String deriveHtmlFilePath(String bodyFile) {
-        final String front = Srl.substringLastFront(bodyFile, ".");
-        final String rear = Srl.substringLastRear(bodyFile, ".");
+        final String front = Srl.substringFirstFront(bodyFile, "."); // e.g. member_registration
+        final String rear = Srl.substringFirstRear(bodyFile, "."); // e.g. dfmail or ja.dfmail
         return front + "_html." + rear; // e.g. member_registration_html.dfmail
     }
 
