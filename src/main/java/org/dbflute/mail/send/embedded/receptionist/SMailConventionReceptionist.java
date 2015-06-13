@@ -28,6 +28,7 @@ import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.embedded.proofreader.SMailBodyMetaProofreader;
 import org.dbflute.mail.send.exception.SMailBodyMetaParseFailureException;
+import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.DfTypeUtil;
 import org.dbflute.util.Srl;
@@ -48,6 +49,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     protected static final String PROPDEF_PREFIX = SMailBodyMetaProofreader.PROPDEF_PREFIX;
     protected static final Set<String> optionSet = SMailBodyMetaProofreader.optionSet;
     protected static final String LF = "\n";
+    protected static final String CR = "\r";
     protected static final String CRLF = "\r\n";
 
     // ===================================================================================
@@ -138,13 +140,23 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             final String realPath = adjustBasePath(path);
             final InputStream ins = DfResourceUtil.getResourceStream(realPath);
             if (ins == null) {
-                // TODO jflute mailflute: [D] file not found error message
-                String msg = "Not found the outside file from classpath: " + realPath;
-                throw new IllegalStateException(msg);
+                throwMailTemplateFromClasspathNotFoundException(postcard, path, realPath);
             }
             read = textIO.read(ins);
         }
         return read;
+    }
+
+    protected void throwMailTemplateFromClasspathNotFoundException(Postcard postcard, String path, String realPath) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the mail template file from classpath");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        br.addItem("Mail Template");
+        br.addElement("plain path : " + path);
+        br.addElement("real path  : " + realPath);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailTemplateNotFoundException(msg);
     }
 
     protected String generateCacheKey(String path, boolean filesystem) {
@@ -179,7 +191,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     protected String deriveHtmlFilePath(String bodyFile) {
         final String front = Srl.substringLastFront(bodyFile, ".");
         final String rear = Srl.substringLastRear(bodyFile, ".");
-        return front + "_html." + rear; // e.g. member_registration_html.ml
+        return front + "_html." + rear; // e.g. member_registration_html.dfmail
     }
 
     // ===================================================================================
@@ -189,11 +201,20 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         final String delimiter = SMailBodyMetaProofreader.META_DELIMITER;
         if (fileText.contains(delimiter)) {
             final String meta = Srl.substringFirstFront(fileText, delimiter);
+            if (!meta.endsWith(LF)) { // also CRLF checked
+                throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
+            }
+            final int rearIndex = fileText.indexOf(delimiter) + delimiter.length();
+            if (fileText.length() > rearIndex) { // just in case (empty mail possible?)
+                final String rearFirstStr = fileText.substring(rearIndex, rearIndex + 1);
+                if (!Srl.equalsPlain(rearFirstStr, LF, CR)) { // e.g. >>> Hello, ...
+                    throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
+                }
+            }
             final List<String> splitList = Srl.splitList(meta, LF);
             if (!splitList.get(0).startsWith(SUBJECT_LABEL)) {
-                throwMailFluteBodyMetaSubjectNotFoundException(bodyFile, fileText);
+                throwMailBodyMetaSubjectNotFoundException(bodyFile, fileText);
             }
-            // TODO jflute mailflute: [D] check '>>>' delimiter's line separator
             if (splitList.size() > 1) {
                 final List<String> nextList = splitList.subList(1, splitList.size());
                 final int nextSize = nextList.size();
@@ -206,32 +227,58 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                         }
                     }
                     if (!line.startsWith(OPTION_LABEL) && !line.startsWith(PROPDEF_PREFIX)) {
-                        throwMailFluteBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
+                        throwMailBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
                     }
                     if (line.startsWith(OPTION_LABEL)) {
                         final String options = Srl.substringFirstRear(line, OPTION_LABEL);
                         final List<String> optionList = Srl.splitListTrimmed(options, ".");
                         for (String option : optionList) {
                             if (!optionSet.contains(option)) {
-                                throwMailFluteBodyMetaUnknownOptionException(bodyFile, fileText, option);
+                                throwMailBodyMetaUnknownOptionException(bodyFile, fileText, option);
                             }
                         }
                     }
                     ++lineNumber;
                     ++index;
                 }
+            } else { // already checked so basically no way but just in case
+                throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
             }
         } else { // no delimiter
             // basically already checked when you generate postcards by DBFlute
             final List<String> splitList = Srl.splitList(fileText, LF);
             final String firstLine = splitList.get(0);
             if (Srl.containsIgnoreCase(firstLine, SUBJECT_LABEL)) { // may be mistake?
-                throwMailFluteBodyMetaNotFoundException(bodyFile, fileText);
+                throwMailBodyMetaNotFoundException(bodyFile, fileText);
             }
         }
     }
 
-    protected void throwMailFluteBodyMetaSubjectNotFoundException(String bodyFile, String fileText) {
+    protected void throwMailBodyMetaNoIndependentDelimiterException(String bodyFile, String fileText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("No independent delimter of body meta.");
+        br.addItem("Advice");
+        br.addElement("The delimter of body meta should be independent in line.");
+        br.addElement("For example:");
+        br.addElement("  (x)");
+        br.addElement("    subject: ...(mail subject)>>>");
+        br.addElement("    ...(mail body)");
+        br.addElement("  (x)");
+        br.addElement("    subject: ...(mail subject)");
+        br.addElement("    >>>...(mail body)");
+        br.addElement("  (o)");
+        br.addElement("    subject: ...(mail subject)");
+        br.addElement("    >>>");
+        br.addElement("    ...(mail body)");
+        br.addItem("Body File");
+        br.addElement(bodyFile);
+        br.addItem("File Text");
+        br.addElement(fileText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwMailBodyMetaSubjectNotFoundException(String bodyFile, String fileText) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Not found the subject in the MailFlute body meta.");
         br.addItem("Advice");
@@ -248,7 +295,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    protected void throwMailFluteBodyMetaUnknownLineException(String bodyFile, String fileText, String line, int lineNumber) {
+    protected void throwMailBodyMetaUnknownLineException(String bodyFile, String fileText, String line, int lineNumber) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Unknown line in the MailFlute body meta.");
         br.addItem("Advice");
@@ -285,7 +332,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    protected void throwMailFluteBodyMetaNotFoundException(String bodyFile, String fileText) {
+    protected void throwMailBodyMetaNotFoundException(String bodyFile, String fileText) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Not found the delimiter for MailFlute body meta.");
         br.addItem("Advice");
@@ -315,7 +362,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    protected void throwMailFluteBodyMetaUnknownOptionException(String bodyFile, String fileText, String option) {
+    protected void throwMailBodyMetaUnknownOptionException(String bodyFile, String fileText, String option) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Unknown option for MailFlute body meta.");
         br.addItem("Advice");

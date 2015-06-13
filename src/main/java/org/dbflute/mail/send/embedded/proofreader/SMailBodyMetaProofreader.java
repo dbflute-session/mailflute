@@ -20,8 +20,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailTextProofreader;
+import org.dbflute.mail.send.exception.SMailSubjectDuplicateException;
+import org.dbflute.mail.send.exception.SMailSubjectNotFoundException;
 import org.dbflute.util.Srl;
 import org.dbflute.util.Srl.ScopeInfo;
 
@@ -65,7 +68,7 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
     //                                                                           =========
     @Override
     public String proofread(String templateText, Map<String, Object> variableMap) {
-        return doProofreader(removeUTF8BomIfNeeds(templateText)); // filter just in case
+        return doProofreader(removeUTF8BomIfNeeds(templateText)); // receptionist already remove it but just in case
     }
 
     protected String doProofreader(String templateText) {
@@ -77,13 +80,11 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
         // _/_/_/_/_/_/_/_/_/_/
         // no check here, already checked by receptionist
         // and parameters may be resolved here so not to have malfunction
-        // TODO jflute mailflute: [D] subject error message
         final String subjectLabel = SUBJECT_LABEL;
         final String delimiter = META_DELIMITER;
         if (templateText.startsWith(subjectLabel) && templateText.contains(delimiter)) {
             if (postcard.getSubject() != null) {
-                String msg = "Subject for the mail already exists but also defined at body file: " + postcard;
-                throw new IllegalStateException(msg);
+                throwMailSubjectDuplicateException(templateText);
             }
             final ScopeInfo scopeFirst = Srl.extractScopeFirst(templateText, subjectLabel, delimiter);
             final String meta = Srl.replace(scopeFirst.getContent().trim(), CRLF, LF);
@@ -95,14 +96,13 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
                 realText = rear.substring(LF.length());
             } else if (rear.startsWith(CRLF)) {
                 realText = rear.substring(CRLF.length());
-            } else { // e.g. >>> Hello, ...
+            } else { // e.g. >>> Hello, ... but receptionist checks it so basically no way
                 realText = rear;
             }
             return realText;
         } else {
             if (postcard.getSubject() == null) {
-                String msg = "Not found the subject for the mail: " + postcard;
-                throw new IllegalStateException(msg);
+                throwMailSubjectNotFoundException(templateText);
             }
             return templateText;
         }
@@ -110,6 +110,37 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
 
     protected String removeUTF8BomIfNeeds(String plainText) {
         return plainText.charAt(0) == '\uFEFF' ? plainText.substring(1) : plainText;
+    }
+
+    protected void throwMailSubjectDuplicateException(String templateText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Duplicate subject specified by postcard and defined in body file.");
+        br.addItem("Advice");
+        br.addElement("If subject in body file exists,");
+        br.addElement("you don't need to specify it by postcard.");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        br.addItem("Template Text");
+        br.addElement(templateText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailSubjectDuplicateException(msg);
+    }
+
+    protected void throwMailSubjectNotFoundException(String templateText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the subject for the postcard.");
+        br.addItem("Advice");
+        br.addElement("Specify subject by postcard or define it in body file.");
+        br.addElement("For example, subject on body meta like this:");
+        br.addElement("  subject: ...(subject)");
+        br.addElement("  >>>");
+        br.addElement("  ...(mail body)");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        br.addItem("Template Text");
+        br.addElement(templateText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailSubjectNotFoundException(msg);
     }
 
     // ===================================================================================

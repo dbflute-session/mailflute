@@ -25,6 +25,9 @@ import java.util.function.BiFunction;
 
 import javax.mail.Address;
 
+import org.dbflute.helper.message.ExceptionMessageBuilder;
+import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
+import org.dbflute.mail.send.exception.SMailPostcardIllegalStateException;
 import org.dbflute.mail.send.supplement.SMailAttachment;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfTypeUtil;
@@ -217,37 +220,67 @@ public class Postcard implements CardView, Serializable {
     // ===================================================================================
     //                                                                     PostOffice Work
     //                                                                     ===============
+    // -----------------------------------------------------
+    //                                          Office Check
+    //                                          ------------
     public void officeCheck() {
-        // TODO jflute mailflute: [D] postcard exception
         if (from == null) {
-            throw new IllegalStateException("Not found the from address in the postcard: subject=" + subject);
+            throwMailFromAddressNotFoundException();
         }
         if (toList == null || toList.isEmpty()) {
-            throw new IllegalStateException("Not found the to address in the postcard: subject=" + subject + ", toList=" + toList);
+            throwMailToAddressNotFoundException();
         }
         if ((bodyFile == null && plainBody == null) || (bodyFile != null && plainBody != null)) {
             String msg = "Set either body file or plain body: bodyFile=" + bodyFile + " plainBody=" + plainBody;
-            throw new IllegalStateException(msg);
+            throw new SMailPostcardIllegalStateException(msg);
         }
         if (plainBody == null && htmlBody != null) {
             String msg = "Cannot set html body only (without plain body): htmlBody=" + htmlBody;
-            throw new IllegalStateException(msg);
+            throw new SMailPostcardIllegalStateException(msg);
         }
         if ((!wholeFixedTextUsed && templateVariableMap == null) || (wholeFixedTextUsed && templateVariableMap != null)) {
             String msg = "You can set either fixed body or template body:";
             msg = msg + " fixedBodyUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
-            throw new IllegalStateException(msg);
+            throw new SMailPostcardIllegalStateException(msg);
         }
         if (templateVariableMap != null && templateVariableMap.isEmpty()) {
             String msg = "Empty variable map for template text: variableMap=" + templateVariableMap;
-            throw new IllegalStateException(msg);
+            throw new SMailPostcardIllegalStateException(msg);
         }
     }
 
+    protected void throwMailFromAddressNotFoundException() {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the 'from' address in the postcard.");
+        br.addItem("Advice");
+        br.addElement("Specify your 'from' address.");
+        br.addItem("Postcard");
+        br.addElement(toString());
+        final String msg = br.buildExceptionMessage();
+        throw new SMailFromAddressNotFoundException(msg);
+    }
+
+    protected void throwMailToAddressNotFoundException() {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the 'to' address in the postcard.");
+        br.addItem("Advice");
+        br.addElement("Specify your 'to' address.");
+        br.addItem("Postcard");
+        br.addElement(toString());
+        final String msg = br.buildExceptionMessage();
+        throw new SMailFromAddressNotFoundException(msg);
+    }
+
+    // -----------------------------------------------------
+    //                                         Office Option
+    //                                         -------------
     public void officePlusHtml() {
         alsoHtmlFile = true;
     }
 
+    // -----------------------------------------------------
+    //                                      Office Proofread
+    //                                      ----------------
     public void proofreadPlain(BiFunction<String, Map<String, Object>, String> proofreader) {
         this.proofreadingPlain = proofreader.apply(getProofreadingOrOriginalPlain(), getTemplaetVariableMap());
     }
@@ -277,7 +310,19 @@ public class Postcard implements CardView, Serializable {
     //                                                                      ==============
     @Override
     public String toString() {
-        return DfTypeUtil.toClassTitle(this) + ":{from=" + from + ", to=" + toList + ", " + subject + "}";
+        final StringBuilder sb = new StringBuilder();
+        sb.append(DfTypeUtil.toClassTitle(this));
+        sb.append(":{");
+        sb.append("from=").append(from);
+        sb.append("to=").append(toList);
+        if (subject != null) {
+            sb.append("subject=").append(subject);
+        }
+        if (bodyFile != null) {
+            sb.append("bodyFile=").append(bodyFile);
+        }
+        sb.append("}");
+        return sb.toString();
     }
 
     // ===================================================================================

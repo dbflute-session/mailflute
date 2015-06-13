@@ -410,8 +410,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                               Logging
     //                                               -------
     protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
-        // TODO jflute mailflute: [B] eml file (2015/05/11)
-        loggingStrategy.logMailMessage(postcard, message);
+        loggingStrategy.logMailMessage(postcard, message); // you can also make EML file here by overriding
     }
 
     // -----------------------------------------------------
