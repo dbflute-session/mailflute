@@ -39,6 +39,7 @@ import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
 import org.dbflute.mail.send.supplement.SMailAttachment;
@@ -46,6 +47,8 @@ import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilterNone;
+import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilter;
+import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
@@ -65,7 +68,8 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                          ==========
     private static final SMailCancelFilter noneCancelFilter = new SMailCancelFilterNone();
     private static final SMailAddressFilter noneAddressFilter = new SMailAddressFilterNone();
-    private static final SMailSubjectFilterNone noneSubjectFilter = new SMailSubjectFilterNone();
+    private static final SMailSubjectFilter noneSubjectFilter = new SMailSubjectFilterNone();
+    private static final SMailBodyTextFilter noneBodyTextFilter = new SMailBodyTextFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
 
@@ -76,6 +80,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailCancelFilter cancelFilter = noneCancelFilter; // not null
     protected SMailAddressFilter addressFilter = noneAddressFilter; // not null
     protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
+    protected SMailBodyTextFilter bodyTextFilter = noneBodyTextFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected boolean training;
@@ -103,6 +108,12 @@ public class SMailHonestPostie implements SMailPostie {
     public SMailHonestPostie withSubjectFilter(SMailSubjectFilter subjectFilter) {
         assertArgumentNotNull("subjectFilter", subjectFilter);
         this.subjectFilter = subjectFilter;
+        return this;
+    }
+
+    public SMailHonestPostie withBodyTextFilter(SMailBodyTextFilter bodyTextFilter) {
+        assertArgumentNotNull("bodyTextFilter", bodyTextFilter);
+        this.bodyTextFilter = bodyTextFilter;
         return this;
     }
 
@@ -159,8 +170,8 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     ===============
     protected void prepareAddress(Postcard postcard, SMailPostingMessage message) {
         final Address fromAddress = postcard.getFrom();
-        if (fromAddress == null) {
-            throw new IllegalStateException("Not found the from address in the postcard: " + postcard);
+        if (fromAddress == null) { // already checked, but just in case
+            throw new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
         }
         final Address filteredFrom = addressFilter.filterFrom(postcard, fromAddress);
         message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
@@ -186,7 +197,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {
         if (filteredFrom == null) {
             String msg = "The filtered from-address should not be null: " + postcard;
-            throw new IllegalStateException(msg);
+            throw new SMailIllegalStateException(msg);
         }
         return filteredFrom;
     }
@@ -194,7 +205,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected OptionalThing<Address> verifyFilteredOptionalAddress(Postcard postcard, OptionalThing<Address> opt) {
         if (opt == null) {
             String msg = "The filtered optional should not be null: postcard=" + postcard;
-            throw new IllegalStateException(msg);
+            throw new SMailIllegalStateException(msg);
         }
         return opt;
     }
@@ -202,7 +213,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected void verifyFilteredToAddressExists(Postcard postcard, boolean existsToAddress) {
         if (!existsToAddress) {
             String msg = "Empty to-address by filtering: specifiedToAddress=" + postcard.getToList();
-            throw new IllegalStateException(msg);
+            throw new SMailIllegalStateException(msg);
         }
     }
 
@@ -225,8 +236,8 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                        Prepare Body
     //                                                                        ============
     protected void prepareBody(Postcard postcard, SMailPostingMessage message) {
-        final String plainText = postcard.toCompletePlainText();
-        final String htmlText = postcard.toCompleteHtmlText();
+        final String plainText = toCompletePlainText(postcard);
+        final String htmlText = toCompleteHtmlText(postcard);
         message.savePlainTextForDisplay(plainText);
         message.saveHtmlTextForDisplay(htmlText);
         final Map<String, SMailAttachment> attachmentMap = postcard.getAttachmentMap();
@@ -238,16 +249,26 @@ public class SMailHonestPostie implements SMailPostie {
             }
         } else { // with attachment
             if (htmlText != null) {
-                throw new IllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
+                throw new SMailIllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
             }
             try {
                 final MimeMultipart multipart = createTextWithAttachmentMultipart(postcard, message, plainText, attachmentMap);
                 nativeMessage.setContent(multipart);
             } catch (MessagingException e) {
                 String msg = "Failed to set attachment multipart content: " + postcard;
-                throw new IllegalStateException(msg, e);
+                throw new SMailIllegalStateException(msg, e);
             }
         }
+    }
+
+    protected String toCompletePlainText(Postcard postcard) {
+        final String plainText = postcard.toCompletePlainText();
+        return bodyTextFilter.filterBody(postcard, plainText, /*html*/false);
+    }
+
+    protected String toCompleteHtmlText(Postcard postcard) {
+        final String plainText = postcard.toCompleteHtmlText();
+        return bodyTextFilter.filterBody(postcard, plainText, /*html*/true);
     }
 
     protected MimeMultipart createTextWithAttachmentMultipart(Postcard postcard, SMailPostingMessage message, String plain,

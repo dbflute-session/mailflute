@@ -30,6 +30,7 @@ import org.dbflute.mail.send.embedded.proofreader.SMailPmCommentProofreader;
 import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
+import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
@@ -58,6 +59,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     protected final OptionalThing<SMailCancelFilter> cancelFilter;
     protected final OptionalThing<SMailAddressFilter> addressFilter;
     protected final OptionalThing<SMailSubjectFilter> subjectFilter;
+    protected final OptionalThing<SMailBodyTextFilter> bodyTextFilter;
     protected final OptionalThing<SMailAsyncStrategy> asyncStrategy;
     protected final OptionalThing<SMailLoggingStrategy> loggingStrategy;
 
@@ -75,6 +77,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         cancelFilter = createCancelFilter();
         addressFilter = createAddressFilter();
         subjectFilter = createSubjectFilter();
+        bodyTextFilter = createBodyTextFilter();
         asyncStrategy = createAsyncStrategy();
         loggingStrategy = createLoggingStrategy();
     }
@@ -128,6 +131,10 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     }
 
     protected OptionalThing<SMailSubjectFilter> createSubjectFilter() {
+        return OptionalThing.empty();
+    }
+
+    protected OptionalThing<SMailBodyTextFilter> createBodyTextFilter() {
         return OptionalThing.empty();
     }
 
