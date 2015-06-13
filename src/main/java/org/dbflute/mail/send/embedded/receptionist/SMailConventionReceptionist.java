@@ -28,6 +28,7 @@ import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.embedded.proofreader.SMailBodyMetaProofreader;
 import org.dbflute.mail.send.exception.SMailBodyMetaParseFailureException;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.DfTypeUtil;
@@ -122,7 +123,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         final String read = doReadText(postcard, path, filesystem);
         if (read == null) { // just in case
             String msg = "Not found the text from the path: " + path + ", filesystem=" + filesystem;
-            throw new IllegalStateException(msg);
+            throw new SMailIllegalStateException(msg);
         }
         textCacheMap.put(cacheKey, read);
         return textCacheMap.get(cacheKey);

@@ -28,6 +28,7 @@ import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalParkingLot;
 import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.embedded.personnel.SMailDogmaticPostalPersonnel;
+import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.utflute.core.PlainTestCase;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.Srl;
@@ -40,11 +41,11 @@ public class PostOfficeTest extends PlainTestCase {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final String BODY_ONLY_ML = "/office/body_only.dfmail";
-    private static final String HEADER_SUBJECT_ML = "/office/header_subject.dfmail";
-    private static final String OPTION_HTMLEXISTS_ML = "/office/option_htmlexists.dfmail";
-    private static final String OPTION_HTMLNOFILE_ML = "/office/option_htmlnofile.dfmail";
-    private static final String VARIOUS_LINES_ML = "/office/various_lines.dfmail";
+    private static final String BODY_ONLY_ML = "office/body_only.dfmail";
+    private static final String HEADER_SUBJECT_ML = "office/header_subject.dfmail";
+    private static final String OPTION_HTMLEXISTS_ML = "office/option_htmlexists.dfmail";
+    private static final String OPTION_HTMLNOFILE_ML = "office/option_htmlnofile.dfmail";
+    private static final String VARIOUS_LINES_ML = "office/various_lines.dfmail";
 
     // ===================================================================================
     //                                                                           Body File
@@ -105,7 +106,7 @@ public class PostOfficeTest extends PlainTestCase {
             office.deliver(postcard);
             // ## Assert ##
             fail();
-        } catch (IllegalStateException e) {
+        } catch (SMailTemplateNotFoundException e) {
             log(e.getMessage());
         }
     }
@@ -132,7 +133,8 @@ public class PostOfficeTest extends PlainTestCase {
     //                                          ------------
     protected String preparePlainBody() {
         final String baseDir = SMailDogmaticPostalPersonnel.CLASSPATH_BASEDIR;
-        final InputStream ins = DfResourceUtil.getResourceStream(baseDir + BODY_ONLY_ML);
+        final InputStream ins = DfResourceUtil.getResourceStream(baseDir + "/" + BODY_ONLY_ML);
+        assertNotNull(ins);
         return new FileTextIO().encodeAsUTF8().read(ins);
     }
 
