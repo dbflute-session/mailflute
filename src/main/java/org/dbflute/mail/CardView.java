@@ -20,7 +20,7 @@ import java.util.Map;
 
 import javax.mail.Address;
 
-import org.dbflute.mail.send.supplement.SMailAttachment;
+import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 
 /**
  * @author jflute

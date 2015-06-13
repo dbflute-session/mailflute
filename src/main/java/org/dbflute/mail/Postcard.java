@@ -28,7 +28,7 @@ import javax.mail.Address;
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
 import org.dbflute.mail.send.exception.SMailPostcardIllegalStateException;
-import org.dbflute.mail.send.supplement.SMailAttachment;
+import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfTypeUtil;
 

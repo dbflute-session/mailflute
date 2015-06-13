@@ -16,9 +16,12 @@
 package org.dbflute.mail.send.supplement;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.mail.Address;
 import javax.mail.internet.MimeMessage;
+
+import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
 
 /**
  * @author jflute
@@ -51,5 +54,5 @@ public interface SMailPostingDiscloser {
 
     String getSavedHtmlText();
 
-    List<String> getSavedAttachmentList(); // list of filenameOnHeader
+    Map<String, SMailReadAttachedData> getSavedAttachmentMap(); // keyed by filenameOnHeader
 }

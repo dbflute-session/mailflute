@@ -17,9 +17,12 @@ package org.dbflute.mail.send.embedded.postie;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.mail.Address;
 import javax.mail.Message.RecipientType;
@@ -27,8 +30,11 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
+import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
+import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +67,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     protected String subject;
     protected String plainText;
     protected String htmlText;
-    protected List<String> attachmentList; // filenameOnHeader
+    protected Map<String, SMailReadAttachedData> attachmentMap; // keyed by filenameOnHeader
 
     // ===================================================================================
     //                                                                         Constructor
@@ -175,12 +181,19 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         this.htmlText = htmlText;
     }
 
-    public void saveAttachmentForDisplay(String filenameOnHeader) {
-        // difficult to read the contents of the attachment text file so file name only for now
-        if (attachmentList == null) {
-            attachmentList = new ArrayList<String>(2);
+    public void saveAttachmentForDisplay(SMailAttachment attachment, byte[] attachedBytes, String textEncoding) {
+        if (attachmentMap == null) {
+            attachmentMap = new LinkedHashMap<String, SMailReadAttachedData>(2);
         }
-        attachmentList.add(filenameOnHeader);
+        final String filenameOnHeader = attachment.getFilenameOnHeader();
+        final String contentType = attachment.getContentType();
+        final SMailReadAttachedData attachedData = newMailReadAttachedData(filenameOnHeader, contentType, textEncoding, attachedBytes);
+        attachmentMap.put(filenameOnHeader, attachedData);
+    }
+
+    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType, String textEncoding,
+            byte[] attachedBytes) {
+        return new SMailReadAttachedData(filenameOnHeader, contentType, attachedBytes, textEncoding);
     }
 
     // -----------------------------------------------------
@@ -214,12 +227,29 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
             sb.append(LF).append(" - - - - - - - - - - (HTML)");
             sb.append(LF).append(htmlText);
         }
-        if (attachmentList != null && !attachmentList.isEmpty()) {
+        if (attachmentMap != null && !attachmentMap.isEmpty()) {
             sb.append(LF).append(" - - - - - - - - - - (Attachment)");
-            sb.append(LF).append(attachmentList);
+            attachmentMap.forEach((filenameOnHeader, attachedData) -> {
+                buildAttachmentDisplay(sb, filenameOnHeader, attachedData);
+            });
         }
         sb.append(LF).append("= = = = = = = = = =/");
         return sb.toString();
+    }
+
+    protected void buildAttachmentDisplay(StringBuilder sb, String filenameOnHeader, SMailReadAttachedData attachedData) {
+        final String contentType = attachedData.getContentType();
+        sb.append(LF).append("*").append(filenameOnHeader).append(" (").append(contentType).append(")");
+        if ("text/plain".equals(contentType)) {
+            final String textEncoding = attachedData.getTextEncoding();
+            final String attachedText;
+            try {
+                attachedText = new String(attachedData.getAttachedBytes(), textEncoding);
+            } catch (UnsupportedEncodingException e) {
+                throw new SMailIllegalStateException("Unknown encoding: " + textEncoding);
+            }
+            sb.append(":").append(LF).append(attachedText);
+        }
     }
 
     // ===================================================================================
@@ -303,7 +333,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         return htmlText;
     }
 
-    public List<String> getSavedAttachmentList() {
-        return attachmentList != null ? attachmentList : Collections.emptyList();
+    public Map<String, SMailReadAttachedData> getSavedAttachmentMap() {
+        return attachmentMap != null ? attachmentMap : Collections.emptyMap();
     }
 }

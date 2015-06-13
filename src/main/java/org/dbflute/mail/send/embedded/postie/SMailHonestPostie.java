@@ -15,7 +15,9 @@
  */
 package org.dbflute.mail.send.embedded.postie;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -42,9 +44,9 @@ import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
-import org.dbflute.mail.send.supplement.SMailAttachment;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
+import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailAddressFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilter;
@@ -278,8 +280,7 @@ public class SMailHonestPostie implements SMailPostie {
         multipart.addBodyPart((BodyPart) setupTextPart(newMimeBodyPart(), plain, TextType.PLAIN));
         for (Entry<String, SMailAttachment> entry : attachmentMap.entrySet()) {
             final SMailAttachment attachment = entry.getValue();
-            multipart.addBodyPart((BodyPart) setupAttachmentPart(attachment));
-            message.saveAttachmentForDisplay(attachment.getFilenameOnHeader());
+            multipart.addBodyPart((BodyPart) setupAttachmentPart(message, attachment));
         }
         return multipart;
     }
@@ -344,11 +345,11 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                     Attachment Part
     //                                                                     ===============
-    protected MimePart setupAttachmentPart(SMailAttachment attachment) {
+    protected MimePart setupAttachmentPart(SMailPostingMessage message, SMailAttachment attachment) {
         assertArgumentNotNull("attachment", attachment);
         final MimePart part = newMimeBodyPart();
         final String contentType = buildAttachmentContentType(attachment);
-        final DataSource source = prepareAttachmentDataSource(attachment);
+        final DataSource source = prepareAttachmentDataSource(message, attachment);
         try {
             part.setDataHandler(createDataHandler(source));
             part.setHeader("Content-Transfer-Encoding", "base64");
@@ -358,16 +359,6 @@ public class SMailHonestPostie implements SMailPostie {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
         }
         return part;
-    }
-
-    protected DataSource prepareAttachmentDataSource(SMailAttachment attachment) {
-        final DataSource source;
-        try {
-            source = new ByteArrayDataSource(attachment.getReourceStream(), "application/octet-stream");
-        } catch (IOException e) {
-            throw new SMailMessageSettingFailureException("Failed to create data source: " + attachment, e);
-        }
-        return source;
     }
 
     protected String buildAttachmentContentType(SMailAttachment attachment) {
@@ -383,10 +374,47 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentType = attachment.getContentType();
         sb.append(contentType);
         if (contentType.equals("text/plain")) {
-            sb.append("; charset=").append(getAttachmentFilenameEncoding());
+            sb.append("; charset=").append(getAttachmentTextEncoding());
         }
         sb.append("; name=\"").append(encodedFilename).append("\"");
         return sb.toString();
+    }
+
+    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment) {
+        final byte[] attachedBytes = readAttachedBytes(attachment);
+        message.saveAttachmentForDisplay(attachment, attachedBytes, getAttachmentTextEncoding());
+        return new ByteArrayDataSource(attachedBytes, "application/octet-stream");
+    }
+
+    protected byte[] readAttachedBytes(SMailAttachment attachment) {
+        final InputStream ins = attachment.getReourceStream();
+        AccessibleByteArrayOutputStream ous = null;
+        try {
+            ous = new AccessibleByteArrayOutputStream();
+            final byte[] buffer = new byte[8192];
+            int length;
+            while ((length = ins.read(buffer)) > 0) {
+                ous.write(buffer, 0, length);
+            }
+            return ous.getBytes();
+        } catch (IOException e) {
+            throw new SMailIllegalStateException("Failed to read the attached stream as bytes: " + attachment);
+        } finally {
+            if (ous != null) {
+                try {
+                    ous.close();
+                } catch (IOException ignored) {}
+            }
+            try {
+                ins.close();
+            } catch (IOException ignored) {}
+        }
+    }
+
+    protected static class AccessibleByteArrayOutputStream extends ByteArrayOutputStream {
+        public byte[] getBytes() {
+            return buf;
+        }
     }
 
     protected String buildAttachmentContentDisposition(SMailAttachment attachObject) {
@@ -397,7 +425,7 @@ public class SMailHonestPostie implements SMailPostie {
         return getBasicEncoding();
     }
 
-    protected String getAttachmentTextFileEncoding() {
+    protected String getAttachmentTextEncoding() {
         return getBasicEncoding();
     }
 
