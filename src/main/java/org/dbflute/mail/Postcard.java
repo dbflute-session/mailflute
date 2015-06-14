@@ -124,7 +124,15 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                            Attachment
     //                                            ----------
-    public void attach(String filenameOnHeader, String contentType, InputStream stream) {
+    public void attachPlainText(String filenameOnHeader, InputStream resourceStream, String textEncoding) {
+        doAttach(filenameOnHeader, "text/plain", resourceStream, textEncoding);
+    }
+
+    public void attachVarious(String filenameOnHeader, String contentType, InputStream resourceStream) {
+        doAttach(filenameOnHeader, contentType, resourceStream, null);
+    }
+
+    protected void doAttach(String filenameOnHeader, String contentType, InputStream resourceStream, String textEncoding) {
         if (attachmentMap == null) {
             attachmentMap = new LinkedHashMap<String, SMailAttachment>(4);
         }
@@ -132,11 +140,12 @@ public class Postcard implements CardView {
             String msg = "Already exists the attachment file: " + filenameOnHeader + ", " + contentType + ", existing=" + attachmentMap;
             throw new IllegalStateException(msg);
         }
-        attachmentMap.put(filenameOnHeader, createAttachment(filenameOnHeader, contentType, stream));
+        final SMailAttachment attachment = createAttachment(filenameOnHeader, contentType, resourceStream, textEncoding);
+        attachmentMap.put(filenameOnHeader, attachment);
     }
 
-    protected SMailAttachment createAttachment(String filenameOnHeader, String contentType, InputStream stream) {
-        return new SMailAttachment(filenameOnHeader, contentType, stream);
+    protected SMailAttachment createAttachment(String filenameOnHeader, String contentType, InputStream resourceStream, String textEncoding) {
+        return new SMailAttachment(filenameOnHeader, contentType, resourceStream, textEncoding);
     }
 
     // -----------------------------------------------------

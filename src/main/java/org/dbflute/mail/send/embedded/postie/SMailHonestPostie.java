@@ -297,6 +297,9 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                           Text Part
     //                                                                           =========
     protected MimePart setupTextPart(MimePart part, String text, TextType textType) {
+        assertArgumentNotNull("part", part);
+        assertArgumentNotNull("text", text);
+        assertArgumentNotNull("textType", textType);
         final String encoding = getTextEncoding();
         final ByteBuffer buffer = prepareTextByteBuffer(text, encoding);
         final DataSource source = prepareTextDataSource(buffer);
@@ -346,22 +349,24 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     Attachment Part
     //                                                                     ===============
     protected MimePart setupAttachmentPart(SMailPostingMessage message, SMailAttachment attachment) {
+        assertArgumentNotNull("message", message);
         assertArgumentNotNull("attachment", attachment);
         final MimePart part = newMimeBodyPart();
-        final String contentType = buildAttachmentContentType(attachment);
-        final DataSource source = prepareAttachmentDataSource(message, attachment);
+        final String textEncoding = getAttachmentTextEncoding(attachment);
+        final String contentType = buildAttachmentContentType(message, attachment, textEncoding);
+        final DataSource source = prepareAttachmentDataSource(message, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
             part.setHeader("Content-Transfer-Encoding", "base64");
             part.addHeader("Content-Type", contentType);
-            part.addHeader("Content-Disposition", buildAttachmentContentDisposition(attachment));
+            part.addHeader("Content-Disposition", "attachment; filename=\"" + attachment.getFilenameOnHeader() + "\"");
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
         }
         return part;
     }
 
-    protected String buildAttachmentContentType(SMailAttachment attachment) {
+    protected String buildAttachmentContentType(SMailPostingMessage message, SMailAttachment attachment, String textEncoding) {
         final String filenameEncoding = getAttachmentFilenameEncoding();
         final String encodedFilename;
         try {
@@ -374,19 +379,19 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentType = attachment.getContentType();
         sb.append(contentType);
         if (contentType.equals("text/plain")) {
-            sb.append("; charset=").append(getAttachmentTextEncoding());
+            sb.append("; charset=").append(textEncoding);
         }
         sb.append("; name=\"").append(encodedFilename).append("\"");
         return sb.toString();
     }
 
-    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment) {
-        final byte[] attachedBytes = readAttachedBytes(attachment);
-        message.saveAttachmentForDisplay(attachment, attachedBytes, getAttachmentTextEncoding());
+    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment, String textEncoding) {
+        final byte[] attachedBytes = readAttachedBytes(message, attachment);
+        message.saveAttachmentForDisplay(attachment, attachedBytes, textEncoding);
         return new ByteArrayDataSource(attachedBytes, "application/octet-stream");
     }
 
-    protected byte[] readAttachedBytes(SMailAttachment attachment) {
+    protected byte[] readAttachedBytes(SMailPostingMessage message, SMailAttachment attachment) {
         final InputStream ins = attachment.getReourceStream();
         AccessibleByteArrayOutputStream ous = null;
         try {
@@ -417,15 +422,11 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected String buildAttachmentContentDisposition(SMailAttachment attachObject) {
-        return "attachment; filename=\"" + attachObject.getFilenameOnHeader() + "\"";
+    protected String getAttachmentTextEncoding(SMailAttachment attachment) {
+        return attachment.getTextEncoding().get(); // always exists if text/plain
     }
 
     protected String getAttachmentFilenameEncoding() {
-        return getBasicEncoding();
-    }
-
-    protected String getAttachmentTextEncoding() {
         return getBasicEncoding();
     }
 

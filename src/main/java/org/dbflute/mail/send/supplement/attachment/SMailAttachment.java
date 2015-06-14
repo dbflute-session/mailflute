@@ -17,6 +17,8 @@ package org.dbflute.mail.send.supplement.attachment;
 
 import java.io.InputStream;
 
+import org.dbflute.optional.OptionalThing;
+
 /**
  * @author jflute
  * @since 0.4.0 (2015/05/18 Monday)
@@ -29,17 +31,19 @@ public class SMailAttachment {
     protected final String filenameOnHeader;
     protected final String contentType;
     protected final InputStream reourceStream;
+    protected final String textEncoding; // null allowed, only for text/plain
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailAttachment(String filenameOnHeader, String contentType, InputStream resourceStream) {
+    public SMailAttachment(String filenameOnHeader, String contentType, InputStream resourceStream, String textEncoding) {
         assertArgumentNotNull("filenameOnHeader", filenameOnHeader);
         assertArgumentNotNull("contentType", contentType);
         assertArgumentNotNull("reourceStream", resourceStream);
         this.filenameOnHeader = filenameOnHeader;
         this.contentType = contentType;
         this.reourceStream = resourceStream;
+        this.textEncoding = textEncoding;
     }
 
     // ===================================================================================
@@ -59,7 +63,7 @@ public class SMailAttachment {
     //                                                                      ==============
     @Override
     public String toString() {
-        return "{" + filenameOnHeader + ", " + contentType + ", " + reourceStream + "}";
+        return "attachment:{" + filenameOnHeader + ", " + contentType + ", " + reourceStream + ", " + textEncoding + "}";
     }
 
     // ===================================================================================
@@ -75,5 +79,11 @@ public class SMailAttachment {
 
     public InputStream getReourceStream() {
         return reourceStream;
+    }
+
+    public OptionalThing<String> getTextEncoding() {
+        return OptionalThing.ofNullable(textEncoding, () -> {
+            throw new IllegalStateException("Not found text encoding: filenameOnHeader=" + filenameOnHeader);
+        });
     }
 }
