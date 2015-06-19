@@ -55,4 +55,6 @@ public interface SMailPostingDiscloser {
     String getSavedHtmlText();
 
     Map<String, SMailReadAttachedData> getSavedAttachmentMap(); // keyed by filenameOnHeader
+
+    Map<String, Object> getPushedLoggingMap();
 }

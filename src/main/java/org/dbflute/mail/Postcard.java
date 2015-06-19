@@ -17,6 +17,7 @@ package org.dbflute.mail;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -60,6 +61,7 @@ public class Postcard implements CardView {
 
     // either required
     protected Map<String, Object> templateVariableMap; // optional, lazy loaded
+    protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
     protected boolean wholeFixedTextUsed; // optional , may be sometimes used
 
     // post office work
@@ -230,6 +232,13 @@ public class Postcard implements CardView {
         return this;
     }
 
+    public void pushLogging(String key, Object value) {
+        if (pushedLoggingMap == null) {
+            pushedLoggingMap = new LinkedHashMap<String, Object>(4);
+        }
+        pushedLoggingMap.put(key, value);
+    }
+
     // ===================================================================================
     //                                                                     PostOffice Work
     //                                                                     ===============
@@ -350,15 +359,15 @@ public class Postcard implements CardView {
     }
 
     public List<Address> getToList() {
-        return toList != null ? toList : DfCollectionUtil.emptyList();
+        return toList != null ? Collections.unmodifiableList(toList) : DfCollectionUtil.emptyList();
     }
 
     public List<Address> getCcList() {
-        return ccList != null ? ccList : DfCollectionUtil.emptyList();
+        return ccList != null ? Collections.unmodifiableList(ccList) : DfCollectionUtil.emptyList();
     }
 
     public List<Address> getBccList() {
-        return bccList != null ? bccList : DfCollectionUtil.emptyList();
+        return bccList != null ? Collections.unmodifiableList(bccList) : DfCollectionUtil.emptyList();
     }
 
     public String getSubject() {
@@ -366,15 +375,15 @@ public class Postcard implements CardView {
     }
 
     public Map<String, SMailAttachment> getAttachmentMap() {
-        return attachmentMap != null ? attachmentMap : DfCollectionUtil.emptyMap();
-    }
-
-    public String getBodyFile() {
-        return bodyFile;
+        return attachmentMap != null ? Collections.unmodifiableMap(attachmentMap) : DfCollectionUtil.emptyMap();
     }
 
     public boolean hasBodyFile() {
         return bodyFile != null;
+    }
+
+    public String getBodyFile() {
+        return bodyFile;
     }
 
     public boolean isAlsoHtmlFile() {
@@ -406,7 +415,15 @@ public class Postcard implements CardView {
     }
 
     public Map<String, Object> getTemplaetVariableMap() {
-        return templateVariableMap != null ? templateVariableMap : DfCollectionUtil.emptyMap();
+        return templateVariableMap != null ? Collections.unmodifiableMap(templateVariableMap) : Collections.emptyMap();
+    }
+
+    public boolean hasPushedLogging() {
+        return pushedLoggingMap != null;
+    }
+
+    public Map<String, Object> getPushedLoggingMap() {
+        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
     }
 
     public boolean isWholeFixedTextUsed() {

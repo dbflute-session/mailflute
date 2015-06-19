@@ -56,6 +56,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                                           =========
     protected final MimeMessage message;
     protected final boolean training;
+    protected final Map<String, Object> pushedLoggingMap;
 
     // -----------------------------------------------------
     //                                     Saved for Display
@@ -72,9 +73,10 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPostingMessage(MimeMessage message, boolean training) {
+    public SMailPostingMessage(MimeMessage message, boolean training, Map<String, Object> pushedLoggingMap) {
         this.message = message;
         this.training = training;
+        this.pushedLoggingMap = pushedLoggingMap;
     }
 
     // ===================================================================================
@@ -221,6 +223,9 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         if (bccAddressList != null && !bccAddressList.isEmpty()) {
             sb.append(LF).append("    bcc: " + (bccAddressList.size() == 1 ? bccAddressList.get(0) : bccAddressList));
         }
+        if (pushedLoggingMap != null && !pushedLoggingMap.isEmpty()) {
+            sb.append(LF).append("logging: " + pushedLoggingMap);
+        }
         sb.append(LF).append(">>>");
         sb.append(LF).append(plainText);
         if (htmlText != null) {
@@ -310,15 +315,15 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     }
 
     public List<Address> getSavedToAddressList() {
-        return toAddressList != null ? toAddressList : Collections.emptyList();
+        return toAddressList != null ? Collections.unmodifiableList(toAddressList) : Collections.emptyList();
     }
 
     public List<Address> getSavedCcAddressList() {
-        return ccAddressList != null ? ccAddressList : Collections.emptyList();
+        return ccAddressList != null ? Collections.unmodifiableList(ccAddressList) : Collections.emptyList();
     }
 
     public List<Address> getSavedBccAddressList() {
-        return bccAddressList != null ? bccAddressList : Collections.emptyList();
+        return bccAddressList != null ? Collections.unmodifiableList(bccAddressList) : Collections.emptyList();
     }
 
     public String getSavedSubject() { // basically not null but consider null
@@ -334,6 +339,10 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     }
 
     public Map<String, SMailReadAttachedData> getSavedAttachmentMap() {
-        return attachmentMap != null ? attachmentMap : Collections.emptyMap();
+        return attachmentMap != null ? Collections.unmodifiableMap(attachmentMap) : Collections.emptyMap();
+    }
+
+    public Map<String, Object> getPushedLoggingMap() {
+        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
     }
 }

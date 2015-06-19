@@ -16,6 +16,7 @@
 package org.dbflute.mail;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.mail.Address;
@@ -50,6 +51,8 @@ public interface CardView {
 
     boolean isFromFilesystem();
 
+    Locale getReceiverLocale();
+
     String getPlainBody();
 
     boolean hasHtmlBody();
@@ -59,6 +62,10 @@ public interface CardView {
     boolean hasTemplateVariable();
 
     Map<String, Object> getTemplaetVariableMap();
+
+    boolean hasPushedLogging();
+
+    Map<String, Object> getPushedLoggingMap();
 
     boolean isWholeFixedTextUsed();
 

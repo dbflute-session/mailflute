@@ -141,7 +141,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                             =======
     @Override
     public void deliver(Postcard postcard) {
-        final SMailPostingMessage message = createMailMessage(motorbike);
+        final SMailPostingMessage message = createMailMessage(postcard);
         if (isCancel(postcard)) {
             return; // no logging here, only filter knows the reason
         }
@@ -151,8 +151,9 @@ public class SMailHonestPostie implements SMailPostie {
         send(postcard, message);
     }
 
-    protected SMailPostingMessage createMailMessage(SMailPostalMotorbike motorbike) {
-        return new SMailPostingMessage(createMimeMessage(extractNativeSession(motorbike)), training);
+    protected SMailPostingMessage createMailMessage(Postcard postcard) {
+        final MimeMessage mimeMessage = createMimeMessage(extractNativeSession(motorbike));
+        return new SMailPostingMessage(mimeMessage, training, postcard.getPushedLoggingMap());
     }
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
@@ -269,8 +270,8 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String toCompleteHtmlText(Postcard postcard) {
-        final String plainText = postcard.toCompleteHtmlText();
-        return bodyTextFilter.filterBody(postcard, plainText, /*html*/true);
+        final String htmlText = postcard.toCompleteHtmlText();
+        return bodyTextFilter.filterBody(postcard, htmlText, /*html*/true);
     }
 
     protected MimeMultipart createTextWithAttachmentMultipart(Postcard postcard, SMailPostingMessage message, String plain,
