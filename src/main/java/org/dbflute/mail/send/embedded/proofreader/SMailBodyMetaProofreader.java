@@ -83,7 +83,7 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
         final String subjectLabel = SUBJECT_LABEL;
         final String delimiter = META_DELIMITER;
         if (templateText.startsWith(subjectLabel) && templateText.contains(delimiter)) {
-            if (postcard.getSubject() != null) {
+            if (postcard.getSubject().isPresent()) {
                 throwMailSubjectDuplicateException(templateText);
             }
             final ScopeInfo scopeFirst = Srl.extractScopeFirst(templateText, subjectLabel, delimiter);

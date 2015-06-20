@@ -42,8 +42,7 @@ public class SMailPostalParkingLot {
     //                                                                    Session Handling
     //                                                                    ================
     public SMailPostalMotorbike findMotorbike(Postcard postcard) {
-        final DeliveryCategory category = postcard.getDeliveryCategory();
-        return sessionMap.get(category != null ? category : DEFAULT_CATEGORY);
+        return sessionMap.get(postcard.getDeliveryCategory().orElse(DEFAULT_CATEGORY));
     }
 
     public void registerMotorbike(DeliveryCategory category, SMailPostalMotorbike motorbike) {

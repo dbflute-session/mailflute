@@ -93,47 +93,51 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       =============
     @Override
     public void accept(Postcard postcard) {
-        final String plainText;
-        final String bodyFile = postcard.getBodyFile();
-        if (bodyFile != null) {
-            if (postcard.getHtmlBody() != null) {
+        postcard.getBodyFile().ifPresent(bodyFile -> {
+            if (postcard.getHtmlBody().isPresent()) {
                 String msg = "Cannot use direct HTML body when body file is specified: " + postcard;
                 throw new SMailIllegalStateException(msg);
             }
             final boolean filesystem = postcard.isFromFilesystem();
             final OptionalThing<Locale> receiverLocale = getReceiverLocale(postcard);
-            plainText = readText(postcard, bodyFile, filesystem, receiverLocale);
+            officeManagedLogging(postcard, bodyFile, receiverLocale);
+            final String plainText = readText(postcard, bodyFile, filesystem, receiverLocale);
             analyzeBodyMeta(postcard, bodyFile, plainText);
             final DirectBodyOption option = postcard.useDirectBody(plainText);
             if (postcard.isAlsoHtmlFile()) {
                 option.alsoDirectHtml(readText(postcard, deriveHtmlFilePath(bodyFile), filesystem, receiverLocale));
             }
-        } else { // direct body
-            plainText = postcard.getPlainBody();
-            if (plainText == null) {
+        }).orElse(() -> { /* direct body, check only here */
+            if (!postcard.getPlainBody().isPresent()) {
                 String msg = "Not found both the body file path and the direct body: " + postcard;
                 throw new SMailIllegalStateException(msg);
             }
-            analyzeBodyMeta(postcard, bodyFile, plainText);
-        }
+        });
     }
 
     protected OptionalThing<Locale> getReceiverLocale(Postcard postcard) {
-        final Locale receiverLocale = postcard.getReceiverLocale();
-        if (receiverLocale != null) {
-            return OptionalThing.of(receiverLocale);
-        }
-        if (receiverLocaleAssist != null) {
-            final OptionalThing<Locale> assistedLocale = receiverLocaleAssist.assist(postcard);
-            if (assistedLocale == null) {
-                String msg = "Not found the user locale from the assist: " + receiverLocaleAssist + ", " + postcard;
-                throw new SMailUserLocaleNotFoundException(msg);
+        final OptionalThing<Locale> receiverLocale = postcard.getReceiverLocale();
+        if (receiverLocale.isPresent()) {
+            return receiverLocale;
+        } else {
+            if (receiverLocaleAssist != null) {
+                final OptionalThing<Locale> assistedLocale = receiverLocaleAssist.assist(postcard);
+                if (assistedLocale == null) {
+                    String msg = "Not found the user locale from the assist: " + receiverLocaleAssist + ", " + postcard;
+                    throw new SMailUserLocaleNotFoundException(msg);
+                }
+                return assistedLocale;
             }
-            return assistedLocale;
+            return OptionalThing.ofNullable(null, () -> {
+                throw new SMailIllegalStateException("Not found the locale: " + postcard);
+            });
         }
-        return OptionalThing.ofNullable(null, () -> {
-            throw new SMailIllegalStateException("Not found the locale: " + postcard);
-        });
+    }
+
+    protected void officeManagedLogging(Postcard postcard, String bodyFile, OptionalThing<Locale> receiverLocale) {
+        final String dfmailTitle = "dfmail";
+        postcard.officeManagedLogging(dfmailTitle, "path", bodyFile);
+        postcard.officeManagedLogging(dfmailTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
     }
 
     // ===================================================================================

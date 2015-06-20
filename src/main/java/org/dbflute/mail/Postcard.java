@@ -28,8 +28,10 @@ import javax.mail.Address;
 
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailPostcardIllegalStateException;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
+import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfTypeUtil;
 
@@ -42,6 +44,9 @@ public class Postcard implements CardView {
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
+    // -----------------------------------------------------
+    //                                      Postcard Request
+    //                                      ----------------
     protected DeliveryCategory deliveryCategory; // optional (has default)
 
     protected Address from; // required
@@ -51,6 +56,9 @@ public class Postcard implements CardView {
     protected String subject; // required or optional (e.g. from template file)
     protected Map<String, SMailAttachment> attachmentMap; // optional, lozy loaded
 
+    // -----------------------------------------------------
+    //                                             Body File
+    //                                             ---------
     // either required: bodyFile or plain/html body
     protected String bodyFile; // either required, also deriving HTML
     protected boolean alsoHtmlFile; // derive HTML file path from bodyFile
@@ -58,16 +66,26 @@ public class Postcard implements CardView {
     protected String plainBody; // null when body file used, direct text
     protected String htmlBody; // null when body file used, path or direct text
     protected Locale receiverLocale; // optional, and the locale file is not found, default file
-
-    // either required
     protected Map<String, Object> templateVariableMap; // optional, lazy loaded
-    protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
-    protected boolean wholeFixedTextUsed; // optional , may be sometimes used
+    protected boolean wholeFixedTextUsed; // may be sometimes used
 
+    // -----------------------------------------------------
+    //                                               Logging
+    //                                               -------
+    // logging
+    protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
+    protected Map<String, Map<String, Object>> officeManagedLoggingMap; // optional, lazy loaded
+
+    // -----------------------------------------------------
+    //                                          Proofreading
+    //                                          ------------
     // post office work
     protected String proofreadingPlain;
     protected String proofreadingHtml;
 
+    // -----------------------------------------------------
+    //                                         Postie Option
+    //                                         -------------
     // postie option
     protected boolean async;
     protected int retryCount;
@@ -81,6 +99,7 @@ public class Postcard implements CardView {
     }
 
     public Postcard asDeliveryCategory(DeliveryCategory category) {
+        assertArgumentNotNull("category", category);
         this.deliveryCategory = category;
         return this;
     }
@@ -92,10 +111,12 @@ public class Postcard implements CardView {
     //                                               Address
     //                                               -------
     public void setFrom(Address address) {
+        assertArgumentNotNull("address", address);
         from = address;
     }
 
     public void addTo(Address address) {
+        assertArgumentNotNull("address", address);
         if (toList == null) {
             toList = new ArrayList<Address>(2);
         }
@@ -103,6 +124,7 @@ public class Postcard implements CardView {
     }
 
     public void addCc(Address address) {
+        assertArgumentNotNull("address", address);
         if (ccList == null) {
             ccList = new ArrayList<Address>(2);
         }
@@ -110,6 +132,7 @@ public class Postcard implements CardView {
     }
 
     public void addBcc(Address address) {
+        assertArgumentNotNull("address", address);
         if (bccList == null) {
             bccList = new ArrayList<Address>(2);
         }
@@ -127,10 +150,16 @@ public class Postcard implements CardView {
     //                                            Attachment
     //                                            ----------
     public void attachPlainText(String filenameOnHeader, InputStream resourceStream, String textEncoding) {
+        assertArgumentNotNull("filenameOnHeader", filenameOnHeader);
+        assertArgumentNotNull("resourceStream", resourceStream);
+        assertArgumentNotNull("textEncoding", textEncoding);
         doAttach(filenameOnHeader, "text/plain", resourceStream, textEncoding);
     }
 
     public void attachVarious(String filenameOnHeader, String contentType, InputStream resourceStream) {
+        assertArgumentNotNull("filenameOnHeader", filenameOnHeader);
+        assertArgumentNotNull("contentType", contentType);
+        assertArgumentNotNull("resourceStream", resourceStream);
         doAttach(filenameOnHeader, contentType, resourceStream, null);
     }
 
@@ -140,7 +169,7 @@ public class Postcard implements CardView {
         }
         if (attachmentMap.containsKey(filenameOnHeader)) {
             String msg = "Already exists the attachment file: " + filenameOnHeader + ", " + contentType + ", existing=" + attachmentMap;
-            throw new IllegalStateException(msg);
+            throw new SMailIllegalStateException(msg);
         }
         final SMailAttachment attachment = createAttachment(filenameOnHeader, contentType, resourceStream, textEncoding);
         attachmentMap.put(filenameOnHeader, attachment);
@@ -154,6 +183,7 @@ public class Postcard implements CardView {
     //                                             Body File
     //                                             ---------
     public BodyFileOption useBodyFile(String bodyFile) {
+        assertArgumentNotNull("bodyFile", bodyFile);
         this.bodyFile = bodyFile;
         return new BodyFileOption();
     }
@@ -171,11 +201,13 @@ public class Postcard implements CardView {
         }
 
         public BodyFileOption receiverLocale(Locale receiverLocale) {
+            assertArgumentNotNull("receiverLocale", receiverLocale);
             Postcard.this.receiverLocale = receiverLocale;
             return this;
         }
 
         public void useTemplateText(Map<String, Object> variableMap) {
+            assertArgumentNotNull("variableMap", variableMap);
             templateVariableMap = variableMap;
         }
 
@@ -188,6 +220,7 @@ public class Postcard implements CardView {
     //                                           Direct Body
     //                                           -----------
     public DirectBodyOption useDirectBody(String plainBody) {
+        assertArgumentNotNull("plainBody", plainBody);
         this.plainBody = plainBody;
         return new DirectBodyOption();
     }
@@ -195,10 +228,12 @@ public class Postcard implements CardView {
     public class DirectBodyOption {
 
         public void alsoDirectHtml(String directHtml) {
+            assertArgumentNotNull("directHtml", directHtml);
             htmlBody = directHtml;
         }
 
         public void useTemplateText(Map<String, Object> variableMap) {
+            assertArgumentNotNull("variableMap", variableMap);
             templateVariableMap = variableMap;
         }
 
@@ -233,6 +268,8 @@ public class Postcard implements CardView {
     }
 
     public void pushLogging(String key, Object value) {
+        assertArgumentNotNull("key", key);
+        assertArgumentNotNull("value", value);
         if (pushedLoggingMap == null) {
             pushedLoggingMap = new LinkedHashMap<String, Object>(4);
         }
@@ -304,27 +341,61 @@ public class Postcard implements CardView {
     //                                      Office Proofread
     //                                      ----------------
     public void proofreadPlain(BiFunction<String, Map<String, Object>, String> proofreader) {
-        this.proofreadingPlain = proofreader.apply(getProofreadingOrOriginalPlain(), getTemplaetVariableMap());
+        this.proofreadingPlain = proofreader.apply(getProofreadingOrOriginalPlain().get(), getTemplaetVariableMap());
     }
 
     public void proofreadHtml(BiFunction<String, Map<String, Object>, String> proofreader) {
-        this.proofreadingHtml = proofreader.apply(getProofreadingOrOriginalHtml(), getTemplaetVariableMap());
+        this.proofreadingHtml = proofreader.apply(getProofreadingOrOriginalHtml().get(), getTemplaetVariableMap());
     }
 
-    public String toCompletePlainText() {
+    public OptionalThing<String> toCompletePlainText() {
         return getProofreadingOrOriginalPlain();
     }
 
-    public String toCompleteHtmlText() {
+    public OptionalThing<String> toCompleteHtmlText() {
         return getProofreadingOrOriginalHtml();
     }
 
-    protected String getProofreadingOrOriginalPlain() {
-        return proofreadingPlain != null ? proofreadingPlain : plainBody;
+    protected OptionalThing<String> getProofreadingOrOriginalPlain() {
+        return OptionalThing.ofNullable(proofreadingPlain != null ? proofreadingPlain : plainBody, () -> {
+            throw new SMailIllegalStateException("Not found the plain text: " + toString());
+        });
     }
 
-    protected String getProofreadingOrOriginalHtml() {
-        return proofreadingHtml != null ? proofreadingHtml : htmlBody;
+    protected OptionalThing<String> getProofreadingOrOriginalHtml() {
+        return OptionalThing.ofNullable(proofreadingHtml != null ? proofreadingHtml : htmlBody, () -> {
+            throw new SMailIllegalStateException("Not found the HTML text: " + toString());
+        });
+    }
+
+    // -----------------------------------------------------
+    //                                Office Managed Logging
+    //                                ----------------------
+    public void officeManagedLogging(String title, String key, Object value) {
+        assertArgumentNotNull("title", title);
+        assertArgumentNotNull("key", key);
+        assertArgumentNotNull("value", value);
+        if (officeManagedLoggingMap == null) {
+            officeManagedLoggingMap = new LinkedHashMap<String, Map<String, Object>>(4);
+        }
+        Map<String, Object> valueMap = officeManagedLoggingMap.get(title);
+        if (valueMap == null) {
+            valueMap = new LinkedHashMap<String, Object>(4);
+            officeManagedLoggingMap.put(title, valueMap);
+        }
+        valueMap.put(key, value);
+    }
+
+    // ===================================================================================
+    //                                                                        Small Helper
+    //                                                                        ============
+    protected void assertArgumentNotNull(String variableName, Object value) {
+        if (variableName == null) {
+            throw new IllegalArgumentException("The variableName should not be null.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("The argument '" + variableName + "' should not be null.");
+        }
     }
 
     // ===================================================================================
@@ -350,12 +421,19 @@ public class Postcard implements CardView {
     // ===================================================================================
     //                                                                              Getter
     //                                                                              ======
-    public DeliveryCategory getDeliveryCategory() {
-        return deliveryCategory;
+    // -----------------------------------------------------
+    //                                      Postcard Request
+    //                                      ----------------
+    public OptionalThing<DeliveryCategory> getDeliveryCategory() {
+        return OptionalThing.ofNullable(deliveryCategory, () -> {
+            throw new SMailIllegalStateException("Not found the delivery category: " + toString());
+        });
     }
 
-    public Address getFrom() {
-        return from;
+    public OptionalThing<Address> getFrom() {
+        return OptionalThing.ofNullable(from, () -> {
+            throw new SMailIllegalStateException("Not found the from address: " + toString());
+        });
     }
 
     public List<Address> getToList() {
@@ -370,20 +448,27 @@ public class Postcard implements CardView {
         return bccList != null ? Collections.unmodifiableList(bccList) : DfCollectionUtil.emptyList();
     }
 
-    public String getSubject() {
-        return subject;
+    public OptionalThing<String> getSubject() {
+        return OptionalThing.ofNullable(subject, () -> {
+            throw new SMailIllegalStateException("Not found the subject: " + toString());
+        });
     }
 
     public Map<String, SMailAttachment> getAttachmentMap() {
         return attachmentMap != null ? Collections.unmodifiableMap(attachmentMap) : DfCollectionUtil.emptyMap();
     }
 
+    // -----------------------------------------------------
+    //                                             Body File
+    //                                             ---------
     public boolean hasBodyFile() {
         return bodyFile != null;
     }
 
-    public String getBodyFile() {
-        return bodyFile;
+    public OptionalThing<String> getBodyFile() {
+        return OptionalThing.ofNullable(bodyFile, () -> {
+            throw new SMailIllegalStateException("Not found the body file: " + toString());
+        });
     }
 
     public boolean isAlsoHtmlFile() {
@@ -394,20 +479,10 @@ public class Postcard implements CardView {
         return fromFilesystem;
     }
 
-    public Locale getReceiverLocale() {
-        return receiverLocale;
-    }
-
-    public String getPlainBody() {
-        return plainBody;
-    }
-
-    public boolean hasHtmlBody() {
-        return htmlBody != null;
-    }
-
-    public String getHtmlBody() {
-        return htmlBody;
+    public OptionalThing<Locale> getReceiverLocale() {
+        return OptionalThing.ofNullable(receiverLocale, () -> {
+            throw new SMailIllegalStateException("Not found the receiver locale: " + toString());
+        });
     }
 
     public boolean hasTemplateVariable() {
@@ -418,6 +493,32 @@ public class Postcard implements CardView {
         return templateVariableMap != null ? Collections.unmodifiableMap(templateVariableMap) : Collections.emptyMap();
     }
 
+    public boolean isWholeFixedTextUsed() {
+        return wholeFixedTextUsed;
+    }
+
+    // -----------------------------------------------------
+    //                                             Body Text
+    //                                             ---------
+    public OptionalThing<String> getPlainBody() {
+        return OptionalThing.ofNullable(plainBody, () -> {
+            throw new SMailIllegalStateException("Not found the plain body: " + toString());
+        });
+    }
+
+    public boolean hasHtmlBody() {
+        return htmlBody != null;
+    }
+
+    public OptionalThing<String> getHtmlBody() {
+        return OptionalThing.ofNullable(htmlBody, () -> {
+            throw new SMailIllegalStateException("Not found the html body: " + toString());
+        });
+    }
+
+    // -----------------------------------------------------
+    //                                               Logging
+    //                                               -------
     public boolean hasPushedLogging() {
         return pushedLoggingMap != null;
     }
@@ -426,8 +527,12 @@ public class Postcard implements CardView {
         return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
     }
 
-    public boolean isWholeFixedTextUsed() {
-        return wholeFixedTextUsed;
+    public boolean hasOfficeManagedLogging() {
+        return officeManagedLoggingMap != null;
+    }
+
+    public Map<String, Map<String, Object>> getOfficeManagedLoggingMap() {
+        return officeManagedLoggingMap != null ? Collections.unmodifiableMap(officeManagedLoggingMap) : Collections.emptyMap();
     }
 
     // -----------------------------------------------------

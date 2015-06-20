@@ -142,15 +142,15 @@ public class PostOfficeTest extends PlainTestCase {
     }
 
     protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb, String subject, boolean hasHtml) {
-        String plain = postcard.toCompletePlainText();
+        String plain = postcard.toCompletePlainText().get();
         Object birthdate = pmb.get("birthdate");
         assertContainsAll(plain, "jflute", "Today is " + birthdate + ".", "Thanks");
         if (hasHtml) {
-            assertContainsAll(postcard.toCompleteHtmlText(), "jflute", "Today is " + birthdate + ".", "Thanks");
+            assertContainsAll(postcard.toCompleteHtmlText().get(), "jflute", "Today is " + birthdate + ".", "Thanks");
         } else {
-            assertNull(postcard.toCompleteHtmlText());
+            assertFalse(postcard.toCompleteHtmlText().isPresent());
         }
-        assertEquals(postcard.getSubject(), subject);
+        assertEquals(postcard.getSubject().get(), subject);
     }
 
     protected Map<String, Object> prepareVariableMap() {
@@ -175,7 +175,7 @@ public class PostOfficeTest extends PlainTestCase {
         prepareOffice().deliver(postcard);
 
         // ## Assert ##
-        String plain = postcard.toCompletePlainText();
+        String plain = postcard.toCompletePlainText().get();
         assertContains(plain, "Konnichiha");
     }
 
@@ -191,9 +191,9 @@ public class PostOfficeTest extends PlainTestCase {
         prepareOffice().deliver(postcard);
 
         // ## Assert ##
-        String plain = postcard.toCompletePlainText();
+        String plain = postcard.toCompletePlainText().get();
         assertContains(plain, "Konnichiha");
-        String html = postcard.toCompleteHtmlText();
+        String html = postcard.toCompleteHtmlText().get();
         assertContainsAll(html, "<html>", "Konnichiha");
     }
 
@@ -209,7 +209,7 @@ public class PostOfficeTest extends PlainTestCase {
         prepareOffice().deliver(postcard);
 
         // ## Assert ##
-        String plain = postcard.toCompletePlainText();
+        String plain = postcard.toCompletePlainText().get();
         assertContains(plain, "Hello");
         assertNotContains(plain, "Konnichiha");
     }
@@ -234,7 +234,7 @@ public class PostOfficeTest extends PlainTestCase {
         prepareOffice().deliver(postcard);
 
         // ## Assert ##
-        String plain = postcard.toCompletePlainText();
+        String plain = postcard.toCompletePlainText().get();
         assertEquals(Srl.removeEmptyLine(plain).length(), plain.length()); // expects no empty line
     }
 

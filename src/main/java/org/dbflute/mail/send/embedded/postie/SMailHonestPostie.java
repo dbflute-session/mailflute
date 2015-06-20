@@ -153,7 +153,9 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected SMailPostingMessage createMailMessage(Postcard postcard) {
         final MimeMessage mimeMessage = createMimeMessage(extractNativeSession(motorbike));
-        return new SMailPostingMessage(mimeMessage, training, postcard.getPushedLoggingMap());
+        final Map<String, Object> pushedLoggingMap = postcard.getPushedLoggingMap();
+        final Map<String, Map<String, Object>> officeManagedLoggingMap = postcard.getOfficeManagedLoggingMap();
+        return new SMailPostingMessage(mimeMessage, training, pushedLoggingMap, officeManagedLoggingMap);
     }
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
@@ -172,10 +174,9 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     Prepare Address
     //                                                                     ===============
     protected void prepareAddress(Postcard postcard, SMailPostingMessage message) {
-        final Address fromAddress = postcard.getFrom();
-        if (fromAddress == null) { // already checked, but just in case
-            throw new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
-        }
+        final Address fromAddress = postcard.getFrom().orElseThrow(() -> { /* already checked, but just in case */
+            return new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
+        });
         final Address filteredFrom = addressFilter.filterFrom(postcard, fromAddress);
         message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
         boolean existsToAddress = false;
@@ -228,7 +229,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getSubject(Postcard postcard) {
-        return subjectFilter.filterSubject(postcard, postcard.getSubject());
+        return subjectFilter.filterSubject(postcard, postcard.getSubject().get());
     }
 
     protected String getSubjectEncoding() {
@@ -240,18 +241,18 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                        ============
     protected void prepareBody(Postcard postcard, SMailPostingMessage message) {
         final String plainText = toCompletePlainText(postcard);
-        final String htmlText = toCompleteHtmlText(postcard);
+        final OptionalThing<String> optHtmlText = toCompleteHtmlText(postcard);
         message.savePlainTextForDisplay(plainText);
-        message.saveHtmlTextForDisplay(htmlText);
+        message.saveHtmlTextForDisplay(optHtmlText);
         final Map<String, SMailAttachment> attachmentMap = postcard.getAttachmentMap();
         final MimeMessage nativeMessage = message.getMimeMessage();
         if (attachmentMap.isEmpty()) { // normally here
             setupTextPart(nativeMessage, plainText, TextType.PLAIN); // plain is required
-            if (htmlText != null) { // HTML is optional
+            optHtmlText.ifPresent(htmlText -> {
                 setupTextPart(nativeMessage, htmlText, TextType.HTML);
-            }
+            });
         } else { // with attachment
-            if (htmlText != null) {
+            if (!optHtmlText.isPresent()) {
                 throw new SMailIllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
             }
             try {
@@ -265,13 +266,15 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String toCompletePlainText(Postcard postcard) {
-        final String plainText = postcard.toCompletePlainText();
-        return bodyTextFilter.filterBody(postcard, plainText, /*html*/false);
+        return postcard.toCompletePlainText().map(plainText -> {
+            return bodyTextFilter.filterBody(postcard, plainText, /*html*/false);
+        }).get();
     }
 
-    protected String toCompleteHtmlText(Postcard postcard) {
-        final String htmlText = postcard.toCompleteHtmlText();
-        return bodyTextFilter.filterBody(postcard, htmlText, /*html*/true);
+    protected OptionalThing<String> toCompleteHtmlText(Postcard postcard) {
+        return postcard.toCompleteHtmlText().map(htmlText -> {
+            return bodyTextFilter.filterBody(postcard, htmlText, /*html*/true);
+        });
     }
 
     protected MimeMultipart createTextWithAttachmentMultipart(Postcard postcard, SMailPostingMessage message, String plain,

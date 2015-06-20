@@ -39,6 +39,9 @@ public class PostOffice {
     //                                                                         Constructor
     //                                                                         ===========
     public PostOffice(SMailDeliveryDepartment deliveryDepartment) {
+        if (deliveryDepartment == null) {
+            throw new IllegalArgumentException("The argument 'deliveryDepartment' should not be null.");
+        }
         this.deliveryDepartment = deliveryDepartment;
     }
 

@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.mail.Address;
 
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
+import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
@@ -29,9 +30,12 @@ import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
  */
 public interface CardView {
 
-    DeliveryCategory getDeliveryCategory();
+    // ===================================================================================
+    //                                                                    Postcard Request
+    //                                                                    ================
+    OptionalThing<DeliveryCategory> getDeliveryCategory();
 
-    Address getFrom();
+    OptionalThing<Address> getFrom();
 
     List<Address> getToList();
 
@@ -39,11 +43,14 @@ public interface CardView {
 
     List<Address> getBccList();
 
-    String getSubject();
+    OptionalThing<String> getSubject();
 
     Map<String, SMailAttachment> getAttachmentMap();
 
-    String getBodyFile();
+    // ===================================================================================
+    //                                                                           Body File
+    //                                                                           =========
+    OptionalThing<String> getBodyFile();
 
     boolean hasBodyFile();
 
@@ -51,24 +58,37 @@ public interface CardView {
 
     boolean isFromFilesystem();
 
-    Locale getReceiverLocale();
-
-    String getPlainBody();
-
-    boolean hasHtmlBody();
-
-    String getHtmlBody();
+    OptionalThing<Locale> getReceiverLocale();
 
     boolean hasTemplateVariable();
 
     Map<String, Object> getTemplaetVariableMap();
 
+    boolean isWholeFixedTextUsed();
+
+    // ===================================================================================
+    //                                                                           Body Text
+    //                                                                           =========
+    OptionalThing<String> getPlainBody();
+
+    boolean hasHtmlBody();
+
+    OptionalThing<String> getHtmlBody();
+
+    // ===================================================================================
+    //                                                                             Logging
+    //                                                                             =======
     boolean hasPushedLogging();
 
     Map<String, Object> getPushedLoggingMap();
 
-    boolean isWholeFixedTextUsed();
+    boolean hasOfficeManagedLogging();
 
+    Map<String, Map<String, Object>> getOfficeManagedLoggingMap();
+
+    // ===================================================================================
+    //                                                                       Postie Option
+    //                                                                       =============
     boolean isAsync();
 
     int getRetryCount();

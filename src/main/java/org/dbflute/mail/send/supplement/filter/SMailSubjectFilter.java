@@ -23,5 +23,10 @@ import org.dbflute.mail.CardView;
  */
 public interface SMailSubjectFilter {
 
+    /**
+     * @param view The view of postcard, you can access the attributes. (NotNull)
+     * @param subject The text as subject, should be one liner. (NotNull)
+     * @return The filtered subject for mail message. (NotNull)
+     */
     String filterSubject(CardView view, String subject);
 }

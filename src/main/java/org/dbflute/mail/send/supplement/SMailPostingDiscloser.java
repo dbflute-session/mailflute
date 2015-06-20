@@ -22,6 +22,7 @@ import javax.mail.Address;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
+import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
@@ -30,17 +31,30 @@ import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
  */
 public interface SMailPostingDiscloser {
 
+    // ===================================================================================
+    //                                                                     Basic Attribute
+    //                                                                     ===============
+    MimeMessage getMimeMessage();
+
     boolean isTraining();
 
+    Map<String, Object> getPushedLoggingMap();
+
+    Map<String, Map<String, Object>> getOfficeManagedLoggingMap();
+
+    // ===================================================================================
+    //                                                                    Display Handling
+    //                                                                    ================
     String toDisplay();
 
     String toHash();
 
     void makeEmlFile(String path); // called by e.g. logging strategy of application customization
 
-    MimeMessage getMimeMessage();
-
-    Address getSavedFromAddress();
+    // ===================================================================================
+    //                                                                   Saved for Display
+    //                                                                   =================
+    OptionalThing<Address> getSavedFromAddress(); // basically present after saving
 
     List<Address> getSavedToAddressList();
 
@@ -48,13 +62,11 @@ public interface SMailPostingDiscloser {
 
     List<Address> getSavedBccAddressList();
 
-    String getSavedSubject();
+    OptionalThing<String> getSavedSubject(); // basically present after saving
 
-    String getSavedPlainText();
+    OptionalThing<String> getSavedPlainText(); // basically present after saving
 
-    String getSavedHtmlText();
+    OptionalThing<String> getSavedHtmlText(); // formally empty-able
 
     Map<String, SMailReadAttachedData> getSavedAttachmentMap(); // keyed by filenameOnHeader
-
-    Map<String, Object> getPushedLoggingMap();
 }

@@ -35,6 +35,8 @@ import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
+import org.dbflute.optional.OptionalThing;
+import org.dbflute.util.Srl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     protected final MimeMessage message;
     protected final boolean training;
     protected final Map<String, Object> pushedLoggingMap;
+    protected final Map<String, Map<String, Object>> officeManagedLoggingMap;
 
     // -----------------------------------------------------
     //                                     Saved for Display
@@ -67,16 +70,21 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     protected List<Address> bccAddressList;
     protected String subject;
     protected String plainText;
-    protected String htmlText;
+    protected OptionalThing<String> optHtmlText = OptionalThing.empty();
     protected Map<String, SMailReadAttachedData> attachmentMap; // keyed by filenameOnHeader
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPostingMessage(MimeMessage message, boolean training, Map<String, Object> pushedLoggingMap) {
+    public SMailPostingMessage(MimeMessage message, boolean training, Map<String, Object> pushedLoggingMap,
+            Map<String, Map<String, Object>> officeManagedLoggingMap) {
+        assertArgumentNotNull("message", message);
+        assertArgumentNotNull("pushedLoggingMap", pushedLoggingMap);
+        assertArgumentNotNull("officeManagedLoggingMap", officeManagedLoggingMap);
         this.message = message;
         this.training = training;
         this.pushedLoggingMap = pushedLoggingMap;
+        this.officeManagedLoggingMap = officeManagedLoggingMap;
     }
 
     // ===================================================================================
@@ -86,6 +94,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                          From Address
     //                                          ------------
     public void setFrom(Address address) {
+        assertArgumentNotNull("address", address);
         fromAddress = address;
         try {
             message.setFrom(address);
@@ -99,6 +108,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                            To Address
     //                                            ----------
     public void addTo(Address address) {
+        assertArgumentNotNull("address", address);
         saveToAddress(address);
         try {
             message.addRecipient(RecipientType.TO, address);
@@ -119,6 +129,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                            Cc Address
     //                                            ----------
     public void addCc(Address address) {
+        assertArgumentNotNull("address", address);
         saveCcAddress(address);
         try {
             message.addRecipient(RecipientType.CC, address);
@@ -139,6 +150,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                           Bcc Address
     //                                           -----------
     public void addBcc(Address address) {
+        assertArgumentNotNull("address", address);
         saveBccAddress(address);
         try {
             message.addRecipient(RecipientType.BCC, address);
@@ -159,6 +171,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                 Body
     //                                                ------
     public void setSubject(String subject, String encoding) {
+        assertArgumentNotNull("encoding", encoding);
         saveSubject(subject);
         try {
             message.setSubject(subject, encoding);
@@ -169,6 +182,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     }
 
     protected void saveSubject(String subject) {
+        assertArgumentNotNull("subject", subject);
         this.subject = subject;
     }
 
@@ -176,14 +190,19 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // so public is saving methods of text
 
     public void savePlainTextForDisplay(String plainText) {
+        assertArgumentNotNull("plainText", plainText);
         this.plainText = plainText;
     }
 
-    public void saveHtmlTextForDisplay(String htmlText) {
-        this.htmlText = htmlText;
+    public void saveHtmlTextForDisplay(OptionalThing<String> optHtmlText) {
+        assertArgumentNotNull("optHtmlText", optHtmlText);
+        this.optHtmlText = optHtmlText;
     }
 
     public void saveAttachmentForDisplay(SMailAttachment attachment, byte[] attachedBytes, String textEncoding) {
+        assertArgumentNotNull("attachment", attachment);
+        assertArgumentNotNull("attachedBytes", attachedBytes);
+        assertArgumentNotNull("textEncoding", textEncoding);
         if (attachmentMap == null) {
             attachmentMap = new LinkedHashMap<String, SMailReadAttachedData>(2);
         }
@@ -223,15 +242,20 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         if (bccAddressList != null && !bccAddressList.isEmpty()) {
             sb.append(LF).append("    bcc: " + (bccAddressList.size() == 1 ? bccAddressList.get(0) : bccAddressList));
         }
+        if (officeManagedLoggingMap != null && !officeManagedLoggingMap.isEmpty()) {
+            officeManagedLoggingMap.forEach((title, valueMap) -> {
+                sb.append(LF).append(Srl.lfill(title, 7, ' ')).append(": ").append(valueMap);
+            });
+        }
         if (pushedLoggingMap != null && !pushedLoggingMap.isEmpty()) {
-            sb.append(LF).append("logging: " + pushedLoggingMap);
+            sb.append(LF).append("appinfo: " + pushedLoggingMap);
         }
         sb.append(LF).append(">>>");
         sb.append(LF).append(plainText);
-        if (htmlText != null) {
+        optHtmlText.ifPresent(htmlText -> {
             sb.append(LF).append(" - - - - - - - - - - (HTML)");
             sb.append(LF).append(htmlText);
-        }
+        });
         if (attachmentMap != null && !attachmentMap.isEmpty()) {
             sb.append(LF).append(" - - - - - - - - - - (Attachment)");
             attachmentMap.forEach((filenameOnHeader, attachedData) -> {
@@ -270,6 +294,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                                       =============
     @Override
     public void makeEmlFile(String path) {
+        assertArgumentNotNull("path", path);
         ByteArrayOutputStream ous = null;
         try {
             ous = new ByteArrayOutputStream();
@@ -288,16 +313,31 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     }
 
     // ===================================================================================
+    //                                                                        Small Helper
+    //                                                                        ============
+    protected void assertArgumentNotNull(String variableName, Object value) {
+        if (variableName == null) {
+            throw new IllegalArgumentException("The variableName should not be null.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("The argument '" + variableName + "' should not be null.");
+        }
+    }
+
+    // ===================================================================================
     //                                                                      Basic Override
     //                                                                      ==============
     @Override
     public String toString() {
-        return "message:{" + message + ", " + plainText + "}";
+        return "message:{" + message + ", " + subject + "}";
     }
 
     // ===================================================================================
     //                                                                            Accessor
     //                                                                            ========
+    // -----------------------------------------------------
+    //                                       Basic Attribute
+    //                                       ---------------
     public MimeMessage getMimeMessage() {
         return message;
     }
@@ -307,11 +347,21 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         return training;
     }
 
+    public Map<String, Object> getPushedLoggingMap() {
+        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
+    }
+
+    public Map<String, Map<String, Object>> getOfficeManagedLoggingMap() {
+        return officeManagedLoggingMap != null ? Collections.unmodifiableMap(officeManagedLoggingMap) : Collections.emptyMap();
+    }
+
     // -----------------------------------------------------
     //                                     Saved for Display
     //                                     -----------------
-    public Address getSavedFromAddress() { // basically not null but consider null
-        return fromAddress;
+    public OptionalThing<Address> getSavedFromAddress() {
+        return OptionalThing.ofNullable(fromAddress, () -> {
+            throw new SMailIllegalStateException("Not found the from address: " + toString());
+        });
     }
 
     public List<Address> getSavedToAddressList() {
@@ -326,23 +376,23 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         return bccAddressList != null ? Collections.unmodifiableList(bccAddressList) : Collections.emptyList();
     }
 
-    public String getSavedSubject() { // basically not null but consider null
-        return subject;
+    public OptionalThing<String> getSavedSubject() { // basically present after saving
+        return OptionalThing.ofNullable(subject, () -> {
+            throw new SMailIllegalStateException("Not found the subject: " + toString());
+        });
     }
 
-    public String getSavedPlainText() { // basically not null but consider null
-        return plainText;
+    public OptionalThing<String> getSavedPlainText() { // basically present after saving
+        return OptionalThing.ofNullable(plainText, () -> {
+            throw new SMailIllegalStateException("Not found the plain text: " + toString());
+        });
     }
 
-    public String getSavedHtmlText() { // formally null allowed
-        return htmlText;
+    public OptionalThing<String> getSavedHtmlText() { // formally empty-able
+        return optHtmlText;
     }
 
     public Map<String, SMailReadAttachedData> getSavedAttachmentMap() {
         return attachmentMap != null ? Collections.unmodifiableMap(attachmentMap) : Collections.emptyMap();
-    }
-
-    public Map<String, Object> getPushedLoggingMap() {
-        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
     }
 }
