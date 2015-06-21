@@ -66,6 +66,8 @@ public interface SMailPostingDiscloser {
 
     List<Address> getSavedReplyToList();
 
+    OptionalThing<String> getSavedReturnPath();
+
     OptionalThing<String> getSavedPlainText(); // basically present after saving
 
     OptionalThing<String> getSavedHtmlText(); // formally empty-able

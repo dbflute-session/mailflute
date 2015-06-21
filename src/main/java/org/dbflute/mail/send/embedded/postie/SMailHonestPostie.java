@@ -207,9 +207,6 @@ public class SMailHonestPostie implements SMailPostie {
             }
             message.setReplyTo(filteredList);
         }
-
-        // TODO jflute reply-to (2015/06/21)
-        // TODO jflute principal (2015/06/21)
     }
 
     protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {

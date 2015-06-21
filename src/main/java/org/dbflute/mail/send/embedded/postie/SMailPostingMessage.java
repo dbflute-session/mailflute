@@ -419,6 +419,10 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         return replyToList != null ? Collections.unmodifiableList(replyToList) : Collections.emptyList();
     }
 
+    public OptionalThing<String> getSavedReturnPath() {
+        return motorbike.getReturnPath();
+    }
+
     public OptionalThing<String> getSavedPlainText() { // basically present after saving
         return OptionalThing.ofNullable(plainText, () -> {
             throw new SMailIllegalStateException("Not found the plain text: " + toString());
