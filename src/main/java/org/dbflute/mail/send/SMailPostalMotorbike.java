@@ -31,9 +31,11 @@ public class SMailPostalMotorbike {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    public static final String MAIL_SMTP_HOST = "mail.smtp.host";
-    public static final String MAIL_SMTP_PORT = "mail.smtp.port";
-    public static final String MAIL_SMTP_FROM = "mail.smtp.from"; // return-path
+    protected static final String MAIL_SMTP_HOST = "mail.smtp.host";
+    protected static final String MAIL_SMTP_PORT = "mail.smtp.port";
+    protected static final String MAIL_SMTP_PASS = "mail.smtp.pass";
+    protected static final String MAIL_SMTP_USER = "mail.smtp.user";
+    protected static final String MAIL_SMTP_FROM = "mail.smtp.from"; // return-path
 
     // ===================================================================================
     //                                                                           Attribute
@@ -62,8 +64,8 @@ public class SMailPostalMotorbike {
 
     public void registerUserInfo(String user, String password) {
         final Properties props = session.getProperties();
-        props.setProperty("mail.smtp.user", user);
-        props.setProperty("mail.smtp.pass", password);
+        props.setProperty(MAIL_SMTP_USER, user);
+        props.setProperty(MAIL_SMTP_PASS, password);
     }
 
     public void registerProxy(String proxyHost, String proxyPort) {

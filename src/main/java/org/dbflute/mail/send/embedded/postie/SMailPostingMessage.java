@@ -30,6 +30,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
@@ -281,7 +282,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
             });
         }
         if (pushedLoggingMap != null && !pushedLoggingMap.isEmpty()) {
-            sb.append(LF).append("appInfo: " + pushedLoggingMap);
+            sb.append(LF).append(Srl.lfill(PostOffice.LOGGING_TITLE_APPINFO, 7, ' ')).append(": ").append(pushedLoggingMap);
         }
         sb.append(LF).append(">>>");
         sb.append(LF).append(plainText);

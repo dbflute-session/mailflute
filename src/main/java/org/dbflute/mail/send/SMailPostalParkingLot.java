@@ -19,7 +19,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.dbflute.mail.DeliveryCategory;
+import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.Postcard;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.util.DfTypeUtil;
 
 /**
@@ -31,26 +33,33 @@ public class SMailPostalParkingLot {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    private static final DeliveryCategory DEFAULT_CATEGORY = new DeliveryCategory("main");
+    protected static final DeliveryCategory MAIN_CATEGORY = new DeliveryCategory("main");
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
-    protected final Map<DeliveryCategory, SMailPostalMotorbike> sessionMap = new ConcurrentHashMap<>();
+    protected final Map<DeliveryCategory, SMailPostalMotorbike> motorbikeMap = new ConcurrentHashMap<>();
 
     // ===================================================================================
     //                                                                    Session Handling
     //                                                                    ================
     public SMailPostalMotorbike findMotorbike(Postcard postcard) {
-        return sessionMap.get(postcard.getDeliveryCategory().orElse(DEFAULT_CATEGORY));
+        final DeliveryCategory category = postcard.getDeliveryCategory().orElse(MAIN_CATEGORY);
+        postcard.officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "category", category.getCategory());
+        final SMailPostalMotorbike motorbike = motorbikeMap.get(category);
+        if (motorbike == null) {
+            String msg = "Not found the motorbike (session) by the category: " + category + ", " + motorbikeMap;
+            throw new SMailIllegalStateException(msg);
+        }
+        return motorbike;
     }
 
     public void registerMotorbike(DeliveryCategory category, SMailPostalMotorbike motorbike) {
-        sessionMap.put(category, motorbike);
+        motorbikeMap.put(category, motorbike);
     }
 
     public void registerMotorbikeAsMain(SMailPostalMotorbike motorbike) {
-        registerMotorbike(DEFAULT_CATEGORY, motorbike);
+        registerMotorbike(MAIN_CATEGORY, motorbike);
     }
 
     // ===================================================================================
@@ -58,6 +67,6 @@ public class SMailPostalParkingLot {
     //                                                                      ==============
     @Override
     public String toString() {
-        return DfTypeUtil.toClassTitle(this) + ":{" + sessionMap + "}@" + Integer.toHexString(hashCode());
+        return DfTypeUtil.toClassTitle(this) + ":{" + motorbikeMap + "}@" + Integer.toHexString(hashCode());
     }
 }

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.helper.message.ExceptionMessageBuilder;
+import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailReceptionist;
@@ -135,9 +136,9 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     }
 
     protected void officeManagedLogging(Postcard postcard, String bodyFile, OptionalThing<Locale> receiverLocale) {
-        final String dfmailTitle = "dfmail";
-        postcard.officeManagedLogging(dfmailTitle, "path", bodyFile);
-        postcard.officeManagedLogging(dfmailTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
+        final String systemTitle = PostOffice.LOGGING_TITLE_SYSINFO;
+        postcard.officeManagedLogging(systemTitle, "dfmail", bodyFile);
+        postcard.officeManagedLogging(systemTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
     }
 
     // ===================================================================================

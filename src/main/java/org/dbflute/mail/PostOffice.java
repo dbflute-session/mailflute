@@ -31,6 +31,12 @@ import org.dbflute.util.DfTypeUtil;
 public class PostOffice {
 
     // ===================================================================================
+    //                                                                          Definition
+    //                                                                          ==========
+    public static final String LOGGING_TITLE_SYSINFO = "sysInfo";
+    public static final String LOGGING_TITLE_APPINFO = "appInfo";
+
+    // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final SMailDeliveryDepartment deliveryDepartment;
