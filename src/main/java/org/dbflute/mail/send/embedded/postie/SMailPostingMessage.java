@@ -30,6 +30,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
@@ -57,6 +58,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                                                           Attribute
     //                                                                           =========
     protected final MimeMessage message;
+    protected final SMailPostalMotorbike motorbike;
     protected final boolean training;
     protected final Map<String, Object> pushedLoggingMap;
     protected final Map<String, Map<String, Object>> officeManagedLoggingMap;
@@ -64,11 +66,12 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // -----------------------------------------------------
     //                                     Saved for Display
     //                                     -----------------
-    protected Address fromAddress;
-    protected List<Address> toAddressList;
-    protected List<Address> ccAddressList;
-    protected List<Address> bccAddressList;
     protected String subject;
+    protected Address from;
+    protected List<Address> toList;
+    protected List<Address> ccList;
+    protected List<Address> bccList;
+    protected List<Address> replyToList;
     protected String plainText;
     protected OptionalThing<String> optHtmlText = OptionalThing.empty();
     protected Map<String, SMailReadAttachedData> attachmentMap; // keyed by filenameOnHeader
@@ -76,12 +79,14 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPostingMessage(MimeMessage message, boolean training, Map<String, Object> pushedLoggingMap,
+    public SMailPostingMessage(MimeMessage message, SMailPostalMotorbike motorbike, boolean training, Map<String, Object> pushedLoggingMap,
             Map<String, Map<String, Object>> officeManagedLoggingMap) {
         assertArgumentNotNull("message", message);
+        assertArgumentNotNull("motorbike", motorbike);
         assertArgumentNotNull("pushedLoggingMap", pushedLoggingMap);
         assertArgumentNotNull("officeManagedLoggingMap", officeManagedLoggingMap);
         this.message = message;
+        this.motorbike = motorbike;
         this.training = training;
         this.pushedLoggingMap = pushedLoggingMap;
         this.officeManagedLoggingMap = officeManagedLoggingMap;
@@ -95,7 +100,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                          ------------
     public void setFrom(Address address) {
         assertArgumentNotNull("address", address);
-        fromAddress = address;
+        from = address;
         try {
             message.setFrom(address);
         } catch (MessagingException e) {
@@ -109,7 +114,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                            ----------
     public void addTo(Address address) {
         assertArgumentNotNull("address", address);
-        saveToAddress(address);
+        saveTo(address);
         try {
             message.addRecipient(RecipientType.TO, address);
         } catch (MessagingException e) {
@@ -118,11 +123,11 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         }
     }
 
-    protected void saveToAddress(Address address) {
-        if (toAddressList == null) {
-            toAddressList = new ArrayList<Address>(2);
+    protected void saveTo(Address address) {
+        if (toList == null) {
+            toList = new ArrayList<Address>(2);
         }
-        toAddressList.add(address);
+        toList.add(address);
     }
 
     // -----------------------------------------------------
@@ -130,7 +135,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                            ----------
     public void addCc(Address address) {
         assertArgumentNotNull("address", address);
-        saveCcAddress(address);
+        saveCc(address);
         try {
             message.addRecipient(RecipientType.CC, address);
         } catch (MessagingException e) {
@@ -139,11 +144,11 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         }
     }
 
-    protected void saveCcAddress(Address address) {
-        if (ccAddressList == null) {
-            ccAddressList = new ArrayList<Address>(2);
+    protected void saveCc(Address address) {
+        if (ccList == null) {
+            ccList = new ArrayList<Address>(2);
         }
-        ccAddressList.add(address);
+        ccList.add(address);
     }
 
     // -----------------------------------------------------
@@ -151,7 +156,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     //                                           -----------
     public void addBcc(Address address) {
         assertArgumentNotNull("address", address);
-        saveBccAddress(address);
+        saveBcc(address);
         try {
             message.addRecipient(RecipientType.BCC, address);
         } catch (MessagingException e) {
@@ -160,11 +165,29 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         }
     }
 
-    protected void saveBccAddress(Address address) {
-        if (bccAddressList == null) {
-            bccAddressList = new ArrayList<Address>(2);
+    protected void saveBcc(Address address) {
+        if (bccList == null) {
+            bccList = new ArrayList<Address>(2);
         }
-        bccAddressList.add(address);
+        bccList.add(address);
+    }
+
+    // -----------------------------------------------------
+    //                                       ReplyTo Address
+    //                                       ---------------
+    public void setReplyTo(List<Address> addressList) {
+        assertArgumentNotNull("addressList", addressList);
+        saveReplyTo(addressList);
+        try {
+            message.setReplyTo(addressList.toArray(new Address[addressList.size()]));
+        } catch (MessagingException e) {
+            String msg = buildAddressSettingFailureMessage("reply-to", addressList);
+            throw new SMailMessageSettingFailureException(msg, e);
+        }
+    }
+
+    protected void saveReplyTo(List<Address> addressList) {
+        replyToList = addressList;
     }
 
     // -----------------------------------------------------
@@ -224,6 +247,10 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         return "Failed to set '" + title + "' address: " + address + " message=" + message;
     }
 
+    protected String buildAddressSettingFailureMessage(String title, List<Address> addressList) {
+        return "Failed to set '" + title + "' addresses: " + addressList + " message=" + message;
+    }
+
     // ===================================================================================
     //                                                                  Display Expression
     //                                                                  ==================
@@ -232,23 +259,29 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         final StringBuilder sb = new StringBuilder();
         sb.append("/= = = = = = = = = = = = = = = = = = = = = = = = = = Mail Message");
         sb.append(LF).append("subject: " + subject);
-        sb.append(LF).append("   from: " + fromAddress);
-        if (toAddressList != null && !toAddressList.isEmpty()) {
-            sb.append(LF).append("     to: " + (toAddressList.size() == 1 ? toAddressList.get(0) : toAddressList));
+        sb.append(LF).append("   from: " + from);
+        if (toList != null && !toList.isEmpty()) {
+            sb.append(LF).append("     to: " + (toList.size() == 1 ? toList.get(0) : toList));
         }
-        if (ccAddressList != null && !ccAddressList.isEmpty()) {
-            sb.append(LF).append("     cc: " + (ccAddressList.size() == 1 ? ccAddressList.get(0) : ccAddressList));
+        if (ccList != null && !ccList.isEmpty()) {
+            sb.append(LF).append("     cc: " + (ccList.size() == 1 ? ccList.get(0) : ccList));
         }
-        if (bccAddressList != null && !bccAddressList.isEmpty()) {
-            sb.append(LF).append("    bcc: " + (bccAddressList.size() == 1 ? bccAddressList.get(0) : bccAddressList));
+        if (bccList != null && !bccList.isEmpty()) {
+            sb.append(LF).append("    bcc: " + (bccList.size() == 1 ? bccList.get(0) : bccList));
         }
+        if (replyToList != null && !replyToList.isEmpty()) {
+            sb.append(LF).append("  reply: " + (replyToList.size() == 1 ? replyToList.get(0) : replyToList));
+        }
+        motorbike.getReturnPath().ifPresent(returnPath -> {
+            sb.append(LF).append(" return: " + returnPath);
+        });
         if (officeManagedLoggingMap != null && !officeManagedLoggingMap.isEmpty()) {
             officeManagedLoggingMap.forEach((title, valueMap) -> {
                 sb.append(LF).append(Srl.lfill(title, 7, ' ')).append(": ").append(valueMap);
             });
         }
         if (pushedLoggingMap != null && !pushedLoggingMap.isEmpty()) {
-            sb.append(LF).append("appinfo: " + pushedLoggingMap);
+            sb.append(LF).append("appInfo: " + pushedLoggingMap);
         }
         sb.append(LF).append(">>>");
         sb.append(LF).append(plainText);
@@ -358,28 +391,32 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     // -----------------------------------------------------
     //                                     Saved for Display
     //                                     -----------------
-    public OptionalThing<Address> getSavedFromAddress() {
-        return OptionalThing.ofNullable(fromAddress, () -> {
-            throw new SMailIllegalStateException("Not found the from address: " + toString());
-        });
-    }
-
-    public List<Address> getSavedToAddressList() {
-        return toAddressList != null ? Collections.unmodifiableList(toAddressList) : Collections.emptyList();
-    }
-
-    public List<Address> getSavedCcAddressList() {
-        return ccAddressList != null ? Collections.unmodifiableList(ccAddressList) : Collections.emptyList();
-    }
-
-    public List<Address> getSavedBccAddressList() {
-        return bccAddressList != null ? Collections.unmodifiableList(bccAddressList) : Collections.emptyList();
-    }
-
     public OptionalThing<String> getSavedSubject() { // basically present after saving
         return OptionalThing.ofNullable(subject, () -> {
             throw new SMailIllegalStateException("Not found the subject: " + toString());
         });
+    }
+
+    public OptionalThing<Address> getSavedFrom() {
+        return OptionalThing.ofNullable(from, () -> {
+            throw new SMailIllegalStateException("Not found the from address: " + toString());
+        });
+    }
+
+    public List<Address> getSavedToList() {
+        return toList != null ? Collections.unmodifiableList(toList) : Collections.emptyList();
+    }
+
+    public List<Address> getSavedCcList() {
+        return ccList != null ? Collections.unmodifiableList(ccList) : Collections.emptyList();
+    }
+
+    public List<Address> getSavedBccList() {
+        return bccList != null ? Collections.unmodifiableList(bccList) : Collections.emptyList();
+    }
+
+    public List<Address> getSavedReplyToList() {
+        return replyToList != null ? Collections.unmodifiableList(replyToList) : Collections.emptyList();
     }
 
     public OptionalThing<String> getSavedPlainText() { // basically present after saving

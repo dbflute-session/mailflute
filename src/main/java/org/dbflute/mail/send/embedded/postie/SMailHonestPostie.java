@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -155,7 +157,7 @@ public class SMailHonestPostie implements SMailPostie {
         final MimeMessage mimeMessage = createMimeMessage(extractNativeSession(motorbike));
         final Map<String, Object> pushedLoggingMap = postcard.getPushedLoggingMap();
         final Map<String, Map<String, Object>> officeManagedLoggingMap = postcard.getOfficeManagedLoggingMap();
-        return new SMailPostingMessage(mimeMessage, training, pushedLoggingMap, officeManagedLoggingMap);
+        return new SMailPostingMessage(mimeMessage, motorbike, training, pushedLoggingMap, officeManagedLoggingMap);
     }
 
     protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
@@ -196,6 +198,18 @@ public class SMailHonestPostie implements SMailPostie {
             final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, bcc);
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addBcc(address));
         }
+        final List<Address> replyToList = postcard.getReplyToList();
+        if (!replyToList.isEmpty()) {
+            final List<Address> filteredList = new ArrayList<Address>(replyToList.size());
+            for (Address replyTo : replyToList) {
+                final OptionalThing<Address> opt = addressFilter.filterReplyTo(postcard, replyTo);
+                verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> filteredList.add(address));
+            }
+            message.setReplyTo(filteredList);
+        }
+
+        // TODO jflute reply-to (2015/06/21)
+        // TODO jflute principal (2015/06/21)
     }
 
     protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {

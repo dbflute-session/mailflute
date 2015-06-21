@@ -35,6 +35,8 @@ public interface CardView {
     //                                                                    ================
     OptionalThing<DeliveryCategory> getDeliveryCategory();
 
+    OptionalThing<String> getSubject();
+
     OptionalThing<Address> getFrom();
 
     List<Address> getToList();
@@ -43,7 +45,7 @@ public interface CardView {
 
     List<Address> getBccList();
 
-    OptionalThing<String> getSubject();
+    List<Address> getReplyToList();
 
     Map<String, SMailAttachment> getAttachmentMap();
 

@@ -19,6 +19,9 @@ import java.util.Properties;
 
 import javax.mail.Session;
 
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
+import org.dbflute.optional.OptionalThing;
+
 /**
  * @author jflute
  * @since 0.1.0 (2015/01/20 Tuesday)
@@ -28,8 +31,9 @@ public class SMailPostalMotorbike {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    protected static final String MAIL_SMTP_HOST = "mail.smtp.host";
-    protected static final String MAIL_SMTP_PORT = "mail.smtp.port";
+    public static final String MAIL_SMTP_HOST = "mail.smtp.host";
+    public static final String MAIL_SMTP_PORT = "mail.smtp.port";
+    public static final String MAIL_SMTP_FROM = "mail.smtp.from"; // return-path
 
     // ===================================================================================
     //                                                                           Attribute
@@ -71,6 +75,10 @@ public class SMailPostalMotorbike {
         props.setProperty("mail.smtp.socks.port", proxyPort);
     }
 
+    public void registerReturnPath(String address) {
+        session.getProperties().setProperty(MAIL_SMTP_FROM, address);
+    }
+
     // ===================================================================================
     //                                                                      Basic Override
     //                                                                      ==============
@@ -86,5 +94,11 @@ public class SMailPostalMotorbike {
     //                                                                            ========
     public Session getNativeSession() {
         return session;
+    }
+
+    public OptionalThing<String> getReturnPath() {
+        return OptionalThing.ofNullable(session.getProperty(MAIL_SMTP_FROM), () -> {
+            throw new SMailIllegalStateException("Not found the return path (" + MAIL_SMTP_FROM + "): " + session.getProperties());
+        });
     }
 }

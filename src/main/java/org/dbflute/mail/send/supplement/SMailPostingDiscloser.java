@@ -54,15 +54,17 @@ public interface SMailPostingDiscloser {
     // ===================================================================================
     //                                                                   Saved for Display
     //                                                                   =================
-    OptionalThing<Address> getSavedFromAddress(); // basically present after saving
-
-    List<Address> getSavedToAddressList();
-
-    List<Address> getSavedCcAddressList();
-
-    List<Address> getSavedBccAddressList();
-
     OptionalThing<String> getSavedSubject(); // basically present after saving
+
+    OptionalThing<Address> getSavedFrom(); // basically present after saving
+
+    List<Address> getSavedToList();
+
+    List<Address> getSavedCcList();
+
+    List<Address> getSavedBccList();
+
+    List<Address> getSavedReplyToList();
 
     OptionalThing<String> getSavedPlainText(); // basically present after saving
 

@@ -45,4 +45,9 @@ public class SMailAddressFilterNone implements SMailAddressFilter {
     public OptionalThing<Address> filterBcc(CardView view, Address address) {
         return OptionalThing.of(address);
     }
+
+    @Override
+    public OptionalThing<Address> filterReplyTo(CardView view, Address address) {
+        return OptionalThing.of(address);
+    }
 }

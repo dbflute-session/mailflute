@@ -39,8 +39,14 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                        ============
     @Override
     public void logMailMessage(CardView view, SMailPostingDiscloser discloser) {
-        if (messageLogger.isInfoEnabled()) {
-            messageLogger.info(buildMailMessageDisp(view, discloser));
+        final boolean messageInfoEnabled = messageLogger.isInfoEnabled();
+        final boolean normalDebugEnabled = normalLogger.isDebugEnabled();
+        final String msg = messageInfoEnabled || normalDebugEnabled ? buildMailMessageDisp(view, discloser) : null;
+        if (messageInfoEnabled) {
+            messageLogger.info(msg);
+        }
+        if (normalDebugEnabled) {
+            normalLogger.debug(msg);
         }
     }
 

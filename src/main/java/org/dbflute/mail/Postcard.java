@@ -48,12 +48,12 @@ public class Postcard implements CardView {
     //                                      Postcard Request
     //                                      ----------------
     protected DeliveryCategory deliveryCategory; // optional (has default)
-
+    protected String subject; // required or optional (e.g. from template file)
     protected Address from; // required
     protected List<Address> toList; // required at least one, lazy loaded
     protected List<Address> ccList; // optional, lazy loaded
     protected List<Address> bccList; // optional, lazy loaded
-    protected String subject; // required or optional (e.g. from template file)
+    protected List<Address> replyToList; // optional, lazy loaded
     protected Map<String, SMailAttachment> attachmentMap; // optional, lozy loaded
 
     // -----------------------------------------------------
@@ -108,6 +108,13 @@ public class Postcard implements CardView {
     //                                                                    Postcard Request
     //                                                                    ================
     // -----------------------------------------------------
+    //                                               Subject
+    //                                               -------
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    // -----------------------------------------------------
     //                                               Address
     //                                               -------
     public void setFrom(Address address) {
@@ -139,11 +146,12 @@ public class Postcard implements CardView {
         bccList.add(address);
     }
 
-    // -----------------------------------------------------
-    //                                               Subject
-    //                                               -------
-    public void setSubject(String subject) {
-        this.subject = subject;
+    public void addReplyTo(Address address) {
+        assertArgumentNotNull("address", address);
+        if (replyToList == null) {
+            replyToList = new ArrayList<Address>(2);
+        }
+        replyToList.add(address);
     }
 
     // -----------------------------------------------------
@@ -424,6 +432,12 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                      Postcard Request
     //                                      ----------------
+    public OptionalThing<String> getSubject() {
+        return OptionalThing.ofNullable(subject, () -> {
+            throw new SMailIllegalStateException("Not found the subject: " + toString());
+        });
+    }
+
     public OptionalThing<DeliveryCategory> getDeliveryCategory() {
         return OptionalThing.ofNullable(deliveryCategory, () -> {
             throw new SMailIllegalStateException("Not found the delivery category: " + toString());
@@ -448,10 +462,8 @@ public class Postcard implements CardView {
         return bccList != null ? Collections.unmodifiableList(bccList) : DfCollectionUtil.emptyList();
     }
 
-    public OptionalThing<String> getSubject() {
-        return OptionalThing.ofNullable(subject, () -> {
-            throw new SMailIllegalStateException("Not found the subject: " + toString());
-        });
+    public List<Address> getReplyToList() {
+        return replyToList != null ? Collections.unmodifiableList(replyToList) : DfCollectionUtil.emptyList();
     }
 
     public Map<String, SMailAttachment> getAttachmentMap() {

@@ -26,11 +26,16 @@ import org.dbflute.optional.OptionalThing;
  */
 public interface SMailAddressFilter {
 
-    Address filterFrom(CardView view, Address address);
+    Address filterFrom(CardView view, Address address); // always called
 
-    OptionalThing<Address> filterTo(CardView view, Address address);
+    OptionalThing<Address> filterTo(CardView view, Address address); // one or more called
 
-    OptionalThing<Address> filterCc(CardView view, Address address);
+    OptionalThing<Address> filterCc(CardView view, Address address); // not called if empty
 
-    OptionalThing<Address> filterBcc(CardView view, Address address);
+    OptionalThing<Address> filterBcc(CardView view, Address address); // not called if empty
+
+    OptionalThing<Address> filterReplyTo(CardView view, Address address); // not called if empty
+
+    // return path is set to session, so no timing to filter (and little necessary)
+    //OptionalThing<Address> filterReturnPath(CardView view, OptionalThing<Address> address); // always called
 }
