@@ -322,8 +322,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             }
         } else { // no delimiter
             // basically already checked when you generate postcards by DBFlute
-            final List<String> splitList = Srl.splitList(fileText, LF);
-            final String firstLine = splitList.get(0);
+            final String firstLine = Srl.substringFirstFront(fileText, LF);
             if (Srl.containsIgnoreCase(firstLine, SUBJECT_LABEL)) { // may be mistake?
                 throwMailBodyMetaNotFoundException(bodyFile, fileText);
             }
