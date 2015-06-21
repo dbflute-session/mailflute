@@ -289,7 +289,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                 }
             }
             final List<String> splitList = Srl.splitList(meta, LF);
-            if (!splitList.get(0).startsWith(SUBJECT_LABEL)) {
+            if (!splitList.get(0).startsWith(SUBJECT_LABEL)) { // also leading spaces not allowed
                 throwMailBodyMetaSubjectNotFoundException(bodyFile, fileText);
             }
             if (splitList.size() > 1) {
@@ -303,6 +303,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                             break;
                         }
                     }
+                    // TODO jflute lastaflute: [B] fitting: alias fixed from, to (2015/06/21)
                     if (!line.startsWith(OPTION_LABEL) && !line.startsWith(PROPDEF_PREFIX)) {
                         throwMailBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
                     }
