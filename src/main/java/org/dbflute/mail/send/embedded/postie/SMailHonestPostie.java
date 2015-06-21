@@ -252,7 +252,7 @@ public class SMailHonestPostie implements SMailPostie {
                 setupTextPart(nativeMessage, htmlText, TextType.HTML);
             });
         } else { // with attachment
-            if (!optHtmlText.isPresent()) {
+            if (optHtmlText.isPresent()) {
                 throw new SMailIllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
             }
             try {
