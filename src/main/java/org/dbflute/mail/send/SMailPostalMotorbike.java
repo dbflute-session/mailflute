@@ -17,6 +17,8 @@ package org.dbflute.mail.send;
 
 import java.util.Properties;
 
+import javax.mail.Authenticator;
+import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
@@ -45,11 +47,32 @@ public class SMailPostalMotorbike {
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailPostalMotorbike() {
-        session = Session.getInstance(newSessionProperties());
+    public SMailPostalMotorbike() { // for normal
+        session = createSession();
     }
 
-    protected Properties newSessionProperties() {
+    public SMailPostalMotorbike(String userName, String password) { // for e.g. starttls
+        session = createSession(createAuthenticator(userName, password));
+    }
+
+    protected Authenticator createAuthenticator(String userName, String password) {
+        return new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(userName, password);
+            }
+        };
+    }
+
+    protected Session createSession() {
+        return Session.getInstance(createSessionProperties());
+    }
+
+    protected Session createSession(Authenticator auth) {
+        return Session.getInstance(createSessionProperties(), auth);
+    }
+
+    protected Properties createSessionProperties() {
         return new Properties();
     }
 
@@ -75,6 +98,14 @@ public class SMailPostalMotorbike {
         props.setProperty("socksProxyPort", proxyPort);
         props.setProperty("mail.smtp.socks.host", proxyHost);
         props.setProperty("mail.smtp.socks.port", proxyPort);
+    }
+
+    public void registerStarttls() {
+        final Properties props = session.getProperties();
+        props.setProperty("mail.transport.protocol", "smtp");
+        props.setProperty("mail.smtp.auth", "true");
+        props.setProperty("mail.smtp.starttls.enable", "true");
+        props.setProperty("mail.smtp.starttls.required", "true");
     }
 
     public void registerReturnPath(String address) {
