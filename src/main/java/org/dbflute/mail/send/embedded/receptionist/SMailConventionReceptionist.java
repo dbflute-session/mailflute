@@ -303,7 +303,6 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                             break;
                         }
                     }
-                    // TODO jflute lastaflute: [B] fitting: alias fixed from, to (2015/06/21)
                     if (!line.startsWith(OPTION_LABEL) && !line.startsWith(PROPDEF_PREFIX)) {
                         throwMailBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
                     }

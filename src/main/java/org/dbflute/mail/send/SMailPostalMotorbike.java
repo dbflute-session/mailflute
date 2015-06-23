@@ -38,6 +38,7 @@ public class SMailPostalMotorbike {
     protected static final String MAIL_SMTP_PASS = "mail.smtp.pass";
     protected static final String MAIL_SMTP_USER = "mail.smtp.user";
     protected static final String MAIL_SMTP_FROM = "mail.smtp.from"; // return-path
+    protected static final String MAIL_TRANSPORT_PROTOCOL = "mail.transport.protocol";
 
     // ===================================================================================
     //                                                                           Attribute
@@ -80,18 +81,23 @@ public class SMailPostalMotorbike {
     //                                                                            Register
     //                                                                            ========
     public void registerConnectionInfo(String host, int port) {
+        assertArgumentNotNull("passhostword", host);
         final Properties props = session.getProperties();
         props.setProperty(MAIL_SMTP_HOST, host);
         props.setProperty(MAIL_SMTP_PORT, String.valueOf(port));
     }
 
     public void registerUserInfo(String user, String password) {
+        assertArgumentNotNull("user", user);
+        assertArgumentNotNull("password", password);
         final Properties props = session.getProperties();
         props.setProperty(MAIL_SMTP_USER, user);
         props.setProperty(MAIL_SMTP_PASS, password);
     }
 
     public void registerProxy(String proxyHost, String proxyPort) {
+        assertArgumentNotNull("proxyHost", proxyHost);
+        assertArgumentNotNull("proxyPort", proxyPort);
         final Properties props = session.getProperties();
         props.setProperty("proxySet", "true");
         props.setProperty("socksProxyHost", proxyHost);
@@ -102,14 +108,40 @@ public class SMailPostalMotorbike {
 
     public void registerStarttls() {
         final Properties props = session.getProperties();
-        props.setProperty("mail.transport.protocol", "smtp");
         props.setProperty("mail.smtp.auth", "true");
         props.setProperty("mail.smtp.starttls.enable", "true");
         props.setProperty("mail.smtp.starttls.required", "true");
     }
 
+    public void registerTransportProtocol(String protocol) {
+        assertArgumentNotNull("protocol", protocol);
+        session.getProperties().setProperty(MAIL_TRANSPORT_PROTOCOL, protocol);
+    }
+
     public void registerReturnPath(String address) {
+        assertArgumentNotNull("address", address);
         session.getProperties().setProperty(MAIL_SMTP_FROM, address);
+    }
+
+    // -----------------------------------------------------
+    //                                     Free Registration
+    //                                     -----------------
+    public void setProperty(String key, String value) {
+        assertArgumentNotNull("key", key);
+        assertArgumentNotNull("value", value);
+        session.getProperties().setProperty(key, value);
+    }
+
+    // ===================================================================================
+    //                                                                       Assist Helper
+    //                                                                       =============
+    protected void assertArgumentNotNull(String variableName, Object value) {
+        if (variableName == null) {
+            throw new IllegalArgumentException("The variableName should not be null.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("The argument '" + variableName + "' should not be null.");
+        }
     }
 
     // ===================================================================================

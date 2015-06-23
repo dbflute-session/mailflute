@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.dbflute.mail</groupId>
 	<artifactId>mailflute</artifactId>
-	<version>0.4.0-RCD-02-SNAPSHOT</version>
+	<version>0.4.0-RCD-03-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>MailFlute</name>
