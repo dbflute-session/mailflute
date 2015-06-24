@@ -35,6 +35,8 @@ public interface CardView {
     //                                                                    ================
     OptionalThing<DeliveryCategory> getDeliveryCategory();
 
+    OptionalThing<Locale> getReceiverLocale();
+
     OptionalThing<String> getSubject();
 
     OptionalThing<Address> getFrom();
@@ -59,8 +61,6 @@ public interface CardView {
     boolean isAlsoHtmlFile();
 
     boolean isFromFilesystem();
-
-    OptionalThing<Locale> getReceiverLocale();
 
     boolean hasTemplateVariable();
 

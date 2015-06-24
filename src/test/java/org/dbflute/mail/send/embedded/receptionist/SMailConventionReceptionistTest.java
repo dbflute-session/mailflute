@@ -23,7 +23,7 @@ import org.dbflute.utflute.core.PlainTestCase;
  */
 public class SMailConventionReceptionistTest extends PlainTestCase {
 
-    public void test_checkBodyMetaFormat_noIndependentDelimiter_inSubject() throws Exception {
+    public void test_verifyFormat_noIndependentDelimiter_inSubject() throws Exception {
         // ## Arrange ##
         SMailConventionReceptionist receptionist = new SMailConventionReceptionist();
         StringBuilder sb = new StringBuilder();
@@ -33,11 +33,11 @@ public class SMailConventionReceptionistTest extends PlainTestCase {
         // ## Act ##
         // ## Assert ##
         assertException(SMailBodyMetaParseFailureException.class, () -> {
-            receptionist.checkBodyMetaFormat("sea.dfmail", sb.toString());
+            receptionist.verifyFormat("sea.dfmail", sb.toString(), ">>>");
         });
     }
 
-    public void test_checkBodyMetaFormat_noIndependentDelimiter_inOption() throws Exception {
+    public void test_verifyFormat_noIndependentDelimiter_inOption() throws Exception {
         // ## Arrange ##
         SMailConventionReceptionist receptionist = new SMailConventionReceptionist();
         StringBuilder sb = new StringBuilder();
@@ -48,11 +48,11 @@ public class SMailConventionReceptionistTest extends PlainTestCase {
         // ## Act ##
         // ## Assert ##
         assertException(SMailBodyMetaParseFailureException.class, () -> {
-            receptionist.checkBodyMetaFormat("sea.dfmail", sb.toString());
+            receptionist.verifyFormat("sea.dfmail", sb.toString(), ">>>");
         });
     }
 
-    public void test_checkBodyMetaFormat_noIndependentDelimiter_noLineBody() throws Exception {
+    public void test_verifyFormat_noIndependentDelimiter_noLineBody() throws Exception {
         // ## Arrange ##
         SMailConventionReceptionist receptionist = new SMailConventionReceptionist();
         StringBuilder sb = new StringBuilder();
@@ -62,7 +62,7 @@ public class SMailConventionReceptionistTest extends PlainTestCase {
         // ## Act ##
         // ## Assert ##
         assertException(SMailBodyMetaParseFailureException.class, () -> {
-            receptionist.checkBodyMetaFormat("sea.dfmail", sb.toString());
+            receptionist.verifyFormat("sea.dfmail", sb.toString(), ">>>");
         });
     }
 }

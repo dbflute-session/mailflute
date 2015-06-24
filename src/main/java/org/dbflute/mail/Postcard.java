@@ -48,6 +48,7 @@ public class Postcard implements CardView {
     //                                      Postcard Request
     //                                      ----------------
     protected DeliveryCategory deliveryCategory; // optional (has default)
+    protected Locale receiverLocale; // optional, and the locale file is not found, default file
     protected String subject; // required or optional (e.g. from template file)
     protected Address from; // required
     protected List<Address> toList; // required at least one, lazy loaded
@@ -65,7 +66,6 @@ public class Postcard implements CardView {
     protected boolean fromFilesystem;
     protected String plainBody; // null when body file used, direct text
     protected String htmlBody; // null when body file used, path or direct text
-    protected Locale receiverLocale; // optional, and the locale file is not found, default file
     protected Map<String, Object> templateVariableMap; // optional, lazy loaded
     protected boolean wholeFixedTextUsed; // may be sometimes used
 
@@ -102,6 +102,11 @@ public class Postcard implements CardView {
         assertArgumentNotNull("category", category);
         this.deliveryCategory = category;
         return this;
+    }
+
+    public void asReceiverLocale(Locale receiverLocale) {
+        assertArgumentNotNull("receiverLocale", receiverLocale);
+        this.receiverLocale = receiverLocale;
     }
 
     // ===================================================================================
@@ -205,12 +210,6 @@ public class Postcard implements CardView {
 
         public BodyFileOption fromFilesystem() {
             fromFilesystem = true;
-            return this;
-        }
-
-        public BodyFileOption receiverLocale(Locale receiverLocale) {
-            assertArgumentNotNull("receiverLocale", receiverLocale);
-            Postcard.this.receiverLocale = receiverLocale;
             return this;
         }
 
@@ -432,15 +431,21 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                      Postcard Request
     //                                      ----------------
-    public OptionalThing<String> getSubject() {
-        return OptionalThing.ofNullable(subject, () -> {
-            throw new SMailIllegalStateException("Not found the subject: " + toString());
-        });
-    }
-
     public OptionalThing<DeliveryCategory> getDeliveryCategory() {
         return OptionalThing.ofNullable(deliveryCategory, () -> {
             throw new SMailIllegalStateException("Not found the delivery category: " + toString());
+        });
+    }
+
+    public OptionalThing<Locale> getReceiverLocale() {
+        return OptionalThing.ofNullable(receiverLocale, () -> {
+            throw new SMailIllegalStateException("Not found the receiver locale: " + toString());
+        });
+    }
+
+    public OptionalThing<String> getSubject() {
+        return OptionalThing.ofNullable(subject, () -> {
+            throw new SMailIllegalStateException("Not found the subject: " + toString());
         });
     }
 
@@ -489,12 +494,6 @@ public class Postcard implements CardView {
 
     public boolean isFromFilesystem() {
         return fromFilesystem;
-    }
-
-    public OptionalThing<Locale> getReceiverLocale() {
-        return OptionalThing.ofNullable(receiverLocale, () -> {
-            throw new SMailIllegalStateException("Not found the receiver locale: " + toString());
-        });
     }
 
     public boolean hasTemplateVariable() {

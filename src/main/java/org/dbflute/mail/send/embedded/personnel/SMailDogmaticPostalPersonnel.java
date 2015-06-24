@@ -33,6 +33,7 @@ import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
+import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfTypeUtil;
@@ -61,6 +62,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     protected final OptionalThing<SMailSubjectFilter> subjectFilter;
     protected final OptionalThing<SMailBodyTextFilter> bodyTextFilter;
     protected final OptionalThing<SMailAsyncStrategy> asyncStrategy;
+    protected final OptionalThing<SMailLabelStrategy> labelStrategy;
     protected final OptionalThing<SMailLoggingStrategy> loggingStrategy;
 
     // -----------------------------------------------------
@@ -79,6 +81,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         subjectFilter = createSubjectFilter();
         bodyTextFilter = createBodyTextFilter();
         asyncStrategy = createAsyncStrategy();
+        labelStrategy = createLabelStrategy();
         loggingStrategy = createLoggingStrategy();
     }
 
@@ -138,6 +141,10 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return OptionalThing.empty();
     }
 
+    protected OptionalThing<SMailLabelStrategy> createLabelStrategy() {
+        return OptionalThing.empty();
+    }
+
     protected OptionalThing<SMailAsyncStrategy> createAsyncStrategy() {
         return OptionalThing.empty();
     }
@@ -182,6 +189,8 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         cancelFilter.ifPresent(filter -> postie.withCancelFilter(filter));
         addressFilter.ifPresent(filter -> postie.withAddressFilter(filter));
         subjectFilter.ifPresent(filter -> postie.withSubjectFilter(filter));
+        bodyTextFilter.ifPresent(filter -> postie.withBodyTextFilter(filter));
+        labelStrategy.ifPresent(filter -> postie.withLabelStrategy(filter));
         asyncStrategy.ifPresent(strategy -> postie.withAsyncStrategy(strategy));
         loggingStrategy.ifPresent(strategy -> postie.withLoggingStrategy(strategy));
         return training ? postie.asTraining() : postie;

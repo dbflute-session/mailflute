@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -32,6 +33,7 @@ import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
@@ -57,6 +59,8 @@ import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilterNone;
+import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
+import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
 import org.dbflute.optional.OptionalThing;
@@ -75,6 +79,7 @@ public class SMailHonestPostie implements SMailPostie {
     private static final SMailSubjectFilter noneSubjectFilter = new SMailSubjectFilterNone();
     private static final SMailBodyTextFilter noneBodyTextFilter = new SMailBodyTextFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
+    private static final SMailLabelStrategy noneLabelStrategy = new SMailLabelStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
 
     // ===================================================================================
@@ -86,6 +91,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
     protected SMailBodyTextFilter bodyTextFilter = noneBodyTextFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
+    protected SMailLabelStrategy labelStrategy = noneLabelStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected boolean training;
 
@@ -124,6 +130,12 @@ public class SMailHonestPostie implements SMailPostie {
     public SMailHonestPostie withAsyncStrategy(SMailAsyncStrategy asyncStrategy) {
         assertArgumentNotNull("asyncStrategy", asyncStrategy);
         this.asyncStrategy = asyncStrategy;
+        return this;
+    }
+
+    public SMailHonestPostie withLabelStrategy(SMailLabelStrategy labelStrategy) {
+        assertArgumentNotNull("labelStrategy", labelStrategy);
+        this.labelStrategy = labelStrategy;
         return this;
     }
 
@@ -179,10 +191,12 @@ public class SMailHonestPostie implements SMailPostie {
         final Address fromAddress = postcard.getFrom().orElseThrow(() -> { /* already checked, but just in case */
             return new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
         });
+        resolveAddressPersonalLabel(postcard, fromAddress);
         final Address filteredFrom = addressFilter.filterFrom(postcard, fromAddress);
         message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
         boolean existsToAddress = false;
         for (Address to : postcard.getToList()) {
+            resolveAddressPersonalLabel(postcard, to);
             final OptionalThing<Address> opt = addressFilter.filterTo(postcard, to);
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addTo(address));
             if (opt.isPresent()) {
@@ -191,10 +205,12 @@ public class SMailHonestPostie implements SMailPostie {
         }
         verifyFilteredToAddressExists(postcard, existsToAddress);
         for (Address cc : postcard.getCcList()) {
+            resolveAddressPersonalLabel(postcard, cc);
             final OptionalThing<Address> opt = addressFilter.filterCc(postcard, cc);
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addCc(address));
         }
         for (Address bcc : postcard.getBccList()) {
+            resolveAddressPersonalLabel(postcard, bcc);
             final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, bcc);
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addBcc(address));
         }
@@ -202,6 +218,7 @@ public class SMailHonestPostie implements SMailPostie {
         if (!replyToList.isEmpty()) {
             final List<Address> filteredList = new ArrayList<Address>(replyToList.size());
             for (Address replyTo : replyToList) {
+                resolveAddressPersonalLabel(postcard, replyTo);
                 final OptionalThing<Address> opt = addressFilter.filterReplyTo(postcard, replyTo);
                 verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> filteredList.add(address));
             }
@@ -209,6 +226,33 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
+    // -----------------------------------------------------
+    //                                        Label Handling
+    //                                        --------------
+    protected void resolveAddressPersonalLabel(Postcard postcard, Address address) {
+        if (address instanceof InternetAddress) {
+            final InternetAddress internetAddress = (InternetAddress) address;
+            final String personal = internetAddress.getPersonal();
+            if (personal != null) {
+                final Locale locale = postcard.getReceiverLocale().orElse(Locale.getDefault());
+                final String resolved = labelStrategy.resolveLabel(postcard, locale, personal);
+                final String encoding = getPersonalEncoding();
+                try {
+                    internetAddress.setPersonal(resolved, encoding);
+                } catch (UnsupportedEncodingException e) {
+                    throw new SMailIllegalStateException("Unknown encoding for personal: " + encoding);
+                }
+            }
+        }
+    }
+
+    protected String getPersonalEncoding() {
+        return getBasicEncoding();
+    }
+
+    // -----------------------------------------------------
+    //                                        Verify Address
+    //                                        --------------
     protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {
         if (filteredFrom == null) {
             String msg = "The filtered from-address should not be null: " + postcard;
@@ -244,7 +288,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getSubjectEncoding() {
-        return getBasicEncoding();
+        return getPersonalEncoding();
     }
 
     // ===================================================================================
@@ -329,7 +373,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getTextEncoding() {
-        return getBasicEncoding();
+        return getPersonalEncoding();
     }
 
     protected ByteBuffer prepareTextByteBuffer(String text, final String encoding) {
@@ -442,7 +486,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getAttachmentFilenameEncoding() {
-        return getBasicEncoding();
+        return getPersonalEncoding();
     }
 
     // ===================================================================================

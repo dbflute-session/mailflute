@@ -15,18 +15,16 @@
  */
 package org.dbflute.mail.send.embedded.proofreader;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailTextProofreader;
+import org.dbflute.mail.send.embedded.receptionist.SMailConventionReceptionist;
+import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailSubjectDuplicateException;
 import org.dbflute.mail.send.exception.SMailSubjectNotFoundException;
 import org.dbflute.util.Srl;
-import org.dbflute.util.Srl.ScopeInfo;
 
 /**
  * @author jflute
@@ -37,17 +35,10 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    public static final String META_DELIMITER = ">>>";
-    public static final String SUBJECT_LABEL = "subject:";
-    public static final String OPTION_LABEL = "option:";
-    public static final String PLUS_HTML_OPTION = "+html";
-    public static final String PROPDEF_PREFIX = "-- !!";
-    public static final Set<String> optionSet;
-    static {
-        final Set<String> set = new LinkedHashSet<String>();
-        set.add(PLUS_HTML_OPTION);
-        optionSet = Collections.unmodifiableSet(set);
-    }
+    protected static final String META_DELIMITER = SMailConventionReceptionist.META_DELIMITER;
+    protected static final String COMMENT_BEGIN = SMailConventionReceptionist.COMMENT_BEGIN;
+    protected static final String COMMENT_END = SMailConventionReceptionist.COMMENT_END;
+    protected static final String SUBJECT_LABEL = SMailConventionReceptionist.SUBJECT_LABEL;
     protected static final String LF = "\n";
     protected static final String CRLF = "\r\n";
 
@@ -72,7 +63,11 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
     }
 
     protected String doProofreader(String templateText) {
-        // _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        // _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        // /*
+        //  [New Member's Registration]
+        //  The member will be formalized after clicking the URL.
+        // */
         // subject: Welcome to your sign up, /*pmb.memberName*/
         // >>>
         // Hello, /*pmb.memberName*/
@@ -80,32 +75,42 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
         // _/_/_/_/_/_/_/_/_/_/
         // no check here, already checked by receptionist
         // and parameters may be resolved here so not to have malfunction
-        final String subjectLabel = SUBJECT_LABEL;
         final String delimiter = META_DELIMITER;
-        if (templateText.startsWith(subjectLabel) && templateText.contains(delimiter)) {
+        if (templateText.startsWith(COMMENT_BEGIN) && templateText.contains(delimiter)) {
             if (postcard.getSubject().isPresent()) {
                 throwMailSubjectDuplicateException(templateText);
             }
-            final ScopeInfo scopeFirst = Srl.extractScopeFirst(templateText, subjectLabel, delimiter);
-            final String meta = Srl.replace(scopeFirst.getContent().trim(), CRLF, LF);
-            final String subject = meta.contains(LF) ? Srl.substringFirstFront(meta, LF) : meta;
+            final String subject = extractSubject(templateText, delimiter);
             postcard.setSubject(subject);
-            final String rear = Srl.substringFirstRear(templateText, delimiter);
-            final String realText;
-            if (rear.startsWith(LF)) {
-                realText = rear.substring(LF.length());
-            } else if (rear.startsWith(CRLF)) {
-                realText = rear.substring(CRLF.length());
-            } else { // e.g. >>> Hello, ... but receptionist checks it so basically no way
-                realText = rear;
-            }
-            return realText;
+            return extractRealText(templateText, delimiter);
         } else {
             if (postcard.getSubject() == null) {
                 throwMailSubjectNotFoundException(templateText);
             }
             return templateText;
         }
+    }
+
+    protected String extractSubject(String templateText, String delimiter) {
+        final String meta = Srl.substringFirstFront(templateText, delimiter);
+        final String commentRear = Srl.substringFirstRear(meta, COMMENT_END);
+        if (commentRear == null) { // basically no way because of receptionist verification
+            throw new SMailIllegalStateException("Body meta should have header comment: " + meta);
+        }
+        return Srl.substringFirstFront(Srl.substringFirstRear(commentRear, SUBJECT_LABEL), LF).trim();
+    }
+
+    protected String extractRealText(String templateText, String delimiter) {
+        final String delimRear = Srl.substringFirstRear(templateText, delimiter);
+        final String realText;
+        if (delimRear.startsWith(LF)) {
+            realText = delimRear.substring(LF.length());
+        } else if (delimRear.startsWith(CRLF)) {
+            realText = delimRear.substring(CRLF.length());
+        } else { // e.g. >>> Hello, ... but receptionist checks it so basically no way
+            realText = delimRear;
+        }
+        return realText;
     }
 
     protected String removeUTF8BomIfNeeds(String plainText) {
@@ -132,7 +137,8 @@ public class SMailBodyMetaProofreader implements SMailTextProofreader {
         br.addItem("Advice");
         br.addElement("Specify subject by postcard or define it in body file.");
         br.addElement("For example, subject on body meta like this:");
-        br.addElement("  subject: ...(subject)");
+        br.addElement("  comment: ...(one liner)");
+        br.addElement("  subject: ...(mail subject)");
         br.addElement("  >>>");
         br.addElement("  ...(mail body)");
         br.addItem("Postcard");

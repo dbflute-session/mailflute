@@ -150,7 +150,7 @@ public class PostOfficeTest extends PlainTestCase {
         } else {
             assertFalse(postcard.toCompleteHtmlText().isPresent());
         }
-        assertEquals(postcard.getSubject().get(), subject);
+        assertEquals(subject, postcard.getSubject().get());
     }
 
     protected Map<String, Object> prepareVariableMap() {
@@ -167,9 +167,10 @@ public class PostOfficeTest extends PlainTestCase {
         // ## Arrange ##
         Postcard postcard = new Postcard();
         prepareMockAddress(postcard);
+        postcard.asReceiverLocale(Locale.JAPANESE);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
-        postcard.useBodyFile(RECEIVER_LOCALE_ML).receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+        postcard.useBodyFile(RECEIVER_LOCALE_ML).useTemplateText(prepareVariableMap());
 
         // ## Act ##
         prepareOffice().deliver(postcard);
@@ -183,9 +184,10 @@ public class PostOfficeTest extends PlainTestCase {
         // ## Arrange ##
         Postcard postcard = new Postcard();
         prepareMockAddress(postcard);
+        postcard.asReceiverLocale(Locale.JAPANESE);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
-        postcard.useBodyFile(RECEIVER_LOCALE_ML).alsoHtmlFile().receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+        postcard.useBodyFile(RECEIVER_LOCALE_ML).alsoHtmlFile().useTemplateText(prepareVariableMap());
 
         // ## Act ##
         prepareOffice().deliver(postcard);
@@ -201,9 +203,10 @@ public class PostOfficeTest extends PlainTestCase {
         // ## Arrange ##
         Postcard postcard = new Postcard();
         prepareMockAddress(postcard);
+        postcard.asReceiverLocale(Locale.JAPANESE);
         String subject = "Welcome to your source code reading";
         postcard.setSubject(subject);
-        postcard.useBodyFile(RECEIVER_LOCALENOFILE_ML).receiverLocale(Locale.JAPANESE).useTemplateText(prepareVariableMap());
+        postcard.useBodyFile(RECEIVER_LOCALENOFILE_ML).useTemplateText(prepareVariableMap());
 
         // ## Act ##
         prepareOffice().deliver(postcard);

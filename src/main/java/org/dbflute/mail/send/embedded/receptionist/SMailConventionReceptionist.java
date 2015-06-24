@@ -17,6 +17,8 @@ package org.dbflute.mail.send.embedded.receptionist;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,15 +31,16 @@ import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailReceptionist;
-import org.dbflute.mail.send.embedded.proofreader.SMailBodyMetaProofreader;
 import org.dbflute.mail.send.exception.SMailBodyMetaParseFailureException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.mail.send.exception.SMailUserLocaleNotFoundException;
 import org.dbflute.optional.OptionalThing;
+import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.DfTypeUtil;
 import org.dbflute.util.Srl;
+import org.dbflute.util.Srl.ScopeInfo;
 
 /**
  * @author jflute
@@ -48,12 +51,23 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
-    protected static final String META_DELIMITER = SMailBodyMetaProofreader.META_DELIMITER;
-    protected static final String SUBJECT_LABEL = SMailBodyMetaProofreader.SUBJECT_LABEL;
-    protected static final String OPTION_LABEL = SMailBodyMetaProofreader.OPTION_LABEL;
-    protected static final String PLUS_HTML_OPTION = SMailBodyMetaProofreader.PLUS_HTML_OPTION;
-    protected static final String PROPDEF_PREFIX = SMailBodyMetaProofreader.PROPDEF_PREFIX;
-    protected static final Set<String> optionSet = SMailBodyMetaProofreader.optionSet;
+    public static final String META_DELIMITER = ">>>";
+    public static final String COMMENT_BEGIN = "/*";
+    public static final String COMMENT_END = "*/";
+    public static final String TITLE_BEGIN = "[";
+    public static final String TITLE_END = "]";
+    public static final String SUBJECT_LABEL = "subject:";
+    public static final String OPTION_LABEL = "option:";
+    public static final String PLUS_HTML_OPTION = "+html";
+    public static final String PROPDEF_PREFIX = "-- !!";
+    public static final Set<String> optionSet;
+    static {
+        optionSet = Collections.unmodifiableSet(DfCollectionUtil.newLinkedHashSet(PLUS_HTML_OPTION));
+    }
+    public static final List<String> allowedPrefixList; // except first line (comment)
+    static {
+        allowedPrefixList = Arrays.asList(OPTION_LABEL, PROPDEF_PREFIX);
+    }
     protected static final String LF = "\n";
     protected static final String CR = "\r";
     protected static final String CRLF = "\r\n";
@@ -100,7 +114,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                 throw new SMailIllegalStateException(msg);
             }
             final boolean filesystem = postcard.isFromFilesystem();
-            final OptionalThing<Locale> receiverLocale = getReceiverLocale(postcard);
+            final OptionalThing<Locale> receiverLocale = prepareReceiverLocale(postcard);
             officeManagedLogging(postcard, bodyFile, receiverLocale);
             final String plainText = readText(postcard, bodyFile, filesystem, receiverLocale);
             analyzeBodyMeta(postcard, bodyFile, plainText);
@@ -116,7 +130,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         });
     }
 
-    protected OptionalThing<Locale> getReceiverLocale(Postcard postcard) {
+    protected OptionalThing<Locale> prepareReceiverLocale(Postcard postcard) {
         final OptionalThing<Locale> receiverLocale = postcard.getReceiverLocale();
         if (receiverLocale.isPresent()) {
             return receiverLocale;
@@ -127,6 +141,9 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                     String msg = "Not found the user locale from the assist: " + receiverLocaleAssist + ", " + postcard;
                     throw new SMailUserLocaleNotFoundException(msg);
                 }
+                assistedLocale.ifPresent(locale -> {
+                    postcard.asReceiverLocale(locale); /* save for next steps */
+                });
                 return assistedLocale;
             }
             return OptionalThing.ofNullable(null, () -> {
@@ -249,19 +266,23 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                     ===============
     protected void analyzeBodyMeta(Postcard postcard, String bodyFile, String plainText) {
         // _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+        // /*
+        //  [New Member's Registration]
+        //  The member will be formalized after click.
+        // */
         // subject: Welcome to your sign up, /*pmb.memberName*/
         // >>>
         // Hello, /*pmb.memberName*/
         // ...
         // _/_/_/_/_/_/_/_/_/_/
-        checkBodyMetaFormat(bodyFile, plainText);
-        final String meta = Srl.replace(Srl.substringFirstFront(plainText, META_DELIMITER), CRLF, LF);
-        final String secondOrMoreText = Srl.substringFirstRear(meta, LF);
-        if (secondOrMoreText.startsWith(OPTION_LABEL)) {
-            final String option = Srl.substringFirstFront(Srl.substringFirstRear(secondOrMoreText, OPTION_LABEL), LF);
-            if (option.contains(PLUS_HTML_OPTION)) {
-                postcard.officePlusHtml();
-            }
+        final String delimiter = META_DELIMITER;
+        if (plainText.contains(delimiter)) {
+            verifyFormat(bodyFile, plainText, delimiter);
+        }
+        final String meta = Srl.replace(Srl.substringFirstFront(plainText, delimiter), CRLF, LF);
+        final ScopeInfo optionScope = Srl.extractScopeFirst(meta, OPTION_LABEL, LF);
+        if (optionScope != null && optionScope.getContent().contains(PLUS_HTML_OPTION)) {
+            postcard.officePlusHtml();
         }
     }
 
@@ -272,189 +293,376 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     }
 
     // ===================================================================================
-    //                                                                        Check Format
-    //                                                                        ============
-    protected void checkBodyMetaFormat(String bodyFile, String fileText) {
-        final String delimiter = SMailBodyMetaProofreader.META_DELIMITER;
-        if (fileText.contains(delimiter)) {
-            final String meta = Srl.substringFirstFront(fileText, delimiter);
-            if (!meta.endsWith(LF)) { // also CRLF checked
-                throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
+    //                                                                             Dispose
+    //                                                                             =======
+    @Override
+    public synchronized void workingDispose() { // for hot deploy
+        textCacheMap.clear();
+    }
+
+    // ===================================================================================
+    //                                                                       Verify Format
+    //                                                                       =============
+    protected void verifyFormat(String bodyFile, String plainText, String delimiter) {
+        final String meta = Srl.substringFirstFront(plainText, delimiter);
+        if (!meta.endsWith(LF)) { // also CRLF checked
+            throwBodyMetaNoIndependentDelimiterException(bodyFile, plainText);
+        }
+        final int rearIndex = plainText.indexOf(delimiter) + delimiter.length();
+        if (plainText.length() > rearIndex) { // just in case (empty mail possible?)
+            final String rearFirstStr = plainText.substring(rearIndex, rearIndex + 1);
+            if (!Srl.equalsPlain(rearFirstStr, LF, CR)) { // e.g. >>> Hello, ...
+                throwBodyMetaNoIndependentDelimiterException(bodyFile, plainText);
             }
-            final int rearIndex = fileText.indexOf(delimiter) + delimiter.length();
-            if (fileText.length() > rearIndex) { // just in case (empty mail possible?)
-                final String rearFirstStr = fileText.substring(rearIndex, rearIndex + 1);
-                if (!Srl.equalsPlain(rearFirstStr, LF, CR)) { // e.g. >>> Hello, ...
-                    throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
+        }
+        if (!meta.startsWith(COMMENT_BEGIN)) { // also leading spaces not allowed
+            throwBodyMetaNotStartWithHeaderCommentException(bodyFile, plainText, meta);
+        }
+        if (!meta.contains(COMMENT_END)) {
+            throwBodyMetaHeaderCommentEndMarkNotFoundException(bodyFile, plainText, meta);
+        }
+        final String headerComment = Srl.extractScopeFirst(plainText, COMMENT_BEGIN, COMMENT_END).getContent();
+        final ScopeInfo titleScope = Srl.extractScopeFirst(headerComment, TITLE_BEGIN, TITLE_END);
+        if (titleScope == null) {
+            throwBodyMetaTitleCommentNotFoundException(bodyFile, plainText);
+        }
+        final String desc = Srl.substringFirstRear(headerComment, TITLE_END);
+        if (desc.isEmpty()) {
+            throwBodyMetaDescriptionCommentNotFoundException(bodyFile, plainText);
+        }
+        final String rearMeta = Srl.substringFirstRear(meta, COMMENT_END);
+        // no way because of already checked
+        //if (!rearMeta.contains(LF)) {
+        //}
+        final List<String> splitList = Srl.splitList(rearMeta, LF);
+        if (!splitList.get(0).trim().isEmpty()) { // after '*/'
+            throwBodyMetaHeaderCommentEndMarkNoIndependentException(bodyFile, plainText);
+        }
+        if (!splitList.get(1).startsWith(SUBJECT_LABEL)) { // also leading spaces not allowed
+            throwBodyMetaSubjectNotFoundException(bodyFile, plainText);
+        }
+        final int nextIndex = 2;
+        if (splitList.size() > nextIndex) { // after subject
+            final List<String> nextList = splitList.subList(nextIndex, splitList.size());
+            final int nextSize = nextList.size();
+            int index = 0;
+            for (String line : nextList) {
+                if (index == nextSize - 1) { // last loop
+                    if (line.isEmpty()) { // empty line only allowed in last loop
+                        break;
+                    }
                 }
-            }
-            final List<String> splitList = Srl.splitList(meta, LF);
-            if (!splitList.get(0).startsWith(SUBJECT_LABEL)) { // also leading spaces not allowed
-                throwMailBodyMetaSubjectNotFoundException(bodyFile, fileText);
-            }
-            if (splitList.size() > 1) {
-                final List<String> nextList = splitList.subList(1, splitList.size());
-                final int nextSize = nextList.size();
-                int index = 0;
-                int lineNumber = 2;
-                for (String line : nextList) {
-                    if (index == nextSize - 1) { // last loop
-                        if (line.isEmpty()) { // empty line only allowed in last loop
-                            break;
+                if (!allowedPrefixList.stream().anyMatch(prefix -> line.startsWith(prefix))) {
+                    throwBodyMetaUnknownLineException(bodyFile, plainText, line);
+                }
+                if (line.startsWith(OPTION_LABEL)) {
+                    final String options = Srl.substringFirstRear(line, OPTION_LABEL);
+                    final List<String> optionList = Srl.splitListTrimmed(options, ".");
+                    for (String option : optionList) {
+                        if (!optionSet.contains(option)) {
+                            throwBodyMetaUnknownOptionException(bodyFile, plainText, option);
                         }
                     }
-                    if (!line.startsWith(OPTION_LABEL) && !line.startsWith(PROPDEF_PREFIX)) {
-                        throwMailBodyMetaUnknownLineException(bodyFile, fileText, line, lineNumber);
-                    }
-                    if (line.startsWith(OPTION_LABEL)) {
-                        final String options = Srl.substringFirstRear(line, OPTION_LABEL);
-                        final List<String> optionList = Srl.splitListTrimmed(options, ".");
-                        for (String option : optionList) {
-                            if (!optionSet.contains(option)) {
-                                throwMailBodyMetaUnknownOptionException(bodyFile, fileText, option);
-                            }
-                        }
-                    }
-                    ++lineNumber;
-                    ++index;
                 }
-            } else { // already checked so basically no way but just in case
-                throwMailBodyMetaNoIndependentDelimiterException(bodyFile, fileText);
-            }
-        } else { // no delimiter
-            // basically already checked when you generate postcards by DBFlute
-            final String firstLine = Srl.substringFirstFront(fileText, LF);
-            if (Srl.containsIgnoreCase(firstLine, SUBJECT_LABEL)) { // may be mistake?
-                throwMailBodyMetaNotFoundException(bodyFile, fileText);
+                ++index;
             }
         }
     }
 
-    protected void throwMailBodyMetaNoIndependentDelimiterException(String bodyFile, String fileText) {
+    protected void throwBodyMetaNoIndependentDelimiterException(String bodyFile, String plainText) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
-        br.addNotice("No independent delimter of body meta.");
+        br.addNotice("No independent delimter of mail body meta.");
         br.addItem("Advice");
-        br.addElement("The delimter of body meta should be independent in line.");
+        br.addElement("The delimter of mail body meta should be independent in line.");
         br.addElement("For example:");
         br.addElement("  (x)");
-        br.addElement("    subject: ...(mail subject)>>>");
-        br.addElement("    ...(mail body)");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */ subject: ... >>>   // *NG");
+        br.addElement("    ...your mail body");
         br.addElement("  (x)");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    >>>...(mail body)");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>> ...your mail body // *NG");
         br.addElement("  (o)");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addItem("Body File");
-        br.addElement(bodyFile);
-        br.addItem("File Text");
-        br.addElement(fileText);
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>                   // OK");
+        br.addElement("    ...your mail body");
+        setupBodyFileInfo(br, bodyFile, plainText);
         final String msg = br.buildExceptionMessage();
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    protected void throwMailBodyMetaSubjectNotFoundException(String bodyFile, String fileText) {
+    protected void throwBodyMetaNotStartWithHeaderCommentException(String bodyFile, String plainText, String meta) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
-        br.addNotice("Not found the subject in the MailFlute body meta.");
+        br.addNotice("Not start with the header comment in the mail body meta.");
         br.addItem("Advice");
-        br.addElement("The MailFlute body meta should start with subject.");
+        br.addElement("The mail body meta should start with '/*' and should contain '*/'.");
+        br.addElement("It means header comment of template file is required.");
         br.addElement("For example:");
-        br.addElement("  subject: ...(mail subject)");
+        br.addElement("  (x)");
+        br.addElement("    subject: ...              // *NG");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        br.addElement("");
+        br.addElement("  (o)");
+        br.addElement("    /*                        // OK");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        br.addElement("");
+        br.addElement("And example:");
+        br.addElement("  /*");
+        br.addElement("   [New Member's Registration]");
+        br.addElement("   The memebr will be formalized after click.");
+        br.addElement("   And the ...");
+        br.addElement("  */");
+        br.addElement("  subject: Welcome to your sign up, /*pmb.memberName*/");
         br.addElement("  >>>");
-        br.addElement("  ...(mail body)");
-        br.addItem("Body File");
-        br.addElement(bodyFile);
-        br.addItem("File Text");
-        br.addElement(fileText);
+        br.addElement("  Hello, sea");
+        br.addElement("  ...");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        br.addItem("Body Meta");
+        br.addElement(meta);
         final String msg = br.buildExceptionMessage();
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    protected void throwMailBodyMetaUnknownLineException(String bodyFile, String fileText, String line, int lineNumber) {
+    protected void throwBodyMetaHeaderCommentEndMarkNotFoundException(String bodyFile, String plainText, String meta) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
-        br.addNotice("Unknown line in the MailFlute body meta.");
+        br.addNotice("Not found the header comment end mark in the mail body meta.");
         br.addItem("Advice");
-        br.addElement("The MailFlute body meta should start with subject:");
+        br.addElement("The mail body meta should start with '/*' and should contain '*/'.");
         br.addElement("For example:");
-        br.addElement("  (o):");
-        br.addElement("    subject: ...(mail subject)");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    subject: ...");
         br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
+        br.addElement("    ...             // *NG: not found");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    >>>");
+        br.addElement("    */              // *NG: after delimiter");
+        br.addElement("    subject: ...");
+        br.addElement("    ...");
         br.addElement("  (o):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    option: ...(options)");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */              // OK");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        br.addItem("Body Meta");
+        br.addElement(meta);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwBodyMetaTitleCommentNotFoundException(String bodyFile, String plainText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the title in the header comment of mail body meta.");
+        br.addItem("Advice");
+        br.addElement("The mail body meta should contain TITLE in the header comment.");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     ...your mail's description     // *NG");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]         // OK");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwBodyMetaDescriptionCommentNotFoundException(String bodyFile, String plainText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the description in the header comment of mail body meta.");
+        br.addItem("Advice");
+        br.addElement("The mail body meta should contain DESCRIPTION");
+        br.addElement("in the header comment like this:");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("    */                              // *NG");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description     // OK");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwBodyMetaHeaderCommentEndMarkNoIndependentException(String bodyFile, String plainText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("No independent the header comment end mark in the mail body meta.");
+        br.addItem("Advice");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */ subject: ...        // *NG");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...           // OK");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwBodyMetaSubjectNotFoundException(String bodyFile, String plainText) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the subject in the mail body meta.");
+        br.addItem("Advice");
+        br.addElement("The mail body meta should have subject.");
+        br.addElement("And should be defined immediately after header comment.");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    >>>                    // *NG");
+        br.addElement("    ...your mail body");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    option: ...");
+        br.addElement("    subject: ...           // *NG");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...           // OK");
+        br.addElement("    >>>");
+        br.addElement("    ...your mail body");
+        setupBodyFileInfo(br, bodyFile, plainText);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
+    }
+
+    protected void throwBodyMetaUnknownLineException(String bodyFile, String plainText, String line) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Unknown line in the template meta.");
+        br.addItem("Advice");
+        br.addElement("The mail body meta should start with option:");
+        br.addElement("or fixed style, e.g. '-- !!...!!'");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    maihama     // *NG: unknown meta definition");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("                // *NG: empty line not allowed");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    >>>");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
         br.addElement("    -- !!String memberName!!");
         br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addElement("  (x):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    maihama // *NG: unknown meta definition");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addElement("  (x):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("        // *NG: empty line not allowed");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addItem("Body File");
-        br.addElement(bodyFile);
-        br.addItem("File Text");
-        br.addElement(fileText);
+        br.addElement("    ...");
+        setupBodyFileInfo(br, bodyFile, plainText);
         br.addItem("Unknown Line");
-        br.addElement("Line Number: " + lineNumber);
         br.addElement(line);
         final String msg = br.buildExceptionMessage();
-        throw new SMailBodyMetaParseFailureException(msg);
+        throw new IllegalStateException(msg);
     }
 
-    protected void throwMailBodyMetaNotFoundException(String bodyFile, String fileText) {
-        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
-        br.addNotice("Not found the delimiter for MailFlute body meta.");
-        br.addItem("Advice");
-        br.addElement("The delimiter of MailFlute body meta is '>>>'.");
-        br.addElement("It should be defined like this:");
-        br.addElement("For example:");
-        br.addElement("  (o):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addElement("  (o):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    option: ...(options)");
-        br.addElement("    -- !!String memberName!!");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
-        br.addElement("  (x):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    ...(mail body)");
-        br.addElement("  (x):");
-        br.addElement("    Hello, sea...");
-        br.addItem("Body File");
-        br.addElement(bodyFile);
-        br.addItem("File Text");
-        br.addElement(fileText);
-        final String msg = br.buildExceptionMessage();
-        throw new SMailBodyMetaParseFailureException(msg);
-    }
-
-    protected void throwMailBodyMetaUnknownOptionException(String bodyFile, String fileText, String option) {
+    protected void throwBodyMetaUnknownOptionException(String bodyFile, String fileText, String option) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Unknown option for MailFlute body meta.");
         br.addItem("Advice");
         br.addElement("You can specify the following option:");
-        br.addElement(PLUS_HTML_OPTION);
+        br.addElement(optionSet);
         br.addElement("For example:");
-        br.addElement("  (o):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    option: +html");
-        br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
         br.addElement("  (x):");
-        br.addElement("    subject: ...(mail subject)");
-        br.addElement("    option: maihama // *NG: unknown option");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    option: maihama      // *NG: unknown option");
         br.addElement("    >>>");
-        br.addElement("    ...(mail body)");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    /*");
+        br.addElement("     [...your mail's title]");
+        br.addElement("     ...your mail's description");
+        br.addElement("    */");
+        br.addElement("    subject: ...");
+        br.addElement("    option: genAsIs      // OK");
+        br.addElement("    >>>");
+        br.addElement("    ...");
         br.addItem("Body File");
         br.addElement(bodyFile);
         br.addItem("File Text");
@@ -465,12 +673,49 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         throw new SMailBodyMetaParseFailureException(msg);
     }
 
-    // ===================================================================================
-    //                                                                             Dispose
-    //                                                                             =======
-    @Override
-    public synchronized void workingDispose() { // for hot deploy
-        textCacheMap.clear();
+    // cannot verify because of not required in runtime process, freegen verify instead
+    //protected void throwBodyMetaNotFoundException(String bodyFile, String plainText) {
+    //    final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+    //    br.addNotice("Not found the delimiter for mail body meta.");
+    //    br.addItem("Advice");
+    //    br.addElement("The delimiter of mail body meta is '>>>'.");
+    //    br.addElement("It should be defined.");
+    //    br.addElement("For example:");
+    //    br.addElement("  (x):");
+    //    br.addElement("    /*");
+    //    br.addElement("     [...your mail's title]");
+    //    br.addElement("     ...your mail's description");
+    //    br.addElement("    */");
+    //    br.addElement("    subject: ...");
+    //    br.addElement("    ...your mail body        // *NG");
+    //    br.addElement("  (o):");
+    //    br.addElement("    /*");
+    //    br.addElement("     [...your mail's title]");
+    //    br.addElement("     ...your mail's description");
+    //    br.addElement("    */");
+    //    br.addElement("    subject: ...");
+    //    br.addElement("    >>>                      // OK");
+    //    br.addElement("    ...your mail body");
+    //    br.addElement("  (o):");
+    //    br.addElement("    /*");
+    //    br.addElement("     [...your mail's title]");
+    //    br.addElement("     ...your mail's description");
+    //    br.addElement("    */");
+    //    br.addElement("    subject: ...");
+    //    br.addElement("    option: ...options");
+    //    br.addElement("    -- !!String memberName!!");
+    //    br.addElement("    >>>                      // OK");
+    //    br.addElement("    ...your mail body");
+    //    setupBodyFileInfo(br, bodyFile, plainText);
+    //    final String msg = br.buildExceptionMessage();
+    //    throw new SMailBodyMetaParseFailureException(msg);
+    //}
+
+    protected void setupBodyFileInfo(ExceptionMessageBuilder br, String bodyFile, String plainText) {
+        br.addItem("Body File");
+        br.addElement(bodyFile);
+        br.addItem("Plain Text");
+        br.addElement(plainText);
     }
 
     // ===================================================================================
