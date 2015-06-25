@@ -61,13 +61,17 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     public static final String PLUS_HTML_OPTION = "+html";
     public static final String PROPDEF_PREFIX = "-- !!";
     public static final Set<String> optionSet;
+
     static {
         optionSet = Collections.unmodifiableSet(DfCollectionUtil.newLinkedHashSet(PLUS_HTML_OPTION));
     }
+
     public static final List<String> allowedPrefixList; // except first line (comment)
+
     static {
         allowedPrefixList = Arrays.asList(OPTION_LABEL, PROPDEF_PREFIX);
     }
+
     protected static final String LF = "\n";
     protected static final String CR = "\r";
     protected static final String CRLF = "\r\n";

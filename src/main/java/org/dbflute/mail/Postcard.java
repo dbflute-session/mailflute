@@ -188,7 +188,8 @@ public class Postcard implements CardView {
         attachmentMap.put(filenameOnHeader, attachment);
     }
 
-    protected SMailAttachment createAttachment(String filenameOnHeader, String contentType, InputStream resourceStream, String textEncoding) {
+    protected SMailAttachment createAttachment(String filenameOnHeader, String contentType, InputStream resourceStream,
+            String textEncoding) {
         return new SMailAttachment(filenameOnHeader, contentType, resourceStream, textEncoding);
     }
 
