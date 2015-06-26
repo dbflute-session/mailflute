@@ -71,8 +71,8 @@ Can login by user 'Pixy' and password 'sea', and can see debug log at console.
 Apache License 2.0
 
 ## Official site
-(comming soon...)
+comming soon...
 
 # Thanks, Friends
-MailFlute is used by:
- comming soon...
+MailFlute is used by:  
+comming soon...
