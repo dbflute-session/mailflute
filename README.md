@@ -23,6 +23,8 @@ Happy birthdate! Today is /*pmb.birthdate*/.
 Thanks
 ```
 
+after that, execute DBFlute FreeGen task, and the class will be generated...
+
 ### use Generated Class
 ```java
 // e.g. WelcomeMemberPostcard, generated from 'welcome_member.dfmail'
@@ -44,7 +46,16 @@ Can boot it by example of LastaFlute:
 3. execute the main method of (org.docksidestage.boot) HarborBoot
 4. access to http://localhost:8090/harbor
 
-*you can login by user 'Pixy' and password 'sea', and can see debug log at console
+```java
+public class HarborBoot {
+
+    public static void main(String[] args) {
+        new JettyBoot(8090, "/harbor").asDevelopment().bootAwait();
+    }
+}
+```
+
+Can login by user 'Pixy' and password 'sea', and can see debug log at console.
 
 # Information
 ## Maven Dependency
@@ -59,6 +70,9 @@ Can boot it by example of LastaFlute:
 ## License
 Apache License 2.0
 
+## Official site
+(comming soon...)
+
 # Thanks, Friends
-LastaFlute is used by:
+MailFlute is used by:
 comming soon...
