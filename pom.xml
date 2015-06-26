@@ -7,7 +7,7 @@
 	<packaging>jar</packaging>
 
 	<name>MailFlute</name>
-	<description>The mail library like DBFlute</description>
+	<description>simple mail library with DBFlute and Java8</description>
 	<url>http://dbflute.org</url>
 	<inceptionYear>2014</inceptionYear>
 
