@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.mail.Address;
-
+import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.optional.OptionalThing;
 
@@ -39,15 +38,15 @@ public interface CardView {
 
     OptionalThing<String> getSubject();
 
-    OptionalThing<Address> getFrom();
+    OptionalThing<SMailAddress> getFrom();
 
-    List<Address> getToList();
+    List<SMailAddress> getToList();
 
-    List<Address> getCcList();
+    List<SMailAddress> getCcList();
 
-    List<Address> getBccList();
+    List<SMailAddress> getBccList();
 
-    List<Address> getReplyToList();
+    List<SMailAddress> getReplyToList();
 
     Map<String, SMailAttachment> getAttachmentMap();
 

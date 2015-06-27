@@ -21,9 +21,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostalParkingLot;
@@ -245,8 +245,8 @@ public class PostOfficeTest extends PlainTestCase {
     //                                                                         Test Helper
     //                                                                         ===========
     protected void prepareMockAddress(Postcard postcard) throws AddressException {
-        postcard.setFrom(new InternetAddress("sea@example.com"));
-        postcard.addTo(new InternetAddress("land@example.com"));
+        postcard.setFrom(new SMailAddress("sea@example.com", "Sea"));
+        postcard.addTo(new SMailAddress("land@example.com", "Land"));
     }
 
     protected PostOffice prepareOffice() {

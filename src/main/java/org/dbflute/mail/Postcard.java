@@ -24,9 +24,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import javax.mail.Address;
-
 import org.dbflute.helper.message.ExceptionMessageBuilder;
+import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailPostcardIllegalStateException;
@@ -50,11 +49,11 @@ public class Postcard implements CardView {
     protected DeliveryCategory deliveryCategory; // optional (has default)
     protected Locale receiverLocale; // optional, and the locale file is not found, default file
     protected String subject; // required or optional (e.g. from template file)
-    protected Address from; // required
-    protected List<Address> toList; // required at least one, lazy loaded
-    protected List<Address> ccList; // optional, lazy loaded
-    protected List<Address> bccList; // optional, lazy loaded
-    protected List<Address> replyToList; // optional, lazy loaded
+    protected SMailAddress from; // required
+    protected List<SMailAddress> toList; // required at least one, lazy loaded
+    protected List<SMailAddress> ccList; // optional, lazy loaded
+    protected List<SMailAddress> bccList; // optional, lazy loaded
+    protected List<SMailAddress> replyToList; // optional, lazy loaded
     protected Map<String, SMailAttachment> attachmentMap; // optional, lozy loaded
 
     // -----------------------------------------------------
@@ -122,39 +121,39 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                               Address
     //                                               -------
-    public void setFrom(Address address) {
+    public void setFrom(SMailAddress address) {
         assertArgumentNotNull("address", address);
         from = address;
     }
 
-    public void addTo(Address address) {
+    public void addTo(SMailAddress address) {
         assertArgumentNotNull("address", address);
         if (toList == null) {
-            toList = new ArrayList<Address>(2);
+            toList = new ArrayList<SMailAddress>(2);
         }
         toList.add(address);
     }
 
-    public void addCc(Address address) {
+    public void addCc(SMailAddress address) {
         assertArgumentNotNull("address", address);
         if (ccList == null) {
-            ccList = new ArrayList<Address>(2);
+            ccList = new ArrayList<SMailAddress>(2);
         }
         ccList.add(address);
     }
 
-    public void addBcc(Address address) {
+    public void addBcc(SMailAddress address) {
         assertArgumentNotNull("address", address);
         if (bccList == null) {
-            bccList = new ArrayList<Address>(2);
+            bccList = new ArrayList<SMailAddress>(2);
         }
         bccList.add(address);
     }
 
-    public void addReplyTo(Address address) {
+    public void addReplyTo(SMailAddress address) {
         assertArgumentNotNull("address", address);
         if (replyToList == null) {
-            replyToList = new ArrayList<Address>(2);
+            replyToList = new ArrayList<SMailAddress>(2);
         }
         replyToList.add(address);
     }
@@ -450,25 +449,25 @@ public class Postcard implements CardView {
         });
     }
 
-    public OptionalThing<Address> getFrom() {
+    public OptionalThing<SMailAddress> getFrom() {
         return OptionalThing.ofNullable(from, () -> {
             throw new SMailIllegalStateException("Not found the from address: " + toString());
         });
     }
 
-    public List<Address> getToList() {
+    public List<SMailAddress> getToList() {
         return toList != null ? Collections.unmodifiableList(toList) : DfCollectionUtil.emptyList();
     }
 
-    public List<Address> getCcList() {
+    public List<SMailAddress> getCcList() {
         return ccList != null ? Collections.unmodifiableList(ccList) : DfCollectionUtil.emptyList();
     }
 
-    public List<Address> getBccList() {
+    public List<SMailAddress> getBccList() {
         return bccList != null ? Collections.unmodifiableList(bccList) : DfCollectionUtil.emptyList();
     }
 
-    public List<Address> getReplyToList() {
+    public List<SMailAddress> getReplyToList() {
         return replyToList != null ? Collections.unmodifiableList(replyToList) : DfCollectionUtil.emptyList();
     }
 

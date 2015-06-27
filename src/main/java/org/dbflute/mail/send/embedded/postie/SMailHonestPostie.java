@@ -33,6 +33,7 @@ import javax.mail.BodyPart;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -43,6 +44,7 @@ import javax.mail.util.ByteArrayDataSource;
 
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.Postcard;
+import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailPostalMotorbike;
 import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
@@ -59,6 +61,8 @@ import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilterNone;
+import org.dbflute.mail.send.supplement.inetaddr.SMailInternetAddressCreator;
+import org.dbflute.mail.send.supplement.inetaddr.SMailNormalInternetAddressCreator;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
@@ -81,6 +85,7 @@ public class SMailHonestPostie implements SMailPostie {
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
     private static final SMailLabelStrategy noneLabelStrategy = new SMailLabelStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
+    private static final SMailInternetAddressCreator normalInternetAddressCreator = new SMailNormalInternetAddressCreator();
 
     // ===================================================================================
     //                                                                           Attribute
@@ -93,6 +98,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
     protected SMailLabelStrategy labelStrategy = noneLabelStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
+    protected SMailInternetAddressCreator internetAddressCreator = normalInternetAddressCreator; // not null
     protected boolean training;
 
     // ===================================================================================
@@ -145,6 +151,12 @@ public class SMailHonestPostie implements SMailPostie {
         return this;
     }
 
+    public SMailHonestPostie withInternetAddressCreator(SMailInternetAddressCreator internetAddressCreator) {
+        assertArgumentNotNull("internetAddressCreator", internetAddressCreator);
+        this.internetAddressCreator = internetAddressCreator;
+        return this;
+    }
+
     public SMailHonestPostie asTraining() {
         training = true;
         return this;
@@ -188,38 +200,33 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                     Prepare Address
     //                                                                     ===============
     protected void prepareAddress(Postcard postcard, SMailPostingMessage message) {
-        final Address fromAddress = postcard.getFrom().orElseThrow(() -> { /* already checked, but just in case */
+        final SMailAddress from = postcard.getFrom().orElseThrow(() -> { /* already checked, but just in case */
             return new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
         });
-        resolveAddressPersonalLabel(postcard, fromAddress);
-        final Address filteredFrom = addressFilter.filterFrom(postcard, fromAddress);
+        final Address filteredFrom = addressFilter.filterFrom(postcard, toInternetAddress(postcard, from));
         message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
         boolean existsToAddress = false;
-        for (Address to : postcard.getToList()) {
-            resolveAddressPersonalLabel(postcard, to);
-            final OptionalThing<Address> opt = addressFilter.filterTo(postcard, to);
+        for (SMailAddress to : postcard.getToList()) {
+            final OptionalThing<Address> opt = addressFilter.filterTo(postcard, toInternetAddress(postcard, to));
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addTo(address));
             if (opt.isPresent()) {
                 existsToAddress = true;
             }
         }
         verifyFilteredToAddressExists(postcard, existsToAddress);
-        for (Address cc : postcard.getCcList()) {
-            resolveAddressPersonalLabel(postcard, cc);
-            final OptionalThing<Address> opt = addressFilter.filterCc(postcard, cc);
+        for (SMailAddress cc : postcard.getCcList()) {
+            final OptionalThing<Address> opt = addressFilter.filterCc(postcard, toInternetAddress(postcard, cc));
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addCc(address));
         }
-        for (Address bcc : postcard.getBccList()) {
-            resolveAddressPersonalLabel(postcard, bcc);
-            final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, bcc);
+        for (SMailAddress bcc : postcard.getBccList()) {
+            final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, toInternetAddress(postcard, bcc));
             verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addBcc(address));
         }
-        final List<Address> replyToList = postcard.getReplyToList();
+        final List<SMailAddress> replyToList = postcard.getReplyToList();
         if (!replyToList.isEmpty()) {
             final List<Address> filteredList = new ArrayList<Address>(replyToList.size());
-            for (Address replyTo : replyToList) {
-                resolveAddressPersonalLabel(postcard, replyTo);
-                final OptionalThing<Address> opt = addressFilter.filterReplyTo(postcard, replyTo);
+            for (SMailAddress replyTo : replyToList) {
+                final OptionalThing<Address> opt = addressFilter.filterReplyTo(postcard, toInternetAddress(postcard, replyTo));
                 verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> filteredList.add(address));
             }
             message.setReplyTo(filteredList);
@@ -229,21 +236,36 @@ public class SMailHonestPostie implements SMailPostie {
     // -----------------------------------------------------
     //                                        Label Handling
     //                                        --------------
-    protected void resolveAddressPersonalLabel(Postcard postcard, Address address) {
-        if (address instanceof InternetAddress) {
-            final InternetAddress internetAddress = (InternetAddress) address;
-            final String personal = internetAddress.getPersonal();
-            if (personal != null) {
+    protected Address toInternetAddress(Postcard postcard, SMailAddress address) {
+        return createAddress(postcard, address);
+    }
+
+    protected Address createAddress(Postcard postcard, SMailAddress address) {
+        final InternetAddress internetAddress;
+        try {
+            internetAddress = createInternetAddress(postcard, address.getAddress(), isStrictAddress());
+        } catch (AddressException e) {
+            throw new IllegalStateException("Failed to create internet address: " + address, e);
+        }
+        address.getPersonal().ifPresent(personal -> {
+            final String encoding = getPersonalEncoding();
+            try {
                 final Locale locale = postcard.getReceiverLocale().orElse(Locale.getDefault());
                 final String resolved = labelStrategy.resolveLabel(postcard, locale, personal);
-                final String encoding = getPersonalEncoding();
-                try {
-                    internetAddress.setPersonal(resolved, encoding);
-                } catch (UnsupportedEncodingException e) {
-                    throw new SMailIllegalStateException("Unknown encoding for personal: " + encoding);
-                }
+                internetAddress.setPersonal(resolved, encoding);
+            } catch (UnsupportedEncodingException e) {
+                throw new IllegalStateException("Unknown encoding for personal: encoding=" + encoding + " personal=" + personal, e);
             }
-        }
+        });
+        return internetAddress;
+    }
+
+    protected boolean isStrictAddress() {
+        return true;
+    }
+
+    protected InternetAddress createInternetAddress(Postcard postcard, String address, boolean strict) throws AddressException {
+        return internetAddressCreator.create(postcard, address, strict);
     }
 
     protected String getPersonalEncoding() {
