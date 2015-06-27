@@ -216,7 +216,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         final StringBuilder sb = new StringBuilder();
         sb.append(DfTypeUtil.toClassTitle(this));
         sb.append(":{").append(receptionist);
-        sb.append(", ").append(proofreader).append((training ? ", *training" : ""));
+        sb.append(", ").append(proofreader).append(training ? ", *training" : "");
         sb.append("}@").append(Integer.toHexString(hashCode()));
         return sb.toString();
     }
