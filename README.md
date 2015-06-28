@@ -43,19 +43,20 @@ WelcomeMemberPostcard.droppedInto(postbox, postcard -> {
 Can boot it by example of LastaFlute:
 
 1. git clone https://github.com/dbflute-session/lastaflute-example-harbor.git
-2. prepare MySQL on 3306 port as empty root password, execute *ReplaceSchema  
+2. prepare MySQL on 3306 port as empty root password  
+and execute *ReplaceSchema at DBFlute client directory 'dbflute_maihamadb'  
 3. compile it as Java8, e.g. maven (mvn compile) or Eclipse or IntelliJ or ...
-4. execute the *main method of (org.docksidestage.boot) HarborBoot
+4. execute the *main() method of (org.docksidestage.boot) HarborBoot
 5. access to http://localhost:8090/harbor  
 and login by user 'Pixy' and password 'sea', and can see debug log at console.
 
 *ReplaceSchema
 ```java
-// in lastaflute-example-harbor/dbflute_maihamadb
+// at lastaflute-example-harbor/dbflute_maihamadb
 ...:dbflute_maihamadb ...$ sh manage.sh
 ```
 
-*Main method
+*main() method
 ```java
 public class HarborBoot {
 
