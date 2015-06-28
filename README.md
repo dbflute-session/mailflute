@@ -1,4 +1,5 @@
-# MailFlute
+MailFlute
+======================
 simple mail library with DBFlute and Java8
 
 This library should be collaborated with FreeGen of DBFlute
@@ -41,11 +42,20 @@ WelcomeMemberPostcard.droppedInto(postbox, postcard -> {
 # Quick Trial
 Can boot it by example of LastaFlute:
 
-1. prepare Java8 compile environment
-2. clone https://github.com/dbflute-session/lastaflute-example-harbor
-3. execute the main method of (org.docksidestage.boot) HarborBoot
-4. access to http://localhost:8090/harbor
+1. git clone https://github.com/dbflute-session/lastaflute-example-harbor.git
+2. prepare MySQL on 3306 port as empty root password, execute *ReplaceSchema  
+3. compile it as Java8, e.g. maven (mvn compile) or Eclipse or IntelliJ or ...
+4. execute the *main method of (org.docksidestage.boot) HarborBoot
+5. access to http://localhost:8090/harbor  
+and login by user 'Pixy' and password 'sea', and can see debug log at console.
 
+*ReplaceSchema
+```java
+// in lastaflute-example-harbor/dbflute_maihamadb
+...:dbflute_maihamadb ...$ sh manage.sh
+```
+
+*Main method
 ```java
 public class HarborBoot {
 
@@ -55,10 +65,8 @@ public class HarborBoot {
 }
 ```
 
-Can login by user 'Pixy' and password 'sea', and can see debug log at console.
-
 # Information
-## Maven Dependency
+## Maven
 ```xml
 <dependency>
     <groupId>org.dbflute.mail</groupId>
