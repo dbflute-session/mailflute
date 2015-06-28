@@ -1,5 +1,5 @@
 MailFlute
-======================
+=======================
 simple mail library with DBFlute and Java8
 
 This library should be collaborated with FreeGen of DBFlute
