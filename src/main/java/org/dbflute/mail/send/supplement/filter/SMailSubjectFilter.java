@@ -21,6 +21,7 @@ import org.dbflute.mail.CardView;
  * @author jflute
  * @since 0.4.0 (2015/06/12 Friday)
  */
+@FunctionalInterface
 public interface SMailSubjectFilter {
 
     /**

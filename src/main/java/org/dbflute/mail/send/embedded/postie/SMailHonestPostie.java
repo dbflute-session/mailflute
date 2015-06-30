@@ -516,7 +516,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                        ============
     protected void send(Postcard postcard, SMailPostingMessage message) {
         try {
-            if (postcard.isAsync()) {
+            if (needsAsync(postcard)) {
                 asyncStrategy.async(postcard, () -> doSend(postcard, message));
             } else {
                 doSend(postcard, message);
@@ -528,6 +528,10 @@ public class SMailHonestPostie implements SMailPostie {
                 throw e;
             }
         }
+    }
+
+    protected boolean needsAsync(Postcard postcard) {
+        return postcard.isAsync() || asyncStrategy.alwaysAsync(postcard);
     }
 
     protected void doSend(Postcard postcard, SMailPostingMessage message) {

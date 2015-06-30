@@ -21,6 +21,7 @@ import org.dbflute.mail.CardView;
  * @author jflute
  * @since 0.4.0 (2015/06/13 Saturday)
  */
+@FunctionalInterface
 public interface SMailBodyTextFilter {
 
     String filterBody(CardView view, String body, boolean html);
