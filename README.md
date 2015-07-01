@@ -39,6 +39,15 @@ WelcomeMemberPostcard.droppedInto(postbox, postcard -> {
 });
 ```
 
+# dfmail Editor
+EMecha (Eclipse plugin) supports dfmail:
+- highlight
+- complemention
+
+https://dbflute-emecha.github.io
+
+*It is very useful if you use MailFlute.
+
 # Quick Trial
 Can boot it by example of LastaFlute:
 
