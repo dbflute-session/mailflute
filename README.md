@@ -6,7 +6,7 @@ This library should be collaborated with FreeGen of DBFlute
 like e.g. LastaFlute:
 
 ## Example Code
-### prepare Mail Template
+### prepare Mail Template (.dfmail)
 ```sql
 /*
  [New Member's Registration]
@@ -39,8 +39,8 @@ WelcomeMemberPostcard.droppedInto(postbox, postcard -> {
 });
 ```
 
-# dfmail Editor
-EMecha (Eclipse plugin) supports dfmail:
+# PMEditor
+EMecha (Eclipse plugin) supports MailFlute mail template .dfmail:
 - highlight
 - complemention
 
