@@ -3,13 +3,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.dbflute.mail</groupId>
 	<artifactId>mailflute</artifactId>
-	<version>0.4.0-RCF</version>
+	<version>0.4.0-RCG</version>
 	<packaging>jar</packaging>
 
 	<name>MailFlute</name>
 	<description>simple mail library with DBFlute and Java8</description>
-	<url>http://dbflute.org</url>
-	<inceptionYear>2014</inceptionYear>
+	<url>https://github.com/dbflute-session/mailflute</url>
+	<inceptionYear>2015</inceptionYear>
 
 	<properties>
 		<dbflute.version>1.1.0-sp6</dbflute.version>
