@@ -425,12 +425,12 @@ public class Postcard implements CardView {
         sb.append(DfTypeUtil.toClassTitle(this));
         sb.append(":{");
         sb.append("from=").append(from);
-        sb.append("to=").append(toList);
+        sb.append(", to=").append(toList);
         if (subject != null) {
-            sb.append("subject=").append(subject);
+            sb.append(", subject=").append(subject);
         }
         if (bodyFile != null) {
-            sb.append("bodyFile=").append(bodyFile);
+            sb.append(", bodyFile=").append(bodyFile);
         }
         sb.append("}");
         return sb.toString();

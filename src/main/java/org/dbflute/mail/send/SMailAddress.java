@@ -34,6 +34,11 @@ public class SMailAddress {
         this.personal = personal;
     }
 
+    @Override
+    public String toString() {
+        return "address:{" + address + (personal != null ? ", " + personal : "") + "}";
+    }
+
     public String getAddress() {
         return address;
     }
