@@ -68,6 +68,8 @@ import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
 import org.dbflute.optional.OptionalThing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jflute
@@ -78,6 +80,7 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                          Definition
     //                                                                          ==========
+    private static final Logger logger = LoggerFactory.getLogger(SMailHonestPostie.class); // for normal logging
     private static final SMailCancelFilter noneCancelFilter = new SMailCancelFilterNone();
     private static final SMailAddressFilter noneAddressFilter = new SMailAddressFilterNone();
     private static final SMailSubjectFilter noneSubjectFilter = new SMailSubjectFilterNone();
@@ -176,6 +179,7 @@ public class SMailHonestPostie implements SMailPostie {
         prepareBody(postcard, message);
         disclosePostingState(postcard, message);
         if (postcard.isDryrun()) {
+            logger.debug("*dryrun: postcard={}", postcard); // normal logging here
             return;
         }
         send(postcard, message);
