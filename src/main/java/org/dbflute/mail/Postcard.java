@@ -29,6 +29,7 @@ import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailPostcardIllegalStateException;
+import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfCollectionUtil;
@@ -69,20 +70,6 @@ public class Postcard implements CardView {
     protected boolean wholeFixedTextUsed; // may be sometimes used
 
     // -----------------------------------------------------
-    //                                               Logging
-    //                                               -------
-    // logging
-    protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
-    protected Map<String, Map<String, Object>> officeManagedLoggingMap; // optional, lazy loaded
-
-    // -----------------------------------------------------
-    //                                          Proofreading
-    //                                          ------------
-    // post office work
-    protected String proofreadingPlain;
-    protected String proofreadingHtml;
-
-    // -----------------------------------------------------
     //                                         Postie Option
     //                                         -------------
     // postie option
@@ -90,6 +77,16 @@ public class Postcard implements CardView {
     protected int retryCount;
     protected long intervalMillis;
     protected boolean suppressSendFailure;
+    protected boolean dryrun;
+    protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
+
+    // -----------------------------------------------------
+    //                                       PostOffice Work
+    //                                       ---------------
+    protected String proofreadingPlain;
+    protected String proofreadingHtml;
+    protected Map<String, Map<String, Object>> officeManagedLoggingMap; // optional, lazy loaded
+    protected SMailPostingDiscloser officePostingDiscloser;
 
     // ===================================================================================
     //                                                                         Constructor
@@ -274,6 +271,13 @@ public class Postcard implements CardView {
         return this;
     }
 
+    public void dryrun() { // no chain to bring it into clear view
+        dryrun = true;
+    }
+
+    // -----------------------------------------------------
+    //                                               Logging
+    //                                               -------
     public void pushLogging(String key, Object value) {
         assertArgumentNotNull("key", key);
         assertArgumentNotNull("value", value);
@@ -391,6 +395,13 @@ public class Postcard implements CardView {
             officeManagedLoggingMap.put(title, valueMap);
         }
         valueMap.put(key, value);
+    }
+
+    // -----------------------------------------------------
+    //                                      Office Discloser
+    //                                      ----------------
+    public void officeDisclosePostingState(SMailPostingDiscloser postingDiscloser) {
+        this.officePostingDiscloser = postingDiscloser;
     }
 
     // ===================================================================================
@@ -528,25 +539,6 @@ public class Postcard implements CardView {
     }
 
     // -----------------------------------------------------
-    //                                               Logging
-    //                                               -------
-    public boolean hasPushedLogging() {
-        return pushedLoggingMap != null;
-    }
-
-    public Map<String, Object> getPushedLoggingMap() {
-        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
-    }
-
-    public boolean hasOfficeManagedLogging() {
-        return officeManagedLoggingMap != null;
-    }
-
-    public Map<String, Map<String, Object>> getOfficeManagedLoggingMap() {
-        return officeManagedLoggingMap != null ? Collections.unmodifiableMap(officeManagedLoggingMap) : Collections.emptyMap();
-    }
-
-    // -----------------------------------------------------
     //                                         Postie Option
     //                                         -------------
     public boolean isAsync() {
@@ -563,5 +555,38 @@ public class Postcard implements CardView {
 
     public boolean isSuppressSendFailure() {
         return suppressSendFailure;
+    }
+
+    public boolean isDryrun() {
+        return dryrun;
+    }
+
+    public boolean hasPushedLogging() {
+        return pushedLoggingMap != null;
+    }
+
+    public Map<String, Object> getPushedLoggingMap() {
+        return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
+    }
+
+    // -----------------------------------------------------
+    //                                       PostOffice Work
+    //                                       ---------------
+    public boolean hasOfficeManagedLogging() {
+        return officeManagedLoggingMap != null;
+    }
+
+    public Map<String, Map<String, Object>> getOfficeManagedLoggingMap() {
+        return officeManagedLoggingMap != null ? Collections.unmodifiableMap(officeManagedLoggingMap) : Collections.emptyMap();
+    }
+
+    public boolean hasOfficePostingDiscloser() {
+        return officePostingDiscloser != null;
+    }
+
+    public OptionalThing<SMailPostingDiscloser> getOfficePostingDiscloser() {
+        return OptionalThing.ofNullable(officePostingDiscloser, () -> {
+            throw new IllegalStateException("Not found office posting discloser: " + toString());
+        });
     }
 }

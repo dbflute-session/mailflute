@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.dbflute.mail.send.SMailAddress;
+import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
 import org.dbflute.optional.OptionalThing;
 
@@ -77,17 +78,6 @@ public interface CardView {
     OptionalThing<String> getHtmlBody();
 
     // ===================================================================================
-    //                                                                             Logging
-    //                                                                             =======
-    boolean hasPushedLogging();
-
-    Map<String, Object> getPushedLoggingMap();
-
-    boolean hasOfficeManagedLogging();
-
-    Map<String, Map<String, Object>> getOfficeManagedLoggingMap();
-
-    // ===================================================================================
     //                                                                       Postie Option
     //                                                                       =============
     boolean isAsync();
@@ -97,4 +87,21 @@ public interface CardView {
     long getIntervalMillis();
 
     boolean isSuppressSendFailure();
+
+    boolean isDryrun();
+
+    boolean hasPushedLogging();
+
+    Map<String, Object> getPushedLoggingMap();
+
+    // ===================================================================================
+    //                                                                     PostOffice Work
+    //                                                                     ===============
+    boolean hasOfficeManagedLogging();
+
+    Map<String, Map<String, Object>> getOfficeManagedLoggingMap();
+
+    boolean hasOfficePostingDiscloser();
+
+    OptionalThing<SMailPostingDiscloser> getOfficePostingDiscloser();
 }

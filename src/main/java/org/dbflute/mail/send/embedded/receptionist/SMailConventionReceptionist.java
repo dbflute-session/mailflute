@@ -129,6 +129,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
                 verifyMailHtmlTemplateTextFormat(htmlFilePath, readHtml);
                 option.alsoDirectHtml(readHtml);
             }
+            // no check about unneeded HTML template file because of runtime performance
+            // DBFlute generator checks it instead
         }).orElse(() -> { /* direct body, check only here */
             if (!postcard.getPlainBody().isPresent()) {
                 String msg = "Not found both the body file path and the direct body: " + postcard;

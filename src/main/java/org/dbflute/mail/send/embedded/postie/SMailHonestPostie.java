@@ -174,6 +174,10 @@ public class SMailHonestPostie implements SMailPostie {
         prepareAddress(postcard, message);
         prepareSubject(postcard, message);
         prepareBody(postcard, message);
+        disclosePostingState(postcard, message);
+        if (postcard.isDryrun()) {
+            return;
+        }
         send(postcard, message);
     }
 
@@ -372,6 +376,13 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected MimeBodyPart newMimeBodyPart() {
         return new MimeBodyPart();
+    }
+
+    // ===================================================================================
+    //                                                                            Disclose
+    //                                                                            ========
+    protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
+        postcard.officeDisclosePostingState(message);
     }
 
     // ===================================================================================
