@@ -124,7 +124,10 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             analyzeBodyMeta(postcard, bodyFile, plainText);
             final DirectBodyOption option = postcard.useDirectBody(plainText);
             if (postcard.isAlsoHtmlFile()) {
-                option.alsoDirectHtml(readText(postcard, deriveHtmlFilePath(bodyFile), filesystem, receiverLocale));
+                final String htmlFilePath = deriveHtmlFilePath(bodyFile);
+                final String readHtml = readText(postcard, htmlFilePath, filesystem, receiverLocale);
+                verifyMailHtmlTemplateTextFormat(htmlFilePath, readHtml);
+                option.alsoDirectHtml(readHtml);
             }
         }).orElse(() -> { /* direct body, check only here */
             if (!postcard.getPlainBody().isPresent()) {
@@ -288,12 +291,6 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         if (optionScope != null && optionScope.getContent().contains(PLUS_HTML_OPTION)) {
             postcard.officePlusHtml();
         }
-    }
-
-    protected String deriveHtmlFilePath(String bodyFile) {
-        final String front = Srl.substringFirstFront(bodyFile, "."); // e.g. member_registration
-        final String rear = Srl.substringFirstRear(bodyFile, "."); // e.g. dfmail or ja.dfmail
-        return front + "_html." + rear; // e.g. member_registration_html.dfmail
     }
 
     // ===================================================================================
@@ -720,6 +717,46 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         br.addElement(bodyFile);
         br.addItem("Plain Text");
         br.addElement(plainText);
+    }
+
+    // ===================================================================================
+    //                                                                       HTML Template
+    //                                                                       =============
+    protected String deriveHtmlFilePath(String bodyFile) {
+        final String front = Srl.substringFirstFront(bodyFile, "."); // e.g. member_registration
+        final String rear = Srl.substringFirstRear(bodyFile, "."); // e.g. dfmail or ja.dfmail
+        return front + "_html." + rear; // e.g. member_registration_html.dfmail
+    }
+
+    protected void verifyMailHtmlTemplateTextFormat(String htmlFilePath, String readHtml) {
+        if (readHtml.contains(META_DELIMITER)) {
+            throwMailHtmlTemplateTextCannotContainHeaderDelimiterException(htmlFilePath, readHtml);
+        }
+    }
+
+    protected void throwMailHtmlTemplateTextCannotContainHeaderDelimiterException(String htmlFilePath, String readHtml) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("HTML template cannot contain meta delimiter '>>>'.");
+        br.addItem("Advice");
+        br.addElement("Body meta delimiter '>>>' can be used by plain text template.");
+        br.addElement("HTML template has only its body.");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    /*");
+        br.addElement("     ...");
+        br.addElement("    */");
+        br.addElement("    >>>        // *NG");
+        br.addElement("    <html>");
+        br.addElement("    ...");
+        br.addElement("  (o):");
+        br.addElement("    <html>     // OK");
+        br.addElement("    ...");
+        br.addItem("HTML Template");
+        br.addElement(htmlFilePath);
+        br.addItem("Read HTML");
+        br.addElement(readHtml);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailBodyMetaParseFailureException(msg);
     }
 
     // ===================================================================================
