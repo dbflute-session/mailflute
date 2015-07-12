@@ -723,9 +723,11 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       HTML Template
     //                                                                       =============
     protected String deriveHtmlFilePath(String bodyFile) {
-        final String front = Srl.substringFirstFront(bodyFile, "."); // e.g. member_registration
-        final String rear = Srl.substringFirstRear(bodyFile, "."); // e.g. dfmail or ja.dfmail
-        return front + "_html." + rear; // e.g. member_registration_html.dfmail
+        final String dirBase = bodyFile.contains("/") ? Srl.substringLastFront(bodyFile, "/") + "/" : "";
+        final String pureFileName = Srl.substringLastRear(bodyFile, "/"); // same if no delimiter
+        final String front = Srl.substringFirstFront(pureFileName, "."); // e.g. member_registration
+        final String rear = Srl.substringFirstRear(pureFileName, "."); // e.g. dfmail or ja.dfmail
+        return dirBase + front + "_html." + rear; // e.g. member_registration_html.dfmail
     }
 
     protected void verifyMailHtmlTemplateTextFormat(String htmlFilePath, String readHtml) {
