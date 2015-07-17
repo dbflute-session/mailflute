@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.dbflute.mail</groupId>
 	<artifactId>mailflute</artifactId>
-	<version>0.4.0-RCH-A-SNAPSHOT</version>
+	<version>0.4.0-RCH</version>
 	<packaging>jar</packaging>
 
 	<name>MailFlute</name>
@@ -12,7 +12,7 @@
 	<inceptionYear>2015</inceptionYear>
 
 	<properties>
-		<dbflute.version>1.1.0-sp6</dbflute.version>
+		<dbflute.version>1.1.0-sp7</dbflute.version>
 		<javax.mail.version>1.4.5</javax.mail.version>
 		<slf4j.version>1.7.12</slf4j.version>
 		<utflute.version>0.5.0-sp6</utflute.version>
