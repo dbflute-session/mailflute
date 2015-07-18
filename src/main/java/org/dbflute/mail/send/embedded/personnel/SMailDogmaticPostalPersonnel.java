@@ -100,7 +100,26 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return createConventionReceptionist();
     }
 
-    protected SMailConventionReceptionist createConventionReceptionist() { // you can customize it e.g. from database
+    protected SMailConventionReceptionist createConventionReceptionist() { // you can customize it e.g. locale, database
+        // you can switch mail template by user locale like this:
+        // /- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        //  @Override
+        //  protected SMailConventionReceptionist createConventionReceptionist() {
+        //      return super.createConventionReceptionist().asReceiverLocale(postcard -> {
+        //          return OptionalThing.of(requestManager.getUserLocale());
+        //      });
+        //  }
+        // - - - - - - - - - -/
+        // 
+        // and templates from database:
+        // /- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        //  @Override
+        //  protected SMailConventionReceptionist createConventionReceptionist() {
+        //      return super.createConventionReceptionist().asDynamicText((postcard, path, filesystem, receiverLocale) -> {
+        //          return ...;
+        //      });
+        //  }
+        // - - - - - - - - - -/
         return newMailConventionReceptionist().asClasspathBase(CLASSPATH_BASEDIR);
     }
 
