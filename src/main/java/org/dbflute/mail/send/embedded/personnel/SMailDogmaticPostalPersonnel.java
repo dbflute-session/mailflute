@@ -76,7 +76,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     //                                                                         Constructor
     //                                                                         ===========
     public SMailDogmaticPostalPersonnel() {
-        receptionist = createOutsideBodyReceptionist();
+        receptionist = createReceptionist();
         proofreader = createProofreader();
         cancelFilter = createCancelFilter();
         addressFilter = createAddressFilter();
@@ -96,7 +96,11 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     // -----------------------------------------------------
     //                                          Receptionist
     //                                          ------------
-    protected SMailReceptionist createOutsideBodyReceptionist() { // you can change it e.g. from database
+    protected SMailReceptionist createReceptionist() {
+        return createConventionReceptionist();
+    }
+
+    protected SMailConventionReceptionist createConventionReceptionist() { // you can customize it e.g. from database
         return newMailConventionReceptionist().asClasspathBase(CLASSPATH_BASEDIR);
     }
 
