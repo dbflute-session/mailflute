@@ -255,7 +255,7 @@ public class Postcard implements CardView {
             assertArgumentNotNull("subject", subject);
             Postcard.this.subject = subject;
             forcedlyDirect = true;
-            officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "forcedLyDirect", true);
+            officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "forcedlyDirect", true);
             return this;
         }
     }
