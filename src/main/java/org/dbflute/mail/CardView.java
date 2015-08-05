@@ -68,6 +68,8 @@ public interface CardView {
 
     boolean isWholeFixedTextUsed();
 
+    boolean isForcedlyDirect();
+
     // ===================================================================================
     //                                                                           Body Text
     //                                                                           =========
