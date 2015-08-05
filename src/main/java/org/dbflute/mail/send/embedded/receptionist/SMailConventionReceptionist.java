@@ -114,7 +114,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     public void accept(Postcard postcard) {
         if (postcard.isForcedlyDirect()) { // should ignore body file
             assertPlainBodyExistsForDirectBody(postcard);
-            postcard.getBodyFile().ifPresent(bodyFile -> {
+            postcard.getBodyFile().ifPresent(bodyFile -> { // but wants logging
                 officeManagedLogging(postcard, bodyFile, prepareReceiverLocale(postcard));
             });
             return;
