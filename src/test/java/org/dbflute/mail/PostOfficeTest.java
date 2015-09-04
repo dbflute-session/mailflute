@@ -161,6 +161,40 @@ public class PostOfficeTest extends PlainTestCase {
     }
 
     // ===================================================================================
+    //                                                                         Direct Body
+    //                                                                         ===========
+    public void test_deliver_directBody_fixedText() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String subject = "Welcome to your source code reading";
+        postcard.setSubject(subject);
+        postcard.useDirectBody("sea /*IF pmb.abc*/").useWholeFixedText();
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        assertContains(postcard.getPlainBody().get(), "sea /*IF pmb.abc*/");
+    }
+
+    public void test_deliver_directBody_forcedlyDirect() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String subject = "forcedly direct";
+        postcard.useBodyFile(HEADER_SUBJECT_ML).useTemplateText(prepareVariableMap());
+        postcard.useDirectBody("sea /*IF pmb.abc*/").useWholeFixedText().forcedlyDirect(subject);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        assertEquals(postcard.getSubject().get(), subject);
+        assertEquals(postcard.getPlainBody().get(), "sea /*IF pmb.abc*/");
+    }
+
+    // ===================================================================================
     //                                                                     Receiver Locale
     //                                                                     ===============
     public void test_deliver_receiver_locale_found() throws Exception {

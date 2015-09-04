@@ -68,6 +68,7 @@ public class Postcard implements CardView {
     protected String htmlBody; // null when body file used, path or direct text
     protected Map<String, Object> templateVariableMap; // optional, lazy loaded
     protected boolean wholeFixedTextUsed; // may be sometimes used
+    protected boolean forcedlyDirect; // e.g. real sending after dryrun 
 
     // -----------------------------------------------------
     //                                         Postie Option
@@ -231,9 +232,10 @@ public class Postcard implements CardView {
 
     public class DirectBodyOption {
 
-        public void alsoDirectHtml(String directHtml) {
+        public DirectBodyOption alsoDirectHtml(String directHtml) {
             assertArgumentNotNull("directHtml", directHtml);
             htmlBody = directHtml;
+            return this;
         }
 
         public void useTemplateText(Map<String, Object> variableMap) {
@@ -241,8 +243,20 @@ public class Postcard implements CardView {
             templateVariableMap = variableMap;
         }
 
-        public void useWholeFixedText() {
+        public WholeFixedTextOption useWholeFixedText() {
             wholeFixedTextUsed = true;
+            return new WholeFixedTextOption();
+        }
+    }
+
+    public class WholeFixedTextOption {
+
+        public WholeFixedTextOption forcedlyDirect(String subject) {
+            assertArgumentNotNull("subject", subject);
+            Postcard.this.subject = subject;
+            forcedlyDirect = true;
+            officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "forcedlyDirect", true);
+            return this;
         }
     }
 
@@ -300,7 +314,11 @@ public class Postcard implements CardView {
         if (toList == null || toList.isEmpty()) {
             throwMailToAddressNotFoundException();
         }
-        if ((bodyFile == null && plainBody == null) || (bodyFile != null && plainBody != null)) {
+        if (bodyFile == null && plainBody == null) {
+            String msg = "Not found body file or plain body: bodyFile=" + bodyFile + " plainBody=" + plainBody;
+            throw new SMailPostcardIllegalStateException(msg);
+        }
+        if (!forcedlyDirect && (bodyFile != null && plainBody != null)) {
             String msg = "Set either body file or plain body: bodyFile=" + bodyFile + " plainBody=" + plainBody;
             throw new SMailPostcardIllegalStateException(msg);
         }
@@ -308,9 +326,14 @@ public class Postcard implements CardView {
             String msg = "Cannot set html body only (without plain body): htmlBody=" + htmlBody;
             throw new SMailPostcardIllegalStateException(msg);
         }
-        if ((!wholeFixedTextUsed && templateVariableMap == null) || (wholeFixedTextUsed && templateVariableMap != null)) {
-            String msg = "You can set either fixed body or template body:";
-            msg = msg + " fixedBodyUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
+        if (!forcedlyDirect && (!wholeFixedTextUsed && templateVariableMap == null)) {
+            String msg = "Not found template variable map:";
+            msg = msg + " wholeFixedTextUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
+            throw new SMailPostcardIllegalStateException(msg);
+        }
+        if (!forcedlyDirect && (wholeFixedTextUsed && templateVariableMap != null)) {
+            String msg = "Unneeded template variable map:";
+            msg = msg + " wholeFixedTextUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
             throw new SMailPostcardIllegalStateException(msg);
         }
         if (templateVariableMap != null && templateVariableMap.isEmpty()) {
@@ -351,6 +374,10 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                      Office Proofread
     //                                      ----------------
+    public boolean needsMainProofreading() {
+        return !isWholeFixedTextUsed() && hasTemplateVariable();
+    }
+
     public void proofreadPlain(BiFunction<String, Map<String, Object>, String> proofreader) {
         this.proofreadingPlain = proofreader.apply(getProofreadingOrOriginalPlain().get(), getTemplaetVariableMap());
     }
@@ -517,6 +544,10 @@ public class Postcard implements CardView {
 
     public boolean isWholeFixedTextUsed() {
         return wholeFixedTextUsed;
+    }
+
+    public boolean isForcedlyDirect() {
+        return forcedlyDirect;
     }
 
     // -----------------------------------------------------

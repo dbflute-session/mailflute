@@ -112,6 +112,13 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       =============
     @Override
     public void accept(Postcard postcard) {
+        if (postcard.isForcedlyDirect()) { // should ignore body file
+            assertPlainBodyExistsForDirectBody(postcard);
+            postcard.getBodyFile().ifPresent(bodyFile -> { // but wants logging
+                officeManagedLogging(postcard, bodyFile, prepareReceiverLocale(postcard));
+            });
+            return;
+        }
         postcard.getBodyFile().ifPresent(bodyFile -> {
             if (postcard.getHtmlBody().isPresent()) {
                 String msg = "Cannot use direct HTML body when body file is specified: " + postcard;
@@ -132,10 +139,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             // no check about unneeded HTML template file because of runtime performance
             // DBFlute generator checks it instead
         }).orElse(() -> { /* direct body, check only here */
-            if (!postcard.getPlainBody().isPresent()) {
-                String msg = "Not found both the body file path and the direct body: " + postcard;
-                throw new SMailIllegalStateException(msg);
-            }
+            assertPlainBodyExistsForDirectBody(postcard);
         });
     }
 
@@ -165,6 +169,13 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         final String systemTitle = PostOffice.LOGGING_TITLE_SYSINFO;
         postcard.officeManagedLogging(systemTitle, "dfmail", bodyFile);
         postcard.officeManagedLogging(systemTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
+    }
+
+    protected void assertPlainBodyExistsForDirectBody(Postcard postcard) {
+        if (!postcard.getPlainBody().isPresent()) {
+            String msg = "Not found both the body file path and the direct body: " + postcard;
+            throw new SMailIllegalStateException(msg);
+        }
     }
 
     // ===================================================================================

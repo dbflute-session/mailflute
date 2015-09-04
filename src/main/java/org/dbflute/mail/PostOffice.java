@@ -71,14 +71,24 @@ public class PostOffice {
     //                                                                           Proofread
     //                                                                           =========
     protected void proofreadIfNeeds(Postcard postcard) {
-        if (postcard.hasTemplateVariable()) {
+        if (needsProofreading(postcard)) {
             final SMailTextProofreader proofreader = fetchProofreader(postcard);
             postcard.proofreadPlain((reading, varMap) -> proofreader.proofread(reading, varMap));
             if (postcard.hasHtmlBody()) {
                 postcard.proofreadHtml((reading, varMap) -> proofreader.proofread(reading, varMap));
             }
         }
-        proofreadSubjectHeader(postcard); // fixed proofreading
+        if (needsSubjectHeader(postcard)) { // because forcedly-direct requires direct subject
+            proofreadSubjectHeader(postcard); // fixed proofreading
+        }
+    }
+
+    protected boolean needsProofreading(Postcard postcard) {
+        return !postcard.isWholeFixedTextUsed() && postcard.hasTemplateVariable();
+    }
+
+    protected boolean needsSubjectHeader(Postcard postcard) {
+        return !postcard.isForcedlyDirect();
     }
 
     protected void proofreadSubjectHeader(Postcard postcard) {
