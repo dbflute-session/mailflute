@@ -448,7 +448,7 @@ public class SMailHonestPostie implements SMailPostie {
         assertArgumentNotNull("message", message);
         assertArgumentNotNull("attachment", attachment);
         final MimePart part = newMimeBodyPart();
-        final String textEncoding = getAttachmentTextEncoding(attachment);
+        final OptionalThing<String> textEncoding = getAttachmentTextEncoding(attachment);
         final String contentType = buildAttachmentContentType(message, attachment, textEncoding);
         final DataSource source = prepareAttachmentDataSource(message, attachment, textEncoding);
         try {
@@ -462,7 +462,8 @@ public class SMailHonestPostie implements SMailPostie {
         return part;
     }
 
-    protected String buildAttachmentContentType(SMailPostingMessage message, SMailAttachment attachment, String textEncoding) {
+    protected String buildAttachmentContentType(SMailPostingMessage message, SMailAttachment attachment,
+            OptionalThing<String> textEncoding) {
         final String filenameEncoding = getAttachmentFilenameEncoding();
         final String encodedFilename;
         try {
@@ -475,13 +476,14 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentType = attachment.getContentType();
         sb.append(contentType);
         if (contentType.equals("text/plain")) {
-            sb.append("; charset=").append(textEncoding);
+            sb.append("; charset=").append(textEncoding.get());
         }
         sb.append("; name=\"").append(encodedFilename).append("\"");
         return sb.toString();
     }
 
-    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment, String textEncoding) {
+    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment,
+            OptionalThing<String> textEncoding) {
         final byte[] attachedBytes = readAttachedBytes(message, attachment);
         message.saveAttachmentForDisplay(attachment, attachedBytes, textEncoding);
         return new ByteArrayDataSource(attachedBytes, "application/octet-stream");
@@ -518,8 +520,8 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected String getAttachmentTextEncoding(SMailAttachment attachment) {
-        return attachment.getTextEncoding().get(); // always exists if text/plain
+    protected OptionalThing<String> getAttachmentTextEncoding(SMailAttachment attachment) {
+        return attachment.getTextEncoding(); // always exists if text/plain
     }
 
     protected String getAttachmentFilenameEncoding() {

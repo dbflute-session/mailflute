@@ -223,7 +223,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         this.optHtmlText = optHtmlText;
     }
 
-    public void saveAttachmentForDisplay(SMailAttachment attachment, byte[] attachedBytes, String textEncoding) {
+    public void saveAttachmentForDisplay(SMailAttachment attachment, byte[] attachedBytes, OptionalThing<String> textEncoding) {
         assertArgumentNotNull("attachment", attachment);
         assertArgumentNotNull("attachedBytes", attachedBytes);
         assertArgumentNotNull("textEncoding", textEncoding);
@@ -236,7 +236,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         attachmentMap.put(filenameOnHeader, attachedData);
     }
 
-    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType, String textEncoding,
+    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType, OptionalThing<String> textEncoding,
             byte[] attachedBytes) {
         return new SMailReadAttachedData(filenameOnHeader, contentType, attachedBytes, textEncoding);
     }
@@ -304,7 +304,7 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         final String contentType = attachedData.getContentType();
         sb.append(LF).append("*").append(filenameOnHeader).append(" (").append(contentType).append(")");
         if ("text/plain".equals(contentType)) {
-            final String textEncoding = attachedData.getTextEncoding();
+            final String textEncoding = attachedData.getTextEncoding().get();
             final String attachedText;
             try {
                 attachedText = new String(attachedData.getAttachedBytes(), textEncoding);
