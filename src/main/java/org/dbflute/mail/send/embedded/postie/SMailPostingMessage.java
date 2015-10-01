@@ -232,12 +232,12 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         }
         final String filenameOnHeader = attachment.getFilenameOnHeader();
         final String contentType = attachment.getContentType();
-        final SMailReadAttachedData attachedData = newMailReadAttachedData(filenameOnHeader, contentType, textEncoding, attachedBytes);
+        final SMailReadAttachedData attachedData = newMailReadAttachedData(filenameOnHeader, contentType, attachedBytes, textEncoding);
         attachmentMap.put(filenameOnHeader, attachedData);
     }
 
-    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType, OptionalThing<String> textEncoding,
-            byte[] attachedBytes) {
+    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType,
+            byte[] attachedBytes, OptionalThing<String> textEncoding) {
         return new SMailReadAttachedData(filenameOnHeader, contentType, attachedBytes, textEncoding);
     }
 
