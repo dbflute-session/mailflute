@@ -449,13 +449,14 @@ public class SMailHonestPostie implements SMailPostie {
         assertArgumentNotNull("attachment", attachment);
         final MimePart part = newMimeBodyPart();
         final OptionalThing<String> textEncoding = getAttachmentTextEncoding(attachment);
-        final String contentType = buildAttachmentContentType(message, attachment, textEncoding);
         final DataSource source = prepareAttachmentDataSource(message, attachment, textEncoding);
+        final String contentType = buildAttachmentContentType(message, attachment, textEncoding);
+        final String contentDisposition = buildAttachmentContentDisposition(message, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
             part.setHeader("Content-Transfer-Encoding", "base64");
             part.addHeader("Content-Type", contentType);
-            part.addHeader("Content-Disposition", "attachment; filename=\"" + attachment.getFilenameOnHeader() + "\"");
+            part.addHeader("Content-Disposition", contentDisposition);
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
         }
@@ -464,14 +465,7 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected String buildAttachmentContentType(SMailPostingMessage message, SMailAttachment attachment,
             OptionalThing<String> textEncoding) {
-        final String filenameEncoding = getAttachmentFilenameEncoding();
-        final String encodedFilename;
-        try {
-            final String filename = attachment.getFilenameOnHeader();
-            encodedFilename = MimeUtility.encodeText(filename, filenameEncoding, "B"); // uses 'B' for various characters
-        } catch (UnsupportedEncodingException e) {
-            throw new SMailMessageSettingFailureException("Unknown encoding: " + filenameEncoding, e);
-        }
+        final String encodedFilename = getEncodedFilename(attachment.getFilenameOnHeader());
         final StringBuilder sb = new StringBuilder();
         final String contentType = attachment.getContentType();
         sb.append(contentType);
@@ -480,6 +474,25 @@ public class SMailHonestPostie implements SMailPostie {
         }
         sb.append("; name=\"").append(encodedFilename).append("\"");
         return sb.toString();
+    }
+
+    protected String buildAttachmentContentDisposition(SMailPostingMessage message, SMailAttachment attachment,
+            OptionalThing<String> textEncoding) {
+        final String encodedFilename = getEncodedFilename(attachment.getFilenameOnHeader());
+        final StringBuilder sb = new StringBuilder();
+        sb.append("attachment; filename=\"").append(encodedFilename).append("\"");
+        return sb.toString();
+    }
+
+    protected String getEncodedFilename(String filename) {
+        final String filenameEncoding = getAttachmentFilenameEncoding();
+        final String encodedFilename;
+        try {
+            encodedFilename = MimeUtility.encodeText(filename, filenameEncoding, "B"); // uses 'B' for various characters
+        } catch (UnsupportedEncodingException e) {
+            throw new SMailMessageSettingFailureException("Unknown encoding: " + filenameEncoding, e);
+        }
+        return encodedFilename;
     }
 
     protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment,
