@@ -15,6 +15,8 @@
  */
 package org.dbflute.mail.send.supplement.attachment;
 
+import org.dbflute.optional.OptionalThing;
+
 /**
  * @author jflute
  * @since 0.4.0 (2015/06/13 Saturday)
@@ -24,9 +26,9 @@ public class SMailReadAttachedData {
     protected final String filenameOnHeader;
     protected final String contentType;
     protected final byte[] attachedBytes;
-    protected final String textEncoding;
+    protected final OptionalThing<String> textEncoding;
 
-    public SMailReadAttachedData(String filenameOnHeader, String contentType, byte[] attachedBytes, String textEncoding) {
+    public SMailReadAttachedData(String filenameOnHeader, String contentType, byte[] attachedBytes, OptionalThing<String> textEncoding) {
         this.filenameOnHeader = filenameOnHeader;
         this.contentType = contentType;
         this.attachedBytes = attachedBytes;
@@ -45,7 +47,7 @@ public class SMailReadAttachedData {
         return attachedBytes;
     }
 
-    public String getTextEncoding() {
+    public OptionalThing<String> getTextEncoding() {
         return textEncoding;
     }
 }
