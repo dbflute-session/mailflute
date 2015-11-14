@@ -545,18 +545,10 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                        Send Message
     //                                                                        ============
     protected void send(Postcard postcard, SMailPostingMessage message) {
-        try {
-            if (needsAsync(postcard)) {
-                asyncStrategy.async(postcard, () -> doSend(postcard, message));
-            } else {
-                doSend(postcard, message);
-            }
-        } catch (RuntimeException e) {
-            if (postcard.isSuppressSendFailure()) {
-                loggingStrategy.logSuppressedCause(postcard, message, e);
-            } else {
-                throw e;
-            }
+        if (needsAsync(postcard)) {
+            asyncStrategy.async(postcard, () -> doSend(postcard, message));
+        } else {
+            doSend(postcard, message);
         }
     }
 
@@ -564,18 +556,40 @@ public class SMailHonestPostie implements SMailPostie {
         return postcard.isAsync() || asyncStrategy.alwaysAsync(postcard);
     }
 
+    // -----------------------------------------------------
+    //                                          with Logging
+    //                                          ------------
     protected void doSend(Postcard postcard, SMailPostingMessage message) {
-        logMailMessage(postcard, message);
-        if (!training) {
-            retryableSend(postcard, message);
+        logMailBefore(postcard, message);
+        RuntimeException cause = null;
+        try {
+            if (!training) {
+                retryableSend(postcard, message);
+            }
+        } catch (RuntimeException e) {
+            cause = e;
+            if (postcard.isSuppressSendFailure()) {
+                logSuppressedCause(postcard, message, e);
+            } else {
+                throw e;
+            }
+        } finally {
+            logMailFinally(postcard, message, cause);
         }
     }
 
-    // -----------------------------------------------------
-    //                                               Logging
-    //                                               -------
-    protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
-        loggingStrategy.logMailMessage(postcard, message); // you can also make EML file here by overriding
+    protected void logMailBefore(Postcard postcard, SMailPostingMessage message) {
+        loggingStrategy.logMailBefore(postcard, message); // you can also make EML file here by overriding
+    }
+
+    protected void logSuppressedCause(Postcard postcard, SMailPostingMessage message, RuntimeException e) {
+        loggingStrategy.logSuppressedCause(postcard, message, e);
+    }
+
+    protected void logMailFinally(Postcard postcard, SMailPostingMessage message, RuntimeException cause) {
+        loggingStrategy.logMailFinally(postcard, message, OptionalThing.ofNullable(cause, () -> {
+            throw new IllegalStateException("Not found the exception for the mail finally: " + postcard);
+        }));
     }
 
     // -----------------------------------------------------
@@ -599,7 +613,7 @@ public class SMailHonestPostie implements SMailPostie {
                 }
                 actuallySend(message);
                 if (challengeCount > 0) { // means retry success
-                    noticeRetrySuccess(postcard, message, challengeCount, firstCause);
+                    logRetrySuccess(postcard, message, challengeCount, firstCause);
                 }
                 break;
             } catch (RuntimeException | MessagingException e) {
@@ -628,10 +642,10 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected void actuallySend(SMailPostingMessage message) throws MessagingException {
-        Transport.send(message.getMimeMessage());
+        Transport.send(message.getMimeMessage()); // #for_now needs refactoring to get SMTP info
     }
 
-    protected void noticeRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
+    protected void logRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
         loggingStrategy.logRetrySuccess(postcard, message, challengeCount, firstCause);
     }
 

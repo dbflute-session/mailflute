@@ -17,6 +17,7 @@ package org.dbflute.mail.send.supplement.logging;
 
 import org.dbflute.mail.CardView;
 import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
+import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
@@ -24,8 +25,17 @@ import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
  */
 public interface SMailLoggingStrategy {
 
-    void logMailMessage(CardView view, SMailPostingDiscloser discloser);
+    // use Exception because may be MessagingException (but several methods are only runtime exception)
+    // ===================================================================================
+    //                                                                        Mail Message
+    //                                                                        ============
+    void logMailBefore(CardView view, SMailPostingDiscloser discloser);
 
+    void logMailFinally(CardView view, SMailPostingDiscloser discloser, OptionalThing<Exception> cause);
+
+    // ===================================================================================
+    //                                                                       Theme Logging
+    //                                                                       =============
     void logRetrySuccess(CardView view, SMailPostingDiscloser discloser, int challengeCount, Exception firstCause);
 
     void logSuppressedCause(CardView view, SMailPostingDiscloser discloser, Exception suppressedCause);

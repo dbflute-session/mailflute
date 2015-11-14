@@ -17,6 +17,7 @@ package org.dbflute.mail.send.supplement.logging;
 
 import org.dbflute.mail.CardView;
 import org.dbflute.mail.send.supplement.SMailPostingDiscloser;
+import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.Srl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                        Mail Message
     //                                                                        ============
     @Override
-    public void logMailMessage(CardView view, SMailPostingDiscloser discloser) {
+    public void logMailBefore(CardView view, SMailPostingDiscloser discloser) {
         final boolean messageInfoEnabled = messageLogger.isInfoEnabled();
         final boolean normalDebugEnabled = normalLogger.isDebugEnabled();
         final String msg = messageInfoEnabled || normalDebugEnabled ? buildMailMessageDisp(view, discloser) : null;
@@ -55,6 +56,11 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
         final String hash = toHash(discloser);
         final String disp = discloser.toDisplay();
         return "...Sending mail " + state + ": #" + hash + "\n" + disp;
+    }
+
+    @Override
+    public void logMailFinally(CardView view, SMailPostingDiscloser discloser, OptionalThing<Exception> cause) {
+        // do nothing as default, mail message already logged
     }
 
     // ===================================================================================
