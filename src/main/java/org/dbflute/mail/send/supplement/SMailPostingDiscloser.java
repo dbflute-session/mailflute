@@ -73,4 +73,11 @@ public interface SMailPostingDiscloser {
     OptionalThing<String> getSavedHtmlText(); // formally empty-able
 
     Map<String, SMailReadAttachedData> getSavedAttachmentMap(); // keyed by filenameOnHeader
+
+    // ===================================================================================
+    //                                                                  Finished Transport
+    //                                                                  ==================
+    OptionalThing<Integer> getLastReturnCode();
+
+    OptionalThing<String> getLastServerResponse();
 }

@@ -40,9 +40,16 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     //                                                                        ============
     @Override
     public void logMailBefore(CardView view, SMailPostingDiscloser discloser) {
+        showMessage(view, discloser);
+    }
+
+    protected void showMessage(CardView view, SMailPostingDiscloser discloser) {
         final boolean messageInfoEnabled = messageLogger.isInfoEnabled();
         final boolean normalDebugEnabled = normalLogger.isDebugEnabled();
-        final String msg = messageInfoEnabled || normalDebugEnabled ? buildMailMessageDisp(view, discloser) : null;
+        if (!messageInfoEnabled && !normalDebugEnabled) {
+            return;
+        }
+        final String msg = buildMessageDisp(view, discloser);
         if (messageInfoEnabled) {
             messageLogger.info(msg);
         }
@@ -51,7 +58,7 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
         }
     }
 
-    protected String buildMailMessageDisp(CardView view, SMailPostingDiscloser discloser) {
+    protected String buildMessageDisp(CardView view, SMailPostingDiscloser discloser) {
         final String state = discloser.isTraining() ? "as training" : "actually";
         final String hash = toHash(discloser);
         final String disp = discloser.toDisplay();
@@ -60,7 +67,31 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
 
     @Override
     public void logMailFinally(CardView view, SMailPostingDiscloser discloser, OptionalThing<Exception> cause) {
-        // do nothing as default, mail message already logged
+        showResult(discloser, cause);
+    }
+
+    protected void showResult(SMailPostingDiscloser discloser, OptionalThing<Exception> cause) {
+        final boolean messageInfoEnabled = messageLogger.isInfoEnabled();
+        final boolean normalDebugEnabled = normalLogger.isDebugEnabled();
+        if (!messageInfoEnabled && !normalDebugEnabled) {
+            return;
+        }
+        final String msg = buildResultDisp(discloser, cause);
+        if (messageInfoEnabled) {
+            messageLogger.info(msg);
+        }
+        if (normalDebugEnabled) {
+            normalLogger.debug(msg);
+        }
+    }
+
+    protected String buildResultDisp(SMailPostingDiscloser discloser, OptionalThing<Exception> cause) {
+        // no exception message and stack trace here because the info is catched as error logging
+        final String hash = toHash(discloser);
+        final String returnExp = discloser.getLastReturnCode().map(code -> " return=" + code).orElse("");
+        final String responseExp = discloser.getLastServerResponse().map(res -> " response=" + res).orElse("");
+        final String causeExp = cause.map(exp -> " *" + exp.getClass().getSimpleName()).orElse("");
+        return "Finished mail: #" + hash + returnExp + responseExp + causeExp;
     }
 
     // ===================================================================================

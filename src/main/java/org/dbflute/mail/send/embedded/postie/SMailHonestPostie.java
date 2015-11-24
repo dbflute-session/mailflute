@@ -642,7 +642,11 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected void actuallySend(SMailPostingMessage message) throws MessagingException {
-        Transport.send(message.getMimeMessage()); // #for_now needs refactoring to get SMTP info
+        final Transport transport = motorbike.getNativeSession().getTransport();
+        final MimeMessage mimeMessage = message.getMimeMessage();
+        transport.connect(); // authenticated by session's authenticator
+        transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        message.acceptSentTransport(transport); // keep e.g. last return code
     }
 
     protected void logRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {

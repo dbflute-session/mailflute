@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.mail.Address;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
+import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
 
 import org.dbflute.helper.filesystem.FileTextIO;
@@ -76,6 +77,12 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
     protected String plainText;
     protected OptionalThing<String> optHtmlText = OptionalThing.empty();
     protected Map<String, SMailReadAttachedData> attachmentMap; // keyed by filenameOnHeader
+
+    // -----------------------------------------------------
+    //                                    Finished Transport
+    //                                    ------------------
+    protected Integer lastReturnCode;
+    protected String lastServerResponse;
 
     // ===================================================================================
     //                                                                         Constructor
@@ -236,8 +243,8 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
         attachmentMap.put(filenameOnHeader, attachedData);
     }
 
-    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType,
-            byte[] attachedBytes, OptionalThing<String> textEncoding) {
+    protected SMailReadAttachedData newMailReadAttachedData(String filenameOnHeader, String contentType, byte[] attachedBytes,
+            OptionalThing<String> textEncoding) {
         return new SMailReadAttachedData(filenameOnHeader, contentType, attachedBytes, textEncoding);
     }
 
@@ -250,6 +257,17 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
 
     protected String buildAddressSettingFailureMessage(String title, List<Address> addressList) {
         return "Failed to set '" + title + "' addresses: " + addressList + " message=" + message;
+    }
+
+    // ===================================================================================
+    //                                                                  Finished Transport
+    //                                                                  ==================
+    public void acceptSentTransport(Transport transport) {
+        if (transport instanceof com.sun.mail.smtp.SMTPTransport) {
+            final com.sun.mail.smtp.SMTPTransport smtp = (com.sun.mail.smtp.SMTPTransport) transport;
+            lastReturnCode = smtp.getLastReturnCode();
+            lastServerResponse = smtp.getLastServerResponse();
+        }
     }
 
     // ===================================================================================
@@ -436,5 +454,20 @@ public class SMailPostingMessage implements SMailPostingDiscloser {
 
     public Map<String, SMailReadAttachedData> getSavedAttachmentMap() {
         return attachmentMap != null ? Collections.unmodifiableMap(attachmentMap) : Collections.emptyMap();
+    }
+
+    // -----------------------------------------------------
+    //                                    Finished Transport
+    //                                    ------------------
+    public OptionalThing<Integer> getLastReturnCode() {
+        return OptionalThing.ofNullable(lastReturnCode, () -> {
+            throw new SMailIllegalStateException("Not found the last return code: " + toString());
+        });
+    }
+
+    public OptionalThing<String> getLastServerResponse() {
+        return OptionalThing.ofNullable(lastServerResponse, () -> {
+            throw new SMailIllegalStateException("Not found the last server response: " + toString());
+        });
     }
 }
