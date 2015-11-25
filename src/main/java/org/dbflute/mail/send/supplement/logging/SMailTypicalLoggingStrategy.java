@@ -88,10 +88,22 @@ public class SMailTypicalLoggingStrategy implements SMailLoggingStrategy {
     protected String buildResultDisp(SMailPostingDiscloser discloser, OptionalThing<Exception> cause) {
         // no exception message and stack trace here because the info is catched as error logging
         final String hash = toHash(discloser);
-        final String returnExp = discloser.getLastReturnCode().map(code -> " return=" + code).orElse("");
-        final String responseExp = discloser.getLastServerResponse().map(res -> " response=" + res).orElse("");
-        final String causeExp = cause.map(exp -> " *" + exp.getClass().getSimpleName()).orElse("");
+        final String returnExp = doBuildResultDispLastReturnCode(discloser);
+        final String responseExp = doBuildResultDispLastServerResponse(discloser);
+        final String causeExp = doBuildResultDispCause(cause);
         return "Finished mail: #" + hash + returnExp + responseExp + causeExp;
+    }
+
+    protected String doBuildResultDispLastReturnCode(SMailPostingDiscloser discloser) {
+        return discloser.getLastReturnCode().map(code -> " return=" + code).orElse("");
+    }
+
+    protected String doBuildResultDispLastServerResponse(SMailPostingDiscloser discloser) {
+        return discloser.getLastServerResponse().map(res -> " response=" + res.trim()).orElse("");
+    }
+
+    protected String doBuildResultDispCause(OptionalThing<Exception> cause) {
+        return cause.map(exp -> " *" + exp.getClass().getSimpleName()).orElse("");
     }
 
     // ===================================================================================
