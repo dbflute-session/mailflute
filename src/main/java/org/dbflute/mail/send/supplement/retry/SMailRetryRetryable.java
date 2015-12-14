@@ -22,5 +22,5 @@ package org.dbflute.mail.send.supplement.retry;
 @FunctionalInterface
 public interface SMailRetryRetryable {
 
-    void retryIfNoSetting(int retryCount, long intervalMillis);
+    void retry(int retryCount, long intervalMillis);
 }

@@ -24,5 +24,5 @@ import org.dbflute.mail.CardView;
 @FunctionalInterface
 public interface SMailRetryStrategy {
 
-    SMailRetrySetupper provideSetupper(CardView view);
+    void retry(CardView view, SMailRetryRetryable retryable);
 }

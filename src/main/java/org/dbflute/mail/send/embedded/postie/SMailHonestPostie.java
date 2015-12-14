@@ -67,7 +67,6 @@ import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
-import org.dbflute.mail.send.supplement.retry.SMailRetrySetupper;
 import org.dbflute.mail.send.supplement.retry.SMailRetryStrategy;
 import org.dbflute.mail.send.supplement.retry.SMailRetryStrategyNone;
 import org.dbflute.optional.OptionalThing;
@@ -558,11 +557,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected void prepareRetry(Postcard postcard) {
-        final SMailRetrySetupper setupper = retryStrategy.provideSetupper(postcard);
-        if (setupper == null) {
-            throw new IllegalStateException("The provideSetupper() should not return null: " + retryStrategy);
-        }
-        setupper.setupIfNeeds((retryCount, intervalMillis) -> {
+        retryStrategy.retry(postcard, (retryCount, intervalMillis) -> {
             if (postcard.getRetryCount() == 0) {
                 logger.debug("...Calling retry({}, {}) automatically by strategy: {}", retryCount, intervalMillis, asyncStrategy);
                 postcard.retry(retryCount, intervalMillis);

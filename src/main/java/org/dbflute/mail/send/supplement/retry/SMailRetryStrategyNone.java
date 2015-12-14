@@ -24,7 +24,6 @@ import org.dbflute.mail.CardView;
 public class SMailRetryStrategyNone implements SMailRetryStrategy {
 
     @Override
-    public SMailRetrySetupper provideSetupper(CardView view) {
-        return retryable -> {};
+    public void retry(CardView view, SMailRetryRetryable retryable) {
     }
 }
