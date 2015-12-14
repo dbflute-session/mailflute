@@ -67,6 +67,9 @@ import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
+import org.dbflute.mail.send.supplement.retry.SMailRetrySetupper;
+import org.dbflute.mail.send.supplement.retry.SMailRetryStrategy;
+import org.dbflute.mail.send.supplement.retry.SMailRetryStrategyNone;
 import org.dbflute.optional.OptionalThing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +89,7 @@ public class SMailHonestPostie implements SMailPostie {
     private static final SMailSubjectFilter noneSubjectFilter = new SMailSubjectFilterNone();
     private static final SMailBodyTextFilter noneBodyTextFilter = new SMailBodyTextFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
+    private static final SMailRetryStrategy noneRetryStrategy = new SMailRetryStrategyNone();
     private static final SMailLabelStrategy noneLabelStrategy = new SMailLabelStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
     private static final SMailInternetAddressCreator normalInternetAddressCreator = new SMailNormalInternetAddressCreator();
@@ -99,6 +103,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
     protected SMailBodyTextFilter bodyTextFilter = noneBodyTextFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
+    protected SMailRetryStrategy retryStrategy = noneRetryStrategy; // not null
     protected SMailLabelStrategy labelStrategy = noneLabelStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected SMailInternetAddressCreator internetAddressCreator = normalInternetAddressCreator; // not null
@@ -142,6 +147,12 @@ public class SMailHonestPostie implements SMailPostie {
         return this;
     }
 
+    public SMailHonestPostie withRetryStrategy(SMailRetryStrategy retryStrategy) {
+        assertArgumentNotNull("retryStrategy", retryStrategy);
+        this.retryStrategy = retryStrategy;
+        return this;
+    }
+
     public SMailHonestPostie withLabelStrategy(SMailLabelStrategy labelStrategy) {
         assertArgumentNotNull("labelStrategy", labelStrategy);
         this.labelStrategy = labelStrategy;
@@ -177,6 +188,8 @@ public class SMailHonestPostie implements SMailPostie {
         prepareAddress(postcard, message);
         prepareSubject(postcard, message);
         prepareBody(postcard, message);
+        prepareAsync(postcard);
+        prepareRetry(postcard);
         disclosePostingState(postcard, message);
         if (postcard.isDryrun()) {
             logger.debug("*dryrun: postcard={}", postcard); // normal logging here
@@ -383,13 +396,6 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     // ===================================================================================
-    //                                                                            Disclose
-    //                                                                            ========
-    protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
-        postcard.officeDisclosePostingState(message);
-    }
-
-    // ===================================================================================
     //                                                                           Text Part
     //                                                                           =========
     protected MimePart setupTextPart(MimePart part, String text, TextType textType) {
@@ -542,6 +548,36 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     // ===================================================================================
+    //                                                                 Prepare Async/Retry
+    //                                                                 ===================
+    protected void prepareAsync(Postcard postcard) {
+        if (asyncStrategy.alwaysAsync(postcard) && !postcard.isAsync()) {
+            logger.debug("...Calling async() automatically by strategy: {}", asyncStrategy);
+            postcard.async();
+        }
+    }
+
+    protected void prepareRetry(Postcard postcard) {
+        final SMailRetrySetupper setupper = retryStrategy.provideSetupper(postcard);
+        if (setupper == null) {
+            throw new IllegalStateException("The provideSetupper() should not return null: " + retryStrategy);
+        }
+        setupper.setupIfNeeds((retryCount, intervalMillis) -> {
+            if (postcard.getRetryCount() == 0) {
+                logger.debug("...Calling retry({}, {}) automatically by strategy: {}", retryCount, intervalMillis, asyncStrategy);
+                postcard.retry(retryCount, intervalMillis);
+            }
+        });
+    }
+
+    // ===================================================================================
+    //                                                                            Disclose
+    //                                                                            ========
+    protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
+        postcard.officeDisclosePostingState(message);
+    }
+
+    // ===================================================================================
     //                                                                        Send Message
     //                                                                        ============
     protected void send(Postcard postcard, SMailPostingMessage message) {
@@ -553,7 +589,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected boolean needsAsync(Postcard postcard) {
-        return postcard.isAsync() || asyncStrategy.alwaysAsync(postcard);
+        return postcard.isAsync();
     }
 
     // -----------------------------------------------------
