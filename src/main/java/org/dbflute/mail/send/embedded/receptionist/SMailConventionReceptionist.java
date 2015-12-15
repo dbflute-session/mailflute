@@ -112,6 +112,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       =============
     @Override
     public void accept(Postcard postcard) {
+        preparePostcardFirst(postcard);
         if (postcard.isForcedlyDirect()) { // should ignore body file
             assertPlainBodyExistsForDirectBody(postcard);
             postcard.getBodyFile().ifPresent(bodyFile -> { // but wants logging
@@ -141,6 +142,9 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }).orElse(() -> { /* direct body, check only here */
             assertPlainBodyExistsForDirectBody(postcard);
         });
+    }
+
+    protected void preparePostcardFirst(Postcard postcard) { // may be overridden
     }
 
     protected OptionalThing<Locale> prepareReceiverLocale(Postcard postcard) {

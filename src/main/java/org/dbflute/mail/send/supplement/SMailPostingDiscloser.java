@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.mail.Address;
+import javax.mail.internet.MimeMessage;
 
 import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
 import org.dbflute.optional.OptionalThing;
@@ -33,6 +34,8 @@ public interface SMailPostingDiscloser {
     // ===================================================================================
     //                                                                     Basic Attribute
     //                                                                     ===============
+    MimeMessage getMimeMessage();
+
     boolean isTraining();
 
     Map<String, Object> getPushedLoggingMap();
@@ -70,4 +73,11 @@ public interface SMailPostingDiscloser {
     OptionalThing<String> getSavedHtmlText(); // formally empty-able
 
     Map<String, SMailReadAttachedData> getSavedAttachmentMap(); // keyed by filenameOnHeader
+
+    // ===================================================================================
+    //                                                                  Finished Transport
+    //                                                                  ==================
+    OptionalThing<Integer> getLastReturnCode();
+
+    OptionalThing<String> getLastServerResponse();
 }

@@ -67,6 +67,8 @@ import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategyNone;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
+import org.dbflute.mail.send.supplement.retry.SMailRetryStrategy;
+import org.dbflute.mail.send.supplement.retry.SMailRetryStrategyNone;
 import org.dbflute.optional.OptionalThing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +88,7 @@ public class SMailHonestPostie implements SMailPostie {
     private static final SMailSubjectFilter noneSubjectFilter = new SMailSubjectFilterNone();
     private static final SMailBodyTextFilter noneBodyTextFilter = new SMailBodyTextFilterNone();
     private static final SMailAsyncStrategy noneAsyncStrategy = new SMailAsyncStrategyNone();
+    private static final SMailRetryStrategy noneRetryStrategy = new SMailRetryStrategyNone();
     private static final SMailLabelStrategy noneLabelStrategy = new SMailLabelStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
     private static final SMailInternetAddressCreator normalInternetAddressCreator = new SMailNormalInternetAddressCreator();
@@ -99,6 +102,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailSubjectFilter subjectFilter = noneSubjectFilter; // not null
     protected SMailBodyTextFilter bodyTextFilter = noneBodyTextFilter; // not null
     protected SMailAsyncStrategy asyncStrategy = noneAsyncStrategy; // not null
+    protected SMailRetryStrategy retryStrategy = noneRetryStrategy; // not null
     protected SMailLabelStrategy labelStrategy = noneLabelStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
     protected SMailInternetAddressCreator internetAddressCreator = normalInternetAddressCreator; // not null
@@ -142,6 +146,12 @@ public class SMailHonestPostie implements SMailPostie {
         return this;
     }
 
+    public SMailHonestPostie withRetryStrategy(SMailRetryStrategy retryStrategy) {
+        assertArgumentNotNull("retryStrategy", retryStrategy);
+        this.retryStrategy = retryStrategy;
+        return this;
+    }
+
     public SMailHonestPostie withLabelStrategy(SMailLabelStrategy labelStrategy) {
         assertArgumentNotNull("labelStrategy", labelStrategy);
         this.labelStrategy = labelStrategy;
@@ -177,6 +187,8 @@ public class SMailHonestPostie implements SMailPostie {
         prepareAddress(postcard, message);
         prepareSubject(postcard, message);
         prepareBody(postcard, message);
+        prepareAsync(postcard);
+        prepareRetry(postcard);
         disclosePostingState(postcard, message);
         if (postcard.isDryrun()) {
             logger.debug("*dryrun: postcard={}", postcard); // normal logging here
@@ -383,13 +395,6 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     // ===================================================================================
-    //                                                                            Disclose
-    //                                                                            ========
-    protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
-        postcard.officeDisclosePostingState(message);
-    }
-
-    // ===================================================================================
     //                                                                           Text Part
     //                                                                           =========
     protected MimePart setupTextPart(MimePart part, String text, TextType textType) {
@@ -542,40 +547,80 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     // ===================================================================================
+    //                                                                 Prepare Async/Retry
+    //                                                                 ===================
+    protected void prepareAsync(Postcard postcard) {
+        if (asyncStrategy.alwaysAsync(postcard) && !postcard.isAsync()) {
+            logger.debug("...Calling async() automatically by strategy: {}", asyncStrategy);
+            postcard.async();
+        }
+    }
+
+    protected void prepareRetry(Postcard postcard) {
+        retryStrategy.retry(postcard, (retryCount, intervalMillis) -> {
+            if (postcard.getRetryCount() == 0) {
+                logger.debug("...Calling retry({}, {}) automatically by strategy: {}", retryCount, intervalMillis, asyncStrategy);
+                postcard.retry(retryCount, intervalMillis);
+            }
+        });
+    }
+
+    // ===================================================================================
+    //                                                                            Disclose
+    //                                                                            ========
+    protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
+        postcard.officeDisclosePostingState(message);
+    }
+
+    // ===================================================================================
     //                                                                        Send Message
     //                                                                        ============
     protected void send(Postcard postcard, SMailPostingMessage message) {
-        try {
-            if (needsAsync(postcard)) {
-                asyncStrategy.async(postcard, () -> doSend(postcard, message));
-            } else {
-                doSend(postcard, message);
-            }
-        } catch (RuntimeException e) {
-            if (postcard.isSuppressSendFailure()) {
-                loggingStrategy.logSuppressedCause(postcard, message, e);
-            } else {
-                throw e;
-            }
+        if (needsAsync(postcard)) {
+            asyncStrategy.async(postcard, () -> doSend(postcard, message));
+        } else {
+            doSend(postcard, message);
         }
     }
 
     protected boolean needsAsync(Postcard postcard) {
-        return postcard.isAsync() || asyncStrategy.alwaysAsync(postcard);
-    }
-
-    protected void doSend(Postcard postcard, SMailPostingMessage message) {
-        logMailMessage(postcard, message);
-        if (!training) {
-            retryableSend(postcard, message);
-        }
+        return postcard.isAsync();
     }
 
     // -----------------------------------------------------
-    //                                               Logging
-    //                                               -------
-    protected void logMailMessage(Postcard postcard, SMailPostingMessage message) {
-        loggingStrategy.logMailMessage(postcard, message); // you can also make EML file here by overriding
+    //                                          with Logging
+    //                                          ------------
+    protected void doSend(Postcard postcard, SMailPostingMessage message) {
+        logMailBefore(postcard, message);
+        RuntimeException cause = null;
+        try {
+            if (!training) {
+                retryableSend(postcard, message);
+            }
+        } catch (RuntimeException e) {
+            cause = e;
+            if (postcard.isSuppressSendFailure()) {
+                logSuppressedCause(postcard, message, e);
+            } else {
+                throw e;
+            }
+        } finally {
+            logMailFinally(postcard, message, cause);
+        }
+    }
+
+    protected void logMailBefore(Postcard postcard, SMailPostingMessage message) {
+        loggingStrategy.logMailBefore(postcard, message); // you can also make EML file here by overriding
+    }
+
+    protected void logSuppressedCause(Postcard postcard, SMailPostingMessage message, RuntimeException e) {
+        loggingStrategy.logSuppressedCause(postcard, message, e);
+    }
+
+    protected void logMailFinally(Postcard postcard, SMailPostingMessage message, RuntimeException cause) {
+        loggingStrategy.logMailFinally(postcard, message, OptionalThing.ofNullable(cause, () -> {
+            throw new IllegalStateException("Not found the exception for the mail finally: " + postcard);
+        }));
     }
 
     // -----------------------------------------------------
@@ -599,7 +644,7 @@ public class SMailHonestPostie implements SMailPostie {
                 }
                 actuallySend(message);
                 if (challengeCount > 0) { // means retry success
-                    noticeRetrySuccess(postcard, message, challengeCount, firstCause);
+                    logRetrySuccess(postcard, message, challengeCount, firstCause);
                 }
                 break;
             } catch (RuntimeException | MessagingException e) {
@@ -628,10 +673,14 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected void actuallySend(SMailPostingMessage message) throws MessagingException {
-        Transport.send(message.getMimeMessage());
+        final Transport transport = motorbike.getNativeSession().getTransport();
+        final MimeMessage mimeMessage = message.getMimeMessage();
+        transport.connect(); // authenticated by session's authenticator
+        transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        message.acceptSentTransport(transport); // keep e.g. last return code
     }
 
-    protected void noticeRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
+    protected void logRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
         loggingStrategy.logRetrySuccess(postcard, message, challengeCount, firstCause);
     }
 
