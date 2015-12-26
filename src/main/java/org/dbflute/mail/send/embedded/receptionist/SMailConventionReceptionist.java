@@ -18,6 +18,7 @@ package org.dbflute.mail.send.embedded.receptionist;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.dbflute.Entity;
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.PostOffice;
@@ -32,6 +34,7 @@ import org.dbflute.mail.Postcard;
 import org.dbflute.mail.Postcard.DirectBodyOption;
 import org.dbflute.mail.send.SMailReceptionist;
 import org.dbflute.mail.send.exception.SMailBodyMetaParseFailureException;
+import org.dbflute.mail.send.exception.SMailDirectlyEntityVariableNotAllowedException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.mail.send.exception.SMailUserLocaleNotFoundException;
@@ -112,7 +115,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       =============
     @Override
     public void accept(Postcard postcard) {
-        preparePostcardFirst(postcard);
+        readyPostcardFirst(postcard);
+        checkPostcardFirst(postcard);
         if (postcard.isForcedlyDirect()) { // should ignore body file
             assertPlainBodyExistsForDirectBody(postcard);
             postcard.getBodyFile().ifPresent(bodyFile -> { // but wants logging
@@ -142,9 +146,6 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }).orElse(() -> { /* direct body, check only here */
             assertPlainBodyExistsForDirectBody(postcard);
         });
-    }
-
-    protected void preparePostcardFirst(Postcard postcard) { // may be overridden
     }
 
     protected OptionalThing<Locale> prepareReceiverLocale(Postcard postcard) {
@@ -180,6 +181,66 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             String msg = "Not found both the body file path and the direct body: " + postcard;
             throw new SMailIllegalStateException(msg);
         }
+    }
+
+    // ===================================================================================
+    //                                                                         Ready First
+    //                                                                         ===========
+    protected void readyPostcardFirst(Postcard postcard) { // may be overridden
+    }
+
+    // ===================================================================================
+    //                                                                         Check First
+    //                                                                         ===========
+    protected void checkPostcardFirst(Postcard postcard) { // similar to LastaFlute's check for display data
+        final Map<String, Object> variableMap = postcard.getTemplaetVariableMap();
+        variableMap.forEach((key, value) -> {
+            stopDirectlyEntityVariable(postcard, key, value);
+        });
+    }
+
+    protected void stopDirectlyEntityVariable(Postcard postcard, String key, Object value) {
+        // though rare case about mail, because of hard to generate, but check just in case
+        if (value instanceof Entity) {
+            throwDirectlyEntityVariableNotAllowedException(postcard, key, value);
+        } else if (value instanceof Collection<?>) {
+            final Collection<?> coll = ((Collection<?>) value);
+            if (!coll.isEmpty()) {
+                // care performance for List that the most frequent pattern
+                final Object first = coll instanceof List<?> ? ((List<?>) coll).get(0) : coll.iterator().next();
+                if (first instanceof Entity) {
+                    throwDirectlyEntityVariableNotAllowedException(postcard, key, value);
+                }
+            }
+        }
+        // cannot check perfectly e.g. map's value, but only primary patterns are enough
+    }
+
+    protected void throwDirectlyEntityVariableNotAllowedException(Postcard postcard, String key, Object value) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Registered the entity directly as mail variable.");
+        br.addItem("Advice");
+        br.addElement("Not allowed to register register entity directly as mail variable.");
+        br.addElement("Convert your entity data to mail bean for mail variable.");
+        br.addElement("For example:");
+        br.addElement("  (x):");
+        br.addElement("    Member member = ...");
+        br.addElement("    postcard.setMember(member); // *Bad");
+        br.addElement("  (o):");
+        br.addElement("    Member member = ...");
+        br.addElement("    MemberBean bean = mappingToBean(member);");
+        br.addElement("    postcard.setMember(bean); // Good");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        br.addItem("Registered");
+        br.addElement("key: " + key);
+        if (value instanceof Collection<?>) {
+            ((Collection<?>) value).forEach(element -> br.addElement(element));
+        } else {
+            br.addElement(value);
+        }
+        final String msg = br.buildExceptionMessage();
+        throw new SMailDirectlyEntityVariableNotAllowedException(msg);
     }
 
     // ===================================================================================

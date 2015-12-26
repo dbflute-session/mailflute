@@ -336,10 +336,11 @@ public class Postcard implements CardView {
             msg = msg + " wholeFixedTextUsed=" + wholeFixedTextUsed + " variableMap=" + templateVariableMap;
             throw new SMailPostcardIllegalStateException(msg);
         }
-        if (templateVariableMap != null && templateVariableMap.isEmpty()) {
-            String msg = "Empty variable map for template text: variableMap=" + templateVariableMap;
-            throw new SMailPostcardIllegalStateException(msg);
-        }
+        // no check for no variable mail (fixed message)
+        //if (templateVariableMap != null && templateVariableMap.isEmpty()) {
+        //    String msg = "Empty variable map for template text: variableMap=" + templateVariableMap;
+        //    throw new SMailPostcardIllegalStateException(msg);
+        //}
     }
 
     protected void throwMailFromAddressNotFoundException() {
