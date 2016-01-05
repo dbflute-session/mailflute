@@ -70,6 +70,7 @@ import org.dbflute.mail.send.supplement.logging.SMailTypicalLoggingStrategy;
 import org.dbflute.mail.send.supplement.retry.SMailRetryStrategy;
 import org.dbflute.mail.send.supplement.retry.SMailRetryStrategyNone;
 import org.dbflute.optional.OptionalThing;
+import org.dbflute.system.DBFluteSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,7 +271,7 @@ public class SMailHonestPostie implements SMailPostie {
         address.getPersonal().ifPresent(personal -> {
             final String encoding = getPersonalEncoding();
             try {
-                final Locale locale = postcard.getReceiverLocale().orElse(Locale.getDefault());
+                final Locale locale = postcard.getReceiverLocale().orElseGet(() -> getDefaultReceiverLocale());
                 final String resolved = labelStrategy.resolveLabel(postcard, locale, personal);
                 internetAddress.setPersonal(resolved, encoding);
             } catch (UnsupportedEncodingException e) {
@@ -290,6 +291,10 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected String getPersonalEncoding() {
         return getBasicEncoding();
+    }
+
+    protected Locale getDefaultReceiverLocale() {
+        return DBFluteSystem.getFinalLocale();
     }
 
     // -----------------------------------------------------
