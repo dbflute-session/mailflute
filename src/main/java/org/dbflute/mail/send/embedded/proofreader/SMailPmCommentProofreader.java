@@ -22,9 +22,13 @@ import org.dbflute.mail.send.SMailTextProofreader;
 import org.dbflute.twowaysql.SqlAnalyzer;
 import org.dbflute.twowaysql.context.CommandContext;
 import org.dbflute.twowaysql.context.CommandContextCreator;
+import org.dbflute.twowaysql.factory.NodeAdviceFactory;
+import org.dbflute.twowaysql.node.BoundValue;
+import org.dbflute.twowaysql.node.EmbeddedVariableNode;
 import org.dbflute.twowaysql.node.Node;
 import org.dbflute.twowaysql.pmbean.SimpleMapPmb;
 import org.dbflute.util.Srl;
+import org.dbflute.util.Srl.ScopeInfo;
 
 /**
  * @author jflute
@@ -56,9 +60,6 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
     //                                                                            Evaluate
     //                                                                            ========
     // very similar to simple template manager of LastaFlute but no recycle to be independent
-    // -----------------------------------------------------
-    //                                              Evaluate
-    //                                              --------
     protected String evaluate(String templateText, Object pmb) {
         final Node node = analyze(filterTemplateText(templateText, pmb));
         final CommandContext ctx = prepareContext(pmb);
@@ -66,9 +67,9 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
         return ctx.getSql();
     }
 
-    // -----------------------------------------------------
-    //                                       Line Adjustment
-    //                                       ---------------
+    // ===================================================================================
+    //                                                                     Line Adjustment
+    //                                                                     ===============
     protected String filterTemplateText(String templateText, Object pmb) {
         final String replaced = Srl.replace(templateText, CRLF, LF);
         final List<String> lineList = Srl.splitList(replaced, LF);
@@ -126,22 +127,67 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
         sb.append(lineNumber > 1 ? LF : "").append(line);
     }
 
-    // -----------------------------------------------------
-    //                                      Analyze Template
-    //                                      ----------------
+    // ===================================================================================
+    //                                                                    Analyze Template
+    //                                                                    ================
     protected Node analyze(String templateText) {
-        return createSqlAnalyzer(templateText, true).analyze();
+        return createMailikeSqlAnalyzer(templateText).analyze();
     }
 
-    protected SqlAnalyzer createSqlAnalyzer(String templateText, boolean blockNullParameter) {
-        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, blockNullParameter) {
+    protected SqlAnalyzer createMailikeSqlAnalyzer(String templateText) {
+        final SqlAnalyzer analyzer = new SqlAnalyzer(templateText, true) {
+            @Override
             protected String filterAtFirst(String sql) {
                 return sql; // keep body
+            }
+
+            @Override
+            protected EmbeddedVariableNode newEmbeddedVariableNode(String expr, String testValue, String specifiedSql,
+                    boolean blockNullParameter, NodeAdviceFactory adviceFactory, boolean replaceOnly, boolean terminalDot,
+                    boolean overlookNativeBinding) {
+                return createMailikeEmbeddedVariableNode(expr, testValue, specifiedSql, blockNullParameter, adviceFactory, replaceOnly,
+                        terminalDot, overlookNativeBinding);
             }
         }.overlookNativeBinding().switchBindingToReplaceOnlyEmbedded(); // adjust for plain template
         return analyzer;
     }
 
+    protected EmbeddedVariableNode createMailikeEmbeddedVariableNode(String expr, String testValue, String specifiedSql,
+            boolean blockNullParameter, NodeAdviceFactory adviceFactory, boolean replaceOnly, boolean terminalDot,
+            boolean overlookNativeBinding) {
+        return new EmbeddedVariableNode(expr, testValue, specifiedSql, blockNullParameter, adviceFactory, replaceOnly, terminalDot,
+                overlookNativeBinding) {
+            @Override
+            protected void setupBoundValue(BoundValue boundValue) {
+                super.setupBoundValue(boundValue);
+                setupOrElseValueIfNeeds(boundValue, _optionDef);
+            }
+        };
+    }
+
+    protected void setupOrElseValueIfNeeds(BoundValue boundValue, String optionDef) {
+        final Object targetValue = boundValue.getTargetValue();
+        if (targetValue == null && Srl.is_NotNull_and_NotTrimmedEmpty(optionDef)) {
+            final List<String> optionList = Srl.splitListTrimmed(optionDef, "|");
+            final String orElseBegin = "orElse(";
+            final String orElseEnd = ")";
+            optionList.stream().filter(op -> {
+                return op.startsWith(orElseBegin) && op.endsWith(orElseEnd);
+            }).findFirst().ifPresent(op -> { // e.g. /*pmb.sea:orElse('land')*/
+                final ScopeInfo scope = Srl.extractScopeWide(op, orElseBegin, orElseEnd);
+                final String content = scope.getContent().trim();
+                if (!Srl.isQuotedSingle(content)) { // string only supported, is enough in MailFlute
+                    String msg = "The MailFlute orElse() value should be single-quoted: " + optionDef;
+                    throw new IllegalStateException(msg);
+                }
+                boundValue.setTargetValue(Srl.unquoteSingle(content));
+            });
+        }
+    }
+
+    // ===================================================================================
+    //                                                                     Command Context
+    //                                                                     ===============
     protected CommandContext prepareContext(Object pmb) {
         final Object filteredPmb = filterPmb(pmb);
         final String[] argNames = new String[] { "pmb" };
