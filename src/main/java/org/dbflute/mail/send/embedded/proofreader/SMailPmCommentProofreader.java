@@ -177,12 +177,16 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
                 final ScopeInfo scope = Srl.extractScopeWide(op, orElseBegin, orElseEnd);
                 final String content = scope.getContent().trim();
                 if (!Srl.isQuotedSingle(content)) { // string only supported, is enough in MailFlute
-                    String msg = "The MailFlute orElse() value should be single-quoted: " + optionDef;
-                    throw new IllegalStateException(msg);
+                    throwMailOrElseValueNotQuotedException(optionDef);
                 }
                 boundValue.setTargetValue(Srl.unquoteSingle(content));
             });
         }
+    }
+
+    protected void throwMailOrElseValueNotQuotedException(String optionDef) {
+        String msg = "The orElse() value for mail should be single-quoted e.g. orElse('sea') but: " + optionDef;
+        throw new IllegalStateException(msg);
     }
 
     // ===================================================================================
