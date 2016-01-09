@@ -13,16 +13,21 @@
  * either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package org.dbflute.mail.send.supplement.retry;
-
-import org.dbflute.mail.CardView;
+package org.dbflute.mail.send.exception;
 
 /**
  * @author jflute
- * @since 0.4.6 (2015/12/14 Monday)
+ * @since 0.4.0 (2015/06/13 Saturday)
  */
-@FunctionalInterface
-public interface SMailRetryStrategy {
+public class SMailDirectlyEntityVariableNotAllowedException extends RuntimeException {
 
-    void retry(CardView view, SMailRetryRetryable retryable);
+    private static final long serialVersionUID = 1L;
+
+    public SMailDirectlyEntityVariableNotAllowedException(String msg) {
+        super(msg);
+    }
+
+    public SMailDirectlyEntityVariableNotAllowedException(String msg, Throwable e) {
+        super(msg, e);
+    }
 }
