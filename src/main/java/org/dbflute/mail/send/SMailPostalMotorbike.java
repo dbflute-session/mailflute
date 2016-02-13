@@ -137,10 +137,9 @@ public class SMailPostalMotorbike {
      * It needs authenticator, that you can specify by constructor.
      * <pre>
      * e.g.
-     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike<span style="color: #994747">("sea", "land")</span>;
+     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike("sea", "land").<span style="color: #CC4747">useStarttls()</span>;
      *  motorbike.registerConnectionInfo(...);
      *  motorbike.registerReturnPath(...);
-     *  motorbike.<span style="color: #CC4747">registerStarttls()</span>;
      * </pre>
      * @return this. (NotNull)
      */
