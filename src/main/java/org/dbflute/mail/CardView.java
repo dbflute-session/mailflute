@@ -106,4 +106,11 @@ public interface CardView {
     boolean hasOfficePostingDiscloser();
 
     OptionalThing<SMailPostingDiscloser> getOfficePostingDiscloser();
+
+    // ===================================================================================
+    //                                                                        Message Memo
+    //                                                                        ============
+    OptionalThing<Object> getMessageAuthor();
+
+    OptionalThing<Class<?>> getMessageTheme();
 }
