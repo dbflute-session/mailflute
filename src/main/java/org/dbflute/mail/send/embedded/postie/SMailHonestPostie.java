@@ -50,6 +50,8 @@ import org.dbflute.mail.send.SMailPostie;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.mail.send.exception.SMailMessageSettingFailureException;
 import org.dbflute.mail.send.exception.SMailTransportFailureException;
+import org.dbflute.mail.send.hook.SMailCallbackContext;
+import org.dbflute.mail.send.hook.SMailPreparedMessageHook;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategy;
 import org.dbflute.mail.send.supplement.async.SMailAsyncStrategyNone;
 import org.dbflute.mail.send.supplement.attachment.SMailAttachment;
@@ -191,6 +193,7 @@ public class SMailHonestPostie implements SMailPostie {
         prepareAsync(postcard);
         prepareRetry(postcard);
         disclosePostingState(postcard, message);
+        hookPreparedMessage(postcard, message);
         if (postcard.isDryrun()) {
             logger.debug("*dryrun: postcard={}", postcard); // normal logging here
             return;
@@ -575,6 +578,17 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                            ========
     protected void disclosePostingState(Postcard postcard, SMailPostingMessage message) {
         postcard.officeDisclosePostingState(message);
+    }
+
+    // ===================================================================================
+    //                                                                    Callback Context
+    //                                                                    ================
+    protected void hookPreparedMessage(Postcard postcard, final SMailPostingMessage message) {
+        if (SMailCallbackContext.isExistPreparedMessageHookOnThread()) {
+            final SMailCallbackContext context = SMailCallbackContext.getCallbackContextOnThread();
+            final SMailPreparedMessageHook hook = context.getPreparedMessageHook();
+            hook.hookPreparedMessage(postcard, message);
+        }
     }
 
     // ===================================================================================

@@ -23,6 +23,7 @@ import javax.mail.Session;
 
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.optional.OptionalThing;
+import org.dbflute.util.Srl;
 
 /**
  * @author jflute
@@ -36,24 +37,56 @@ public class SMailPostalMotorbike {
     protected static final String MAIL_SMTP_HOST = "mail.smtp.host";
     protected static final String MAIL_SMTP_PORT = "mail.smtp.port";
     protected static final String MAIL_SMTP_FROM = "mail.smtp.from"; // return-path
+    protected static final String MAIL_SMTP_AUTH = "mail.smtp.auth"; // for e.g. starttls, ssl
     protected static final String MAIL_TRANSPORT_PROTOCOL = "mail.transport.protocol";
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final Session session; // not null
+    protected final boolean hasAuth;
+    protected MotorbikeSecurityType securityType = MotorbikeSecurityType.NONE;
+
+    protected enum MotorbikeSecurityType {
+        NONE, SSL, STARTTLS
+    }
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
     public SMailPostalMotorbike() { // for normal
         session = createSession();
+        hasAuth = false;
     }
 
+    /**
+     * <pre>
+     * e.g. STARTTLS
+     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike("sea", "land");
+     *  motorbike.registerConnectionInfo(...);
+     *  motorbike.registerReturnPath(...);
+     *  motorbike.<span style="color: #CC4747">registerStarttls()</span>;
+     * 
+     * e.g. SSL
+     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike("sea", "land").<span style="color: #CC4747">useSsl()</span>;
+     *  motorbike.registerConnectionInfo(...);
+     *  motorbike.registerReturnPath(...);
+     * </pre>
+     * @param userName The user name for authentication to mail server. (NotNul)
+     * @param password The password for the user. (NotNul)
+     */
     public SMailPostalMotorbike(String userName, String password) { // for e.g. starttls
+        assertArgumentNotNull("userName", userName);
+        assertArgumentNotNull("password", password);
         session = createSession(createAuthenticator(userName, password));
+        hasAuth = true;
     }
 
+    /**
+     * @param userName The user name for authentication to mail server. (NotNul)
+     * @param password The password for the user. (NotNul)
+     * @return The new-created authenticator. (NotNull)
+     */
     protected Authenticator createAuthenticator(String userName, String password) {
         return new Authenticator() {
             @Override
@@ -75,17 +108,71 @@ public class SMailPostalMotorbike {
         return new Properties();
     }
 
+    /**
+     * Motorbike uses SMTP over SSL. <br>
+     * It needs authenticator, that you can specify by constructor.
+     * <pre>
+     * e.g.
+     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike("sea", "land").<span style="color: #CC4747">useSsl()</span>;
+     *  motorbike.registerConnectionInfo(...);
+     *  motorbike.registerReturnPath(...);
+     * </pre>
+     * @return this. (NotNull)
+     */
+    public SMailPostalMotorbike useSsl() {
+        if (!hasAuth) {
+            throw new IllegalStateException("Not found the authenticator for SSL: session=" + session);
+        }
+        if (MotorbikeSecurityType.STARTTLS.equals(securityType)) {
+            throw new IllegalStateException("Cannot use SSL with STARTTLS: session=" + session);
+        }
+        securityType = MotorbikeSecurityType.SSL;
+        registerTransportProtocol("smtps");
+        registerSmtpAuth();
+        return this;
+    }
+
+    /**
+     * Motorbike uses STARTTLS. <br>
+     * It needs authenticator, that you can specify by constructor.
+     * <pre>
+     * e.g.
+     *  SMailPostalMotorbike motorbike = new SMailPostalMotorbike("sea", "land").<span style="color: #CC4747">useStarttls()</span>;
+     *  motorbike.registerConnectionInfo(...);
+     *  motorbike.registerReturnPath(...);
+     * </pre>
+     * @return this. (NotNull)
+     */
+    public SMailPostalMotorbike useStarttls() {
+        if (!hasAuth) {
+            throw new IllegalStateException("Not found the authenticator for STARTTLS: session=" + session);
+        }
+        if (MotorbikeSecurityType.SSL.equals(securityType)) {
+            throw new IllegalStateException("Cannot use STARTTLS with SSL: session=" + session);
+        }
+        securityType = MotorbikeSecurityType.STARTTLS;
+        registerSmtpAuth();
+        final Properties props = session.getProperties();
+        props.setProperty("mail.smtp.starttls.enable", "true");
+        props.setProperty("mail.smtp.starttls.required", "true");
+        return this;
+    }
+
+    protected void registerSmtpAuth() {
+        session.getProperties().setProperty(resolveProtocolKey(MAIL_SMTP_AUTH), "true");
+    }
+
     // ===================================================================================
     //                                                                            Register
     //                                                                            ========
     public void registerConnectionInfo(String host, int port) {
         assertArgumentNotNull("passhostword", host);
         final Properties props = session.getProperties();
-        props.setProperty(MAIL_SMTP_HOST, host);
-        props.setProperty(MAIL_SMTP_PORT, String.valueOf(port));
+        props.setProperty(resolveProtocolKey(MAIL_SMTP_HOST), host);
+        props.setProperty(resolveProtocolKey(MAIL_SMTP_PORT), String.valueOf(port));
     }
 
-    public void registerProxy(String proxyHost, String proxyPort) {
+    public void registerProxy(String proxyHost, String proxyPort) { // #thinking: needs SSL key handling?
         assertArgumentNotNull("proxyHost", proxyHost);
         assertArgumentNotNull("proxyPort", proxyPort);
         final Properties props = session.getProperties();
@@ -96,21 +183,28 @@ public class SMailPostalMotorbike {
         props.setProperty("mail.smtp.socks.port", proxyPort);
     }
 
+    /**
+     * @deprecated use useStarttls()
+     */
     public void registerStarttls() {
-        final Properties props = session.getProperties();
-        props.setProperty("mail.smtp.auth", "true");
-        props.setProperty("mail.smtp.starttls.enable", "true");
-        props.setProperty("mail.smtp.starttls.required", "true");
-    }
-
-    public void registerTransportProtocol(String protocol) {
-        assertArgumentNotNull("protocol", protocol);
-        session.getProperties().setProperty(MAIL_TRANSPORT_PROTOCOL, protocol);
+        useStarttls();
     }
 
     public void registerReturnPath(String address) {
         assertArgumentNotNull("address", address);
-        session.getProperties().setProperty(MAIL_SMTP_FROM, address);
+        session.getProperties().setProperty(resolveProtocolKey(MAIL_SMTP_FROM), address);
+    }
+
+    public void registerTransportProtocol(String protocol) { // public just in case
+        assertArgumentNotNull("protocol", protocol);
+        session.getProperties().setProperty(MAIL_TRANSPORT_PROTOCOL, protocol);
+    }
+
+    // -----------------------------------------------------
+    //                                      SSL Key Handling
+    //                                      ----------------
+    protected String resolveProtocolKey(String key) {
+        return MotorbikeSecurityType.SSL.equals(securityType) ? Srl.replace(key, ".smtp.", ".smtps.") : key;
     }
 
     // -----------------------------------------------------
@@ -139,9 +233,7 @@ public class SMailPostalMotorbike {
     //                                                                      ==============
     @Override
     public String toString() {
-        final String host = session.getProperty(MAIL_SMTP_HOST);
-        final String port = session.getProperty(MAIL_SMTP_PORT);
-        return "motorbike:{host=" + host + ", port=" + port + "}";
+        return "motorbike:{session=" + session + (hasAuth ? ", auth(" + securityType + ")" : "") + "}";
     }
 
     // ===================================================================================

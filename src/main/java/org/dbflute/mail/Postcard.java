@@ -89,6 +89,12 @@ public class Postcard implements CardView {
     protected Map<String, Map<String, Object>> officeManagedLoggingMap; // optional, lazy loaded
     protected SMailPostingDiscloser officePostingDiscloser;
 
+    // -----------------------------------------------------
+    //                                          Message Memo
+    //                                          ------------
+    protected Object messageAuthor; // optional
+    protected Class<?> messageTheme; // optional
+
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
@@ -429,7 +435,38 @@ public class Postcard implements CardView {
     //                                      Office Discloser
     //                                      ----------------
     public void officeDisclosePostingState(SMailPostingDiscloser postingDiscloser) {
+        assertArgumentNotNull("postingDiscloser", postingDiscloser);
         this.officePostingDiscloser = postingDiscloser;
+    }
+
+    // ===================================================================================
+    //                                                                        Message Memo
+    //                                                                        ============
+    public void writeMessageAuthor(Object messageAuthor) {
+        assertArgumentNotNull("messageAuthor", messageAuthor);
+        this.messageAuthor = messageAuthor;
+        final String exp = buildMessageAuthorLoggingExp(messageAuthor);
+        officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "author", exp);
+    }
+
+    protected String buildMessageAuthorLoggingExp(Object messageAuthor) {
+        final String exp;
+        if (messageAuthor instanceof Class<?>) {
+            exp = ((Class<?>) messageAuthor).getSimpleName();
+        } else {
+            if (messageAuthor.getClass().getName().startsWith("java.")) { // e.g. String, Integer
+                exp = messageAuthor.toString();
+            } else {
+                exp = messageAuthor.getClass().getSimpleName();
+            }
+        }
+        return exp;
+    }
+
+    public void writeMessageTheme(Class<?> messageTheme) {
+        assertArgumentNotNull("messageTheme", messageTheme);
+        this.messageTheme = messageTheme;
+        officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "theme", messageTheme.getSimpleName());
     }
 
     // ===================================================================================
@@ -618,7 +655,22 @@ public class Postcard implements CardView {
 
     public OptionalThing<SMailPostingDiscloser> getOfficePostingDiscloser() {
         return OptionalThing.ofNullable(officePostingDiscloser, () -> {
-            throw new IllegalStateException("Not found office posting discloser: " + toString());
+            throw new IllegalStateException("Not found the office posting discloser: " + toString());
+        });
+    }
+
+    // -----------------------------------------------------
+    //                                          Message Memo
+    //                                          ------------
+    public OptionalThing<Object> getMessageAuthor() {
+        return OptionalThing.ofNullable(messageAuthor, () -> {
+            throw new IllegalStateException("Not found the message author: " + toString());
+        });
+    }
+
+    public OptionalThing<Class<?>> getMessageTheme() {
+        return OptionalThing.ofNullable(messageTheme, () -> {
+            throw new IllegalStateException("Not found the message theme: " + toString());
         });
     }
 }
