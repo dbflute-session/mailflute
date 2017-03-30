@@ -15,17 +15,15 @@
  */
 package org.dbflute.mail.send.embedded.receptionist;
 
-import java.util.Locale;
-
-import org.dbflute.mail.CardView;
-import org.dbflute.optional.OptionalThing;
-
 /**
  * @author jflute
- * @since 0.4.0 (2015/06/13 Saturday at nakameguro)
+ * @since 0.4.2 (2017/03/31 Friday)
  */
-@FunctionalInterface
-public interface SMailReceiverLocaleAssist {
+public interface SMailDynamicPropAcceptor {
 
-    OptionalThing<Locale> assist(CardView cardView);
+    /**
+     * @param address The address for 'from'. (NotNull)
+     * @param personal The personal for 'from'. (NullAllowed)
+     */
+    void setFrom(String address, String personal);
 }

@@ -28,12 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.dbflute.Entity;
 import org.dbflute.helper.filesystem.FileTextIO;
+import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.Postcard.DirectBodyOption;
+import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailReceptionist;
+import org.dbflute.mail.send.exception.SMailFromAddressNotFoundException;
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
-import org.dbflute.mail.send.exception.SMailUserLocaleNotFoundException;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.DfCollectionUtil;
 import org.dbflute.util.DfResourceUtil;
@@ -132,13 +134,14 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             }
             final boolean filesystem = postcard.isFromFilesystem();
             final OptionalThing<Locale> receiverLocale = prepareReceiverLocale(postcard);
+            final OptionalThing<Object> dynamicData = prepareDynamicData(postcard, bodyFile);
             officeManagedLogging(postcard, bodyFile, receiverLocale);
-            final String plainText = readText(postcard, bodyFile, filesystem, receiverLocale);
+            final String plainText = readText(postcard, bodyFile, false, filesystem, receiverLocale, dynamicData);
             analyzeBodyMeta(postcard, bodyFile, plainText);
             final DirectBodyOption option = postcard.useDirectBody(plainText);
             if (postcard.isAlsoHtmlFile()) {
                 final String htmlFilePath = deriveHtmlFilePath(bodyFile);
-                final String readHtml = readText(postcard, htmlFilePath, filesystem, receiverLocale);
+                final String readHtml = readText(postcard, htmlFilePath, true, filesystem, receiverLocale, dynamicData);
                 verifyMailHtmlTemplateTextFormat(htmlFilePath, readHtml);
                 option.alsoDirectHtml(readHtml);
             }
@@ -147,52 +150,20 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }).orElse(() -> { /* direct body, check only here */
             assertPlainBodyExistsForDirectBody(postcard);
         });
-    }
-
-    protected OptionalThing<Locale> prepareReceiverLocale(Postcard postcard) {
-        final OptionalThing<Locale> receiverLocale = postcard.getReceiverLocale();
-        if (receiverLocale.isPresent()) {
-            return receiverLocale;
-        } else {
-            if (receiverLocaleAssist != null) {
-                final OptionalThing<Locale> assistedLocale = receiverLocaleAssist.assist(postcard);
-                if (assistedLocale == null) {
-                    String msg = "Not found the user locale from the assist: " + receiverLocaleAssist + ", " + postcard;
-                    throw new SMailUserLocaleNotFoundException(msg);
-                }
-                assistedLocale.ifPresent(locale -> {
-                    postcard.asReceiverLocale(locale); /* save for next steps */
-                });
-                return assistedLocale;
-            }
-            return OptionalThing.ofNullable(null, () -> {
-                throw new SMailIllegalStateException("Not found the locale: " + postcard);
-            });
+        if (!postcard.getFrom().isPresent()) { // is moved from office check of postcard
+            throwMailFromAddressNotFoundException(postcard);
         }
     }
 
-    protected void officeManagedLogging(Postcard postcard, String bodyFile, OptionalThing<Locale> receiverLocale) {
-        final String systemTitle = PostOffice.LOGGING_TITLE_SYSINFO;
-        postcard.officeManagedLogging(systemTitle, "dfmail", bodyFile);
-        postcard.officeManagedLogging(systemTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
-    }
-
-    protected void assertPlainBodyExistsForDirectBody(Postcard postcard) {
-        if (!postcard.getPlainBody().isPresent()) {
-            String msg = "Not found both the body file path and the direct body: " + postcard;
-            throw new SMailIllegalStateException(msg);
-        }
-    }
-
-    // ===================================================================================
-    //                                                                         Ready First
-    //                                                                         ===========
+    // -----------------------------------------------------
+    //                                           Ready First
+    //                                           -----------
     protected void readyPostcardFirst(Postcard postcard) { // may be overridden
     }
 
-    // ===================================================================================
-    //                                                                         Check First
-    //                                                                         ===========
+    // -----------------------------------------------------
+    //                                           Check First
+    //                                           -----------
     protected void checkPostcardFirst(Postcard postcard) { // similar to LastaFlute's check for display data
         final Map<String, Object> variableMap = postcard.getTemplaetVariableMap();
         variableMap.forEach((key, value) -> {
@@ -221,13 +192,88 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         security.throwDirectlyEntityVariableNotAllowedException(postcard, key, value);
     }
 
+    // -----------------------------------------------------
+    //                                                Locale
+    //                                                ------
+    protected OptionalThing<Locale> prepareReceiverLocale(Postcard postcard) {
+        final OptionalThing<Locale> receiverLocale = postcard.getReceiverLocale();
+        if (receiverLocale.isPresent()) {
+            return receiverLocale;
+        } else {
+            if (receiverLocaleAssist != null) {
+                final OptionalThing<Locale> assistedLocale = receiverLocaleAssist.assist(postcard);
+                if (assistedLocale == null) {
+                    String msg = "Cannot return null as optional type: receiverLocaleAssist=" + receiverLocaleAssist + ", " + postcard;
+                    throw new SMailIllegalStateException(msg);
+                }
+                assistedLocale.ifPresent(locale -> {
+                    postcard.asReceiverLocale(locale); /* save for next steps */
+                });
+                return assistedLocale;
+            }
+            return OptionalThing.ofNullable(null, () -> {
+                throw new SMailIllegalStateException("Not found the locale: " + postcard);
+            });
+        }
+    }
+
+    // -----------------------------------------------------
+    //                                          Dynamic Data
+    //                                          ------------
+    protected OptionalThing<Object> prepareDynamicData(Postcard postcard, String bodyFile) {
+        if (dynamicTextAssist == null) {
+            return OptionalThing.empty();
+        }
+        final OptionalThing<Object> dynamicData = dynamicTextAssist.prepareDynamicData(postcard, bodyFile, new SMailDynamicPropAcceptor() {
+            public void setFrom(String address, String personal) {
+                postcard.setFrom(new SMailAddress(address, personal));
+            }
+        });
+        if (dynamicData == null) {
+            String msg = "Cannot return null as optional type: dynamicTextAssist=" + dynamicTextAssist + ", " + postcard;
+            throw new SMailIllegalStateException(msg);
+        }
+        return dynamicData;
+    }
+
+    // -----------------------------------------------------
+    //                                       Managed Logging
+    //                                       ---------------
+    protected void officeManagedLogging(Postcard postcard, String bodyFile, OptionalThing<Locale> receiverLocale) {
+        final String systemTitle = PostOffice.LOGGING_TITLE_SYSINFO;
+        postcard.officeManagedLogging(systemTitle, "dfmail", bodyFile);
+        postcard.officeManagedLogging(systemTitle, "locale", receiverLocale.map(lo -> lo.toString()).orElse("none"));
+    }
+
+    // -----------------------------------------------------
+    //                                             Exception
+    //                                             ---------
+    protected void assertPlainBodyExistsForDirectBody(Postcard postcard) {
+        if (!postcard.getPlainBody().isPresent()) {
+            String msg = "Not found both the body file path and the direct body: " + postcard;
+            throw new SMailIllegalStateException(msg);
+        }
+    }
+
+    protected void throwMailFromAddressNotFoundException(Postcard postcard) {
+        final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
+        br.addNotice("Not found the 'from' address in the postcard.");
+        br.addItem("Advice");
+        br.addElement("Specify your 'from' address.");
+        br.addItem("Postcard");
+        br.addElement(postcard);
+        final String msg = br.buildExceptionMessage();
+        throw new SMailFromAddressNotFoundException(msg);
+    }
+
     // ===================================================================================
     //                                                                       Actually Read
     //                                                                       =============
-    protected String readText(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
-        final String assisted = assistDynamicText(postcard, path, filesystem, receiverLocale); // e.g. from database
-        if (assisted != null) {
-            return assisted;
+    protected String readText(Postcard postcard, String path, boolean html, boolean filesystem, OptionalThing<Locale> receiverLocale,
+            OptionalThing<Object> dynamicData) {
+        final OptionalThing<String> assisted = assistDynamicText(postcard, path, html, filesystem, receiverLocale, dynamicData); // e.g. from database
+        if (assisted.isPresent()) {
+            return assisted.get();
         }
         final String cacheKey = generateCacheKey(path, filesystem, receiverLocale);
         final String cached = textCacheMap.get(cacheKey);
@@ -249,8 +295,19 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }
     }
 
-    protected String assistDynamicText(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {
-        return dynamicTextAssist != null ? dynamicTextAssist.assist(postcard, path, filesystem, receiverLocale) : null;
+    protected OptionalThing<String> assistDynamicText(Postcard postcard, String templatePath, boolean html, boolean filesystem,
+            OptionalThing<Locale> receiverLocale, OptionalThing<Object> dynamicData) {
+        if (dynamicTextAssist == null) {
+            return OptionalThing.empty();
+        }
+        final SMailDynamicTextResource resource =
+                new SMailDynamicTextResource(postcard, templatePath, html, filesystem, receiverLocale, dynamicData);
+        final OptionalThing<String> assisted = dynamicTextAssist.assist(resource);
+        if (assisted == null) {
+            String msg = "Cannot return null as optional type: dynamicTextAssist=" + dynamicTextAssist + ", " + postcard;
+            throw new SMailIllegalStateException(msg);
+        }
+        return assisted;
     }
 
     protected String generateCacheKey(String path, boolean filesystem, OptionalThing<Locale> receiverLocale) {

@@ -15,17 +15,37 @@
  */
 package org.dbflute.mail.send.embedded.receptionist;
 
-import java.util.Locale;
-
-import org.dbflute.mail.Postcard;
+import org.dbflute.mail.CardView;
 import org.dbflute.optional.OptionalThing;
 
 /**
  * @author jflute
  * @since 0.4.0 (2015/05/16 Saturday at nakameguro)
  */
-@FunctionalInterface
 public interface SMailDynamicTextAssist {
 
-    String assist(Postcard postcard, String path, boolean filesystem, OptionalThing<Locale> receiverLocale);
+    /**
+     * Prepare dynamic data, and set dynamic properties.
+     * <pre>
+     * e.g.
+     *  o DB access by templatePath
+     *  o set dynamic properties by acceptor
+     *  o return DB result for dynamic text this.assist()
+     * </pre>
+     * @param cardView The view of postcard. (NotNull)
+     * @param templatePath The path of template file. (NotNull)
+     * @param dynamicItemAcceptor The acceptor for dynamic property of postcard. (NotNull)
+     * @return The optional dynamic data from e.g. database for assist(). (NullAllowed: means no dynamic data in assist())
+     */
+    default OptionalThing<Object> prepareDynamicData(CardView cardView, String templatePath, SMailDynamicPropAcceptor dynamicPropAcceptor) {
+        return OptionalThing.empty(); // as default
+    }
+
+    /**
+     * Assist dynamic text from e.g. database by resource. <br>
+     * This method may be called twice in one mail sending, for plain text and html text.
+     * @param resource The resource of dynamic text. (NotNull)
+     * @return The optional dynamic text from e.g. database. (NotNull, EmptyAllowed: means no dynamic text)
+     */
+    OptionalThing<String> assist(SMailDynamicTextResource resource);
 }
