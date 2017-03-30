@@ -245,7 +245,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }
         final SMailDynamicPropResource resource = new SMailDynamicPropResource(postcard, bodyFile, filesystem, receiverLocale, dynamicData);
         dynamicTextAssist.accept(resource, new SMailDynamicPropAcceptor() {
-            public void setFrom(String address, String personal) {
+            public void acceptFrom(String address, String personal) {
                 postcard.setFrom(new SMailAddress(address, personal));
             }
         });

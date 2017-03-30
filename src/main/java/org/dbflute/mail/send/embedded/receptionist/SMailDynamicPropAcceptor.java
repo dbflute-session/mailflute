@@ -25,5 +25,5 @@ public interface SMailDynamicPropAcceptor {
      * @param address The address for 'from'. (NotNull)
      * @param personal The personal for 'from'. (NullAllowed)
      */
-    void setFrom(String address, String personal);
+    void acceptFrom(String address, String personal);
 }
