@@ -24,11 +24,11 @@ import org.dbflute.optional.OptionalThing;
 public interface SMailDynamicTextAssist {
 
     /**
-     * Prepare dynamic data.
+     * Prepare dynamic data for dynamic property and dynamic text.
      * <pre>
      * e.g.
-     *  o DB access by templatePath
-     *  o return DB result for dynamic text this.assist()
+     *  o select data from database by templatePath and other resoures.
+     *  o return DB result for this.accept and this.assist()
      * </pre>
      * @param resource The resource of dynamic data. (NotNull)
      * @return The optional dynamic data from e.g. database for accept(), assist(). (NotNull, EmptyAllowed: then no accept(), assist())
@@ -36,13 +36,7 @@ public interface SMailDynamicTextAssist {
     OptionalThing<Object> prepareDynamicData(SMailDynamicDataResource resource);
 
     /**
-     * Accept dynamic property, called if dynamic data exists.
-     * <pre>
-     * e.g.
-     *  o DB access by templatePath
-     *  o set dynamic properties by acceptor
-     *  o return DB result for dynamic text this.assist()
-     * </pre>
+     * Accept dynamic property from prepared dynamic data, called if dynamic data exists.
      * @param resource The resource of dynamic property. (NotNull)
      * @param dynamicPropAcceptor The acceptor for dynamic property of postcard. (NotNull)
      */
@@ -50,7 +44,7 @@ public interface SMailDynamicTextAssist {
     }
 
     /**
-     * Assist dynamic text from e.g. database, called if dynamic data exists. <br>
+     * Assist dynamic text from prepared dynamic data, called if dynamic data exists. <br>
      * This method may be called twice in one mail sending, for plain text and html text.
      * @param resource The resource of dynamic text. (NotNull)
      * @return The optional dynamic text from e.g. database. (NotNull, EmptyAllowed: means no dynamic text)
