@@ -34,7 +34,7 @@ public interface SMailDynamicTextAssist {
      * </pre>
      * @param cardView The view of postcard. (NotNull)
      * @param templatePath The path of template file. (NotNull)
-     * @param dynamicItemAcceptor The acceptor for dynamic property of postcard. (NotNull)
+     * @param dynamicPropAcceptor The acceptor for dynamic property of postcard. (NotNull)
      * @return The optional dynamic data from e.g. database for assist(). (NullAllowed: means no dynamic data in assist())
      */
     default OptionalThing<Object> prepareDynamicData(CardView cardView, String templatePath, SMailDynamicPropAcceptor dynamicPropAcceptor) {
