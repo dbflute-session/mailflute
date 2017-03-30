@@ -15,7 +15,6 @@
  */
 package org.dbflute.mail.send.embedded.receptionist;
 
-import org.dbflute.mail.CardView;
 import org.dbflute.optional.OptionalThing;
 
 /**
@@ -25,24 +24,33 @@ import org.dbflute.optional.OptionalThing;
 public interface SMailDynamicTextAssist {
 
     /**
-     * Prepare dynamic data, and set dynamic properties.
+     * Prepare dynamic data.
+     * <pre>
+     * e.g.
+     *  o DB access by templatePath
+     *  o return DB result for dynamic text this.assist()
+     * </pre>
+     * @param resource The resource of dynamic data. (NotNull)
+     * @return The optional dynamic data from e.g. database for accept(), assist(). (NotNull, EmptyAllowed: then no accept(), assist())
+     */
+    OptionalThing<Object> prepareDynamicData(SMailDynamicDataResource resource);
+
+    /**
+     * Accept dynamic property, called if dynamic data exists.
      * <pre>
      * e.g.
      *  o DB access by templatePath
      *  o set dynamic properties by acceptor
      *  o return DB result for dynamic text this.assist()
      * </pre>
-     * @param cardView The view of postcard. (NotNull)
-     * @param templatePath The path of template file. (NotNull)
+     * @param resource The resource of dynamic property. (NotNull)
      * @param dynamicPropAcceptor The acceptor for dynamic property of postcard. (NotNull)
-     * @return The optional dynamic data from e.g. database for assist(). (NullAllowed: means no dynamic data in assist())
      */
-    default OptionalThing<Object> prepareDynamicData(CardView cardView, String templatePath, SMailDynamicPropAcceptor dynamicPropAcceptor) {
-        return OptionalThing.empty(); // as default
+    default void accept(SMailDynamicPropResource resource, SMailDynamicPropAcceptor dynamicPropAcceptor) {
     }
 
     /**
-     * Assist dynamic text from e.g. database by resource. <br>
+     * Assist dynamic text from e.g. database, called if dynamic data exists. <br>
      * This method may be called twice in one mail sending, for plain text and html text.
      * @param resource The resource of dynamic text. (NotNull)
      * @return The optional dynamic text from e.g. database. (NotNull, EmptyAllowed: means no dynamic text)

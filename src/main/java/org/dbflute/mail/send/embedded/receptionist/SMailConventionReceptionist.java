@@ -134,7 +134,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             }
             final boolean filesystem = postcard.isFromFilesystem();
             final OptionalThing<Locale> receiverLocale = prepareReceiverLocale(postcard);
-            final OptionalThing<Object> dynamicData = prepareDynamicData(postcard, bodyFile);
+            final OptionalThing<Object> dynamicData = prepareDynamicData(postcard, bodyFile, filesystem, receiverLocale);
+            dynamicData.ifPresent(data -> acceptDynamicProperty(postcard, bodyFile, filesystem, receiverLocale, data));
             officeManagedLogging(postcard, bodyFile, receiverLocale);
             final String plainText = readText(postcard, bodyFile, false, filesystem, receiverLocale, dynamicData);
             analyzeBodyMeta(postcard, bodyFile, plainText);
@@ -220,20 +221,34 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     // -----------------------------------------------------
     //                                          Dynamic Data
     //                                          ------------
-    protected OptionalThing<Object> prepareDynamicData(Postcard postcard, String bodyFile) {
+    protected OptionalThing<Object> prepareDynamicData(Postcard postcard, String bodyFile, boolean filesystem,
+            OptionalThing<Locale> receiverLocale) {
         if (dynamicTextAssist == null) {
             return OptionalThing.empty();
         }
-        final OptionalThing<Object> dynamicData = dynamicTextAssist.prepareDynamicData(postcard, bodyFile, new SMailDynamicPropAcceptor() {
-            public void setFrom(String address, String personal) {
-                postcard.setFrom(new SMailAddress(address, personal));
-            }
-        });
+        final SMailDynamicDataResource resource = new SMailDynamicDataResource(postcard, bodyFile, filesystem, receiverLocale);
+        final OptionalThing<Object> dynamicData = dynamicTextAssist.prepareDynamicData(resource);
         if (dynamicData == null) {
             String msg = "Cannot return null as optional type: dynamicTextAssist=" + dynamicTextAssist + ", " + postcard;
             throw new SMailIllegalStateException(msg);
         }
         return dynamicData;
+    }
+
+    // -----------------------------------------------------
+    //                                      Dynamic Property
+    //                                      ----------------
+    protected void acceptDynamicProperty(Postcard postcard, String bodyFile, boolean filesystem, OptionalThing<Locale> receiverLocale,
+            Object dynamicData) {
+        if (dynamicTextAssist == null) { // no way, just in case
+            return;
+        }
+        final SMailDynamicPropResource resource = new SMailDynamicPropResource(postcard, bodyFile, filesystem, receiverLocale, dynamicData);
+        dynamicTextAssist.accept(resource, new SMailDynamicPropAcceptor() {
+            public void setFrom(String address, String personal) {
+                postcard.setFrom(new SMailAddress(address, personal));
+            }
+        });
     }
 
     // -----------------------------------------------------
@@ -271,9 +286,11 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     //                                                                       =============
     protected String readText(Postcard postcard, String path, boolean html, boolean filesystem, OptionalThing<Locale> receiverLocale,
             OptionalThing<Object> dynamicData) {
-        final OptionalThing<String> assisted = assistDynamicText(postcard, path, html, filesystem, receiverLocale, dynamicData); // e.g. from database
-        if (assisted.isPresent()) {
-            return assisted.get();
+        if (dynamicData.isPresent()) {
+            final OptionalThing<String> assisted = assistDynamicText(postcard, path, html, filesystem, receiverLocale, dynamicData.get());
+            if (assisted.isPresent()) {
+                return assisted.get();
+            }
         }
         final String cacheKey = generateCacheKey(path, filesystem, receiverLocale);
         final String cached = textCacheMap.get(cacheKey);
@@ -296,8 +313,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
     }
 
     protected OptionalThing<String> assistDynamicText(Postcard postcard, String templatePath, boolean html, boolean filesystem,
-            OptionalThing<Locale> receiverLocale, OptionalThing<Object> dynamicData) {
-        if (dynamicTextAssist == null) {
+            OptionalThing<Locale> receiverLocale, Object dynamicData) {
+        if (dynamicTextAssist == null) { // no way, just in case
             return OptionalThing.empty();
         }
         final SMailDynamicTextResource resource =

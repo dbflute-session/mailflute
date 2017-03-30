@@ -24,29 +24,24 @@ import org.dbflute.optional.OptionalThing;
  * @author jflute
  * @since 0.4.2 (2017/03/31 Friday)
  */
-public class SMailDynamicTextResource {
+public class SMailDynamicDataResource {
 
     // ===================================================================================
     //                                                                           Attribute
     //                                                                           =========
     protected final CardView cardView; // not null
     protected final String templatePath; // not null
-    protected final boolean html;
     protected final boolean filesystem;
     protected final OptionalThing<Locale> receiverLocale; // not null, empty allowed
-    protected final Object dynamicData; // not null
 
     // ===================================================================================
     //                                                                         Constructor
     //                                                                         ===========
-    public SMailDynamicTextResource(CardView cardView, String templatePath, boolean html, boolean filesystem,
-            OptionalThing<Locale> receiverLocale, Object dynamicData) {
+    public SMailDynamicDataResource(CardView cardView, String templatePath, boolean filesystem, OptionalThing<Locale> receiverLocale) {
         this.cardView = cardView;
         this.templatePath = templatePath;
-        this.html = html;
         this.filesystem = filesystem;
         this.receiverLocale = receiverLocale;
-        this.dynamicData = dynamicData;
     }
 
     // ===================================================================================
@@ -54,7 +49,7 @@ public class SMailDynamicTextResource {
     //                                                                      ==============
     @Override
     public String toString() { // card view is not main property
-        return "{" + templatePath + ", html=" + html + ", filesystem=" + filesystem + ", " + receiverLocale + "}";
+        return "{" + templatePath + ", filesystem=" + filesystem + ", " + receiverLocale + "}";
     }
 
     // ===================================================================================
@@ -68,19 +63,11 @@ public class SMailDynamicTextResource {
         return templatePath;
     }
 
-    public boolean isHtml() {
-        return html;
-    }
-
     public boolean isFilesystem() {
         return filesystem;
     }
 
     public OptionalThing<Locale> getReceiverLocale() {
         return receiverLocale;
-    }
-
-    public Object getDynamicData() {
-        return dynamicData;
     }
 }
