@@ -151,7 +151,7 @@ public class SMailConventionReceptionist implements SMailReceptionist {
         }).orElse(() -> { /* direct body, check only here */
             assertPlainBodyExistsForDirectBody(postcard);
         });
-        if (!postcard.getFrom().isPresent()) { // is moved from office check of postcard
+        if (!postcard.getFrom().isPresent()) { // is moved from office check of postcard for dynamic property
             throwMailFromAddressNotFoundException(postcard);
         }
     }
