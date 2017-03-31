@@ -314,9 +314,10 @@ public class Postcard implements CardView {
     //                                          Office Check
     //                                          ------------
     public void officeCheck() {
-        if (from == null) {
-            throwMailFromAddressNotFoundException();
-        }
+        // move to receptionist for dynamic text
+        //if (from == null) {
+        //    throwMailFromAddressNotFoundException();
+        //}
         if (toList == null || toList.isEmpty()) {
             throwMailToAddressNotFoundException();
         }
