@@ -227,7 +227,8 @@ public class SMailConventionReceptionist implements SMailReceptionist {
             return OptionalThing.empty();
         }
         final SMailDynamicDataResource resource = new SMailDynamicDataResource(postcard, bodyFile, filesystem, receiverLocale);
-        final OptionalThing<Object> dynamicData = dynamicTextAssist.prepareDynamicData(resource);
+        @SuppressWarnings("unchecked")
+        final OptionalThing<Object> dynamicData = (OptionalThing<Object>) dynamicTextAssist.prepareDynamicData(resource);
         if (dynamicData == null) {
             String msg = "Cannot return null as optional type: dynamicTextAssist=" + dynamicTextAssist + ", " + postcard;
             throw new SMailIllegalStateException(msg);

@@ -33,7 +33,7 @@ public interface SMailDynamicTextAssist {
      * @param resource The resource of dynamic data. (NotNull)
      * @return The optional dynamic data from e.g. database for accept(), assist(). (NotNull, EmptyAllowed: then no accept(), assist())
      */
-    OptionalThing<Object> prepareDynamicData(SMailDynamicDataResource resource);
+    OptionalThing<? extends Object> prepareDynamicData(SMailDynamicDataResource resource);
 
     /**
      * Accept dynamic property from prepared dynamic data, called if dynamic data exists.
