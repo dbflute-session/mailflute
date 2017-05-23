@@ -275,17 +275,30 @@ public class Postcard implements CardView {
     // -----------------------------------------------------
     //                                     Override BodyFile
     //                                     -----------------
-    public void overrideBodyFile(String subject, String plainBody, String htmlBody) {
+    public OverridingBodyFileOption overrideBodyFile(String subject, String plainBody) {
         assertArgumentNotNull("subject", subject);
         assertArgumentNotNull("plainBody", plainBody);
-        if (alsoHtmlFile) {
-            assertArgumentNotNull("htmlBody", htmlBody);
+        if (bodyFile == null) {
+            throw new IllegalStateException("No body file so mistake?: specified-subject=" + subject);
         }
         clearBodyFile();
         setSubject(subject);
         final DirectBodyOption option = useDirectBody(plainBody);
-        if (htmlBody != null) {
-            option.alsoDirectHtml(htmlBody);
+        return new OverridingBodyFileOption(option);
+    }
+
+    public class OverridingBodyFileOption {
+
+        protected final DirectBodyOption directBodyOption;
+
+        public OverridingBodyFileOption(DirectBodyOption directBodyOption) {
+            this.directBodyOption = directBodyOption;
+        }
+
+        public OverridingBodyFileOption alsoHtmlBody(String htmlBody) {
+            assertArgumentNotNull("htmlBody", htmlBody);
+            directBodyOption.alsoDirectHtml(htmlBody);
+            return this;
         }
     }
 
