@@ -227,6 +227,12 @@ public class Postcard implements CardView {
         }
     }
 
+    protected void clearBodyFile() {
+        bodyFile = null;
+        alsoHtmlFile = false;
+        fromFilesystem = false;
+    }
+
     // -----------------------------------------------------
     //                                           Direct Body
     //                                           -----------
@@ -262,6 +268,36 @@ public class Postcard implements CardView {
             Postcard.this.subject = subject;
             forcedlyDirect = true;
             officeManagedLogging(PostOffice.LOGGING_TITLE_SYSINFO, "forcedlyDirect", true);
+            return this;
+        }
+    }
+
+    // -----------------------------------------------------
+    //                                     Override BodyFile
+    //                                     -----------------
+    public OverridingBodyFileOption overrideBodyFile(String subject, String plainBody) {
+        assertArgumentNotNull("subject", subject);
+        assertArgumentNotNull("plainBody", plainBody);
+        if (bodyFile == null) {
+            throw new IllegalStateException("No body file so mistake?: specified-subject=" + subject);
+        }
+        clearBodyFile();
+        setSubject(subject);
+        final DirectBodyOption option = useDirectBody(plainBody);
+        return new OverridingBodyFileOption(option);
+    }
+
+    public class OverridingBodyFileOption {
+
+        protected final DirectBodyOption directBodyOption;
+
+        public OverridingBodyFileOption(DirectBodyOption directBodyOption) {
+            this.directBodyOption = directBodyOption;
+        }
+
+        public OverridingBodyFileOption alsoHtmlBody(String htmlBody) {
+            assertArgumentNotNull("htmlBody", htmlBody);
+            directBodyOption.alsoDirectHtml(htmlBody);
             return this;
         }
     }
