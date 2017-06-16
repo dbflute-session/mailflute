@@ -1,0 +1,8 @@
+/*
+ [test of option, bind orElse()]
+ ...
+*/
+subject: Welcome to your test code reading, /*pmb.memberName:orElse('sea')*/
+>>>
+Hello, /*pmb.memberName:orElse('land')*/
+Hello, /*pmb.memberAccount:orElse('piari')*/

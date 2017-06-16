@@ -15,6 +15,8 @@
  */
 package org.dbflute.mail.send.embedded.proofreader;
 
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.Map;
 
@@ -161,31 +163,75 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
             protected void setupBoundValue(BoundValue boundValue) {
                 super.setupBoundValue(boundValue);
                 setupOrElseValueIfNeeds(boundValue, _optionDef);
+                setupFormatAsValueIfNeeds(boundValue, _optionDef);
             }
         };
     }
 
+    // -----------------------------------------------------
+    //                                              orElse()
+    //                                              --------
     protected void setupOrElseValueIfNeeds(BoundValue boundValue, String optionDef) {
-        final Object targetValue = boundValue.getTargetValue();
-        if (targetValue == null && Srl.is_NotNull_and_NotTrimmedEmpty(optionDef)) {
-            final List<String> optionList = Srl.splitListTrimmed(optionDef, "|");
-            final String orElseBegin = "orElse(";
-            final String orElseEnd = ")";
-            optionList.stream().filter(op -> {
-                return op.startsWith(orElseBegin) && op.endsWith(orElseEnd);
-            }).findFirst().ifPresent(op -> { // e.g. /*pmb.sea:orElse('land')*/
-                final ScopeInfo scope = Srl.extractScopeWide(op, orElseBegin, orElseEnd);
-                final String content = scope.getContent().trim();
-                if (!Srl.isQuotedSingle(content)) { // string only supported, is enough in MailFlute
-                    throwMailOrElseValueNotQuotedException(optionDef);
-                }
-                boundValue.setTargetValue(Srl.unquoteSingle(content));
-            });
+        if (Srl.is_Null_or_TrimmedEmpty(optionDef)) {
+            return;
         }
+        final Object targetValue = boundValue.getTargetValue();
+        if (targetValue != null) {
+            return;
+        }
+        final List<String> optionList = Srl.splitListTrimmed(optionDef, "|");
+        final String orElseBegin = "orElse(";
+        final String orElseEnd = ")";
+        optionList.stream().filter(op -> {
+            return op.startsWith(orElseBegin) && op.endsWith(orElseEnd);
+        }).findFirst().ifPresent(op -> { // e.g. /*pmb.sea:orElse('land')*/
+            final ScopeInfo scope = Srl.extractScopeWide(op, orElseBegin, orElseEnd);
+            final String content = scope.getContent().trim();
+            if (!Srl.isQuotedSingle(content)) { // string only supported, is enough here
+                throwMailOrElseValueNotQuotedException(optionDef);
+            }
+            boundValue.setTargetValue(Srl.unquoteSingle(content));
+        });
     }
 
     protected void throwMailOrElseValueNotQuotedException(String optionDef) {
         String msg = "The orElse() value for mail should be single-quoted e.g. orElse('sea') but: " + optionDef;
+        throw new IllegalStateException(msg);
+    }
+
+    // -----------------------------------------------------
+    //                                            formatAs()
+    //                                            ----------
+    protected void setupFormatAsValueIfNeeds(BoundValue boundValue, String optionDef) {
+        if (Srl.is_Null_or_TrimmedEmpty(optionDef)) {
+            return;
+        }
+        final Object targetValue = boundValue.getTargetValue();
+        if (targetValue == null) {
+            return;
+        }
+        if (targetValue instanceof TemporalAccessor) { // e.g. LocalDate, LocalDateTime
+            final TemporalAccessor temporal = (TemporalAccessor) targetValue;
+            final List<String> optionList = Srl.splitListTrimmed(optionDef, "|");
+            final String formatAsBegin = "formatAs(";
+            final String formatAsEnd = ")";
+            optionList.stream().filter(op -> {
+                return op.startsWith(formatAsBegin) && op.endsWith(formatAsEnd);
+            }).findFirst().ifPresent(op -> { // e.g. /*pmb.sea:formatAs('yyyy/MM/dd')*/
+                final ScopeInfo scope = Srl.extractScopeWide(op, formatAsBegin, formatAsEnd);
+                final String content = scope.getContent().trim();
+                if (!Srl.isQuotedSingle(content)) {
+                    throwMailFormatAsValueNotQuotedException(optionDef);
+                }
+                final String datePattern = Srl.unquoteSingle(content);
+                final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(datePattern);
+                boundValue.setTargetValue(formatter.format(temporal));
+            });
+        }
+    }
+
+    protected void throwMailFormatAsValueNotQuotedException(String optionDef) {
+        String msg = "The formatAs() value for mail should be single-quoted e.g. formatAs('sea') but: " + optionDef;
         throw new IllegalStateException(msg);
     }
 
