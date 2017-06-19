@@ -338,7 +338,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getSubjectEncoding() {
-        return getPersonalEncoding();
+        return getBasicEncoding();
     }
 
     // ===================================================================================
@@ -414,8 +414,8 @@ public class SMailHonestPostie implements SMailPostie {
         final DataSource source = prepareTextDataSource(buffer);
         try {
             part.setDataHandler(createDataHandler(source));
-            part.setHeader("Content-Transfer-Encoding", "7bit");
-            part.setHeader("Content-Type", "text/" + textType.code() + "; charset=\"" + encoding + "\"");
+            part.setHeader("Content-Transfer-Encoding", getTextTransferEncoding());
+            part.setHeader("Content-Type", buildTextContentType(textType, encoding));
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + encoding, e);
         }
@@ -423,10 +423,10 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getTextEncoding() {
-        return getPersonalEncoding();
+        return getBasicEncoding();
     }
 
-    protected ByteBuffer prepareTextByteBuffer(String text, final String encoding) {
+    protected ByteBuffer prepareTextByteBuffer(String text, String encoding) {
         final ByteBuffer buffer;
         try {
             buffer = ByteBuffer.wrap(text.getBytes(encoding));
@@ -436,8 +436,20 @@ public class SMailHonestPostie implements SMailPostie {
         return buffer;
     }
 
-    protected ByteArrayDataSource prepareTextDataSource(final ByteBuffer buffer) {
-        return new ByteArrayDataSource(buffer.array(), "application/octet-stream");
+    protected ByteArrayDataSource prepareTextDataSource(ByteBuffer buffer) {
+        return new ByteArrayDataSource(buffer.array(), getTextMimeType());
+    }
+
+    protected String getTextMimeType() {
+        return "application/octet-stream"; // as default of MailFlute
+    }
+
+    protected String getTextTransferEncoding() {
+        return "7bit"; // as default of MailFlute
+    }
+
+    protected String buildTextContentType(TextType textType, String encoding) {
+        return "text/" + textType.code() + "; charset=\"" + encoding + "\"";
     }
 
     protected static enum TextType {
@@ -467,7 +479,7 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentDisposition = buildAttachmentContentDisposition(message, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
-            part.setHeader("Content-Transfer-Encoding", "base64");
+            part.setHeader("Content-Transfer-Encoding", getAttachmentTransferEncoding());
             part.addHeader("Content-Type", contentType);
             part.addHeader("Content-Disposition", contentDisposition);
         } catch (MessagingException e) {
@@ -512,7 +524,7 @@ public class SMailHonestPostie implements SMailPostie {
             OptionalThing<String> textEncoding) {
         final byte[] attachedBytes = readAttachedBytes(message, attachment);
         message.saveAttachmentForDisplay(attachment, attachedBytes, textEncoding);
-        return new ByteArrayDataSource(attachedBytes, "application/octet-stream");
+        return new ByteArrayDataSource(attachedBytes, getTextMimeType());
     }
 
     protected byte[] readAttachedBytes(SMailPostingMessage message, SMailAttachment attachment) {
@@ -551,7 +563,11 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected String getAttachmentFilenameEncoding() {
-        return getPersonalEncoding();
+        return getBasicEncoding();
+    }
+
+    protected String getAttachmentTransferEncoding() {
+        return "base64";
     }
 
     // ===================================================================================
@@ -719,7 +735,7 @@ public class SMailHonestPostie implements SMailPostie {
     //                                                                        Assist Logic
     //                                                                        ============
     protected String getBasicEncoding() {
-        return "UTF-8";
+        return "UTF-8"; // as default of MailFlute
     }
 
     protected DataHandler createDataHandler(DataSource source) {
