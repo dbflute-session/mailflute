@@ -414,7 +414,8 @@ public class SMailHonestPostie implements SMailPostie {
         final DataSource source = prepareTextDataSource(buffer);
         try {
             part.setDataHandler(createDataHandler(source));
-            part.setHeader("Content-Transfer-Encoding", getTextTransferEncoding());
+            // TODO jflute challenging now (2017/06/20)
+            //part.setHeader("Content-Transfer-Encoding", getTextTransferEncoding());
             part.setHeader("Content-Type", buildTextContentType(textType, encoding));
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + encoding, e);
