@@ -107,6 +107,10 @@ public interface CardView {
 
     OptionalThing<SMailPostingDiscloser> getOfficePostingDiscloser();
 
+    OptionalThing<String> toCompletePlainText();
+
+    OptionalThing<String> toCompleteHtmlText();
+
     // ===================================================================================
     //                                                                        Message Memo
     //                                                                        ============

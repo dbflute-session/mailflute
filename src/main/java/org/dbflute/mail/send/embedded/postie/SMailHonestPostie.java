@@ -43,6 +43,7 @@ import javax.mail.internet.MimeUtility;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.dbflute.helper.message.ExceptionMessageBuilder;
+import org.dbflute.mail.CardView;
 import org.dbflute.mail.Postcard;
 import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailPostalMotorbike;
@@ -63,6 +64,8 @@ import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilterNone;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilterNone;
+import org.dbflute.mail.send.supplement.header.SMailMailHeaderStrategy;
+import org.dbflute.mail.send.supplement.header.SMailMailHeaderStrategyNone;
 import org.dbflute.mail.send.supplement.inetaddr.SMailInternetAddressCreator;
 import org.dbflute.mail.send.supplement.inetaddr.SMailNormalInternetAddressCreator;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
@@ -94,6 +97,7 @@ public class SMailHonestPostie implements SMailPostie {
     private static final SMailRetryStrategy noneRetryStrategy = new SMailRetryStrategyNone();
     private static final SMailLabelStrategy noneLabelStrategy = new SMailLabelStrategyNone();
     private static final SMailLoggingStrategy typicalLoggingStrategy = new SMailTypicalLoggingStrategy();
+    private static final SMailMailHeaderStrategy noneMailHeaderStrategy = new SMailMailHeaderStrategyNone();
     private static final SMailInternetAddressCreator normalInternetAddressCreator = new SMailNormalInternetAddressCreator();
 
     // ===================================================================================
@@ -108,8 +112,10 @@ public class SMailHonestPostie implements SMailPostie {
     protected SMailRetryStrategy retryStrategy = noneRetryStrategy; // not null
     protected SMailLabelStrategy labelStrategy = noneLabelStrategy; // not null
     protected SMailLoggingStrategy loggingStrategy = typicalLoggingStrategy; // not null
+    protected SMailMailHeaderStrategy mailHeaderStrategy = noneMailHeaderStrategy; // not null
     protected SMailInternetAddressCreator internetAddressCreator = normalInternetAddressCreator; // not null
     protected boolean training;
+    protected OptionalThing<String> textTransferEncoding = OptionalThing.empty();
 
     // ===================================================================================
     //                                                                         Constructor
@@ -167,6 +173,12 @@ public class SMailHonestPostie implements SMailPostie {
         return this;
     }
 
+    public SMailHonestPostie withMailHeaderStrategy(SMailMailHeaderStrategy mailHeaderStrategy) {
+        assertArgumentNotNull("mailHeaderStrategy", mailHeaderStrategy);
+        this.mailHeaderStrategy = mailHeaderStrategy;
+        return this;
+    }
+
     public SMailHonestPostie withInternetAddressCreator(SMailInternetAddressCreator internetAddressCreator) {
         assertArgumentNotNull("internetAddressCreator", internetAddressCreator);
         this.internetAddressCreator = internetAddressCreator;
@@ -201,57 +213,57 @@ public class SMailHonestPostie implements SMailPostie {
         send(postcard, message);
     }
 
-    protected SMailPostingMessage createMailMessage(Postcard postcard) {
-        final MimeMessage mimeMessage = createMimeMessage(extractNativeSession(motorbike));
-        final Map<String, Object> pushedLoggingMap = postcard.getPushedLoggingMap();
-        final Map<String, Map<String, Object>> officeManagedLoggingMap = postcard.getOfficeManagedLoggingMap();
+    protected SMailPostingMessage createMailMessage(CardView view) {
+        final MimeMessage mimeMessage = createMimeMessage(view, extractNativeSession(view, motorbike));
+        final Map<String, Object> pushedLoggingMap = view.getPushedLoggingMap();
+        final Map<String, Map<String, Object>> officeManagedLoggingMap = view.getOfficeManagedLoggingMap();
         return new SMailPostingMessage(mimeMessage, motorbike, training, pushedLoggingMap, officeManagedLoggingMap);
     }
 
-    protected Session extractNativeSession(SMailPostalMotorbike motorbike) {
+    protected Session extractNativeSession(CardView view, SMailPostalMotorbike motorbike) {
         return motorbike.getNativeSession();
     }
 
-    protected MimeMessage createMimeMessage(Session session) {
+    protected MimeMessage createMimeMessage(CardView view, Session session) {
         return new MimeMessage(session);
     }
 
-    protected boolean isCancel(Postcard postcard) {
-        return cancelFilter.isCancel(postcard);
+    protected boolean isCancel(CardView view) {
+        return cancelFilter.isCancel(view);
     }
 
     // ===================================================================================
     //                                                                     Prepare Address
     //                                                                     ===============
-    protected void prepareAddress(Postcard postcard, SMailPostingMessage message) {
-        final SMailAddress from = postcard.getFrom().orElseThrow(() -> { /* already checked, but just in case */
-            return new SMailIllegalStateException("Not found the from address in the postcard: " + postcard);
+    protected void prepareAddress(CardView view, SMailPostingMessage message) {
+        final SMailAddress from = view.getFrom().orElseThrow(() -> { /* already checked, but just in case */
+            return new SMailIllegalStateException("Not found the from address in the postcard: " + view);
         });
-        final Address filteredFrom = addressFilter.filterFrom(postcard, toInternetAddress(postcard, from));
-        message.setFrom(verifyFilteredFromAddress(postcard, filteredFrom));
+        final Address filteredFrom = addressFilter.filterFrom(view, toInternetAddress(view, from));
+        message.setFrom(verifyFilteredFromAddress(view, filteredFrom));
         boolean existsToAddress = false;
-        for (SMailAddress to : postcard.getToList()) {
-            final OptionalThing<Address> opt = addressFilter.filterTo(postcard, toInternetAddress(postcard, to));
-            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addTo(address));
+        for (SMailAddress to : view.getToList()) {
+            final OptionalThing<Address> opt = addressFilter.filterTo(view, toInternetAddress(view, to));
+            verifyFilteredOptionalAddress(view, opt).ifPresent(address -> message.addTo(address));
             if (opt.isPresent()) {
                 existsToAddress = true;
             }
         }
-        verifyFilteredToAddressExists(postcard, existsToAddress);
-        for (SMailAddress cc : postcard.getCcList()) {
-            final OptionalThing<Address> opt = addressFilter.filterCc(postcard, toInternetAddress(postcard, cc));
-            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addCc(address));
+        verifyFilteredToAddressExists(view, existsToAddress);
+        for (SMailAddress cc : view.getCcList()) {
+            final OptionalThing<Address> opt = addressFilter.filterCc(view, toInternetAddress(view, cc));
+            verifyFilteredOptionalAddress(view, opt).ifPresent(address -> message.addCc(address));
         }
-        for (SMailAddress bcc : postcard.getBccList()) {
-            final OptionalThing<Address> opt = addressFilter.filterBcc(postcard, toInternetAddress(postcard, bcc));
-            verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> message.addBcc(address));
+        for (SMailAddress bcc : view.getBccList()) {
+            final OptionalThing<Address> opt = addressFilter.filterBcc(view, toInternetAddress(view, bcc));
+            verifyFilteredOptionalAddress(view, opt).ifPresent(address -> message.addBcc(address));
         }
-        final List<SMailAddress> replyToList = postcard.getReplyToList();
+        final List<SMailAddress> replyToList = view.getReplyToList();
         if (!replyToList.isEmpty()) {
             final List<Address> filteredList = new ArrayList<Address>(replyToList.size());
             for (SMailAddress replyTo : replyToList) {
-                final OptionalThing<Address> opt = addressFilter.filterReplyTo(postcard, toInternetAddress(postcard, replyTo));
-                verifyFilteredOptionalAddress(postcard, opt).ifPresent(address -> filteredList.add(address));
+                final OptionalThing<Address> opt = addressFilter.filterReplyTo(view, toInternetAddress(view, replyTo));
+                verifyFilteredOptionalAddress(view, opt).ifPresent(address -> filteredList.add(address));
             }
             message.setReplyTo(filteredList);
         }
@@ -260,22 +272,22 @@ public class SMailHonestPostie implements SMailPostie {
     // -----------------------------------------------------
     //                                        Label Handling
     //                                        --------------
-    protected Address toInternetAddress(Postcard postcard, SMailAddress address) {
-        return createAddress(postcard, address);
+    protected Address toInternetAddress(CardView view, SMailAddress address) {
+        return createAddress(view, address);
     }
 
-    protected Address createAddress(Postcard postcard, SMailAddress address) {
+    protected Address createAddress(CardView view, SMailAddress address) {
         final InternetAddress internetAddress;
         try {
-            internetAddress = createInternetAddress(postcard, address.getAddress(), isStrictAddress());
+            internetAddress = createInternetAddress(view, address.getAddress(), isStrictAddress());
         } catch (AddressException e) {
             throw new IllegalStateException("Failed to create internet address: " + address, e);
         }
         address.getPersonal().ifPresent(personal -> {
             final String encoding = getPersonalEncoding();
             try {
-                final Locale locale = postcard.getReceiverLocale().orElseGet(() -> getDefaultReceiverLocale());
-                final String resolved = labelStrategy.resolveLabel(postcard, locale, personal);
+                final Locale locale = view.getReceiverLocale().orElseGet(() -> getDefaultReceiverLocale());
+                final String resolved = labelStrategy.resolveLabel(view, locale, personal);
                 internetAddress.setPersonal(resolved, encoding);
             } catch (UnsupportedEncodingException e) {
                 throw new IllegalStateException("Unknown encoding for personal: encoding=" + encoding + " personal=" + personal, e);
@@ -288,8 +300,8 @@ public class SMailHonestPostie implements SMailPostie {
         return true;
     }
 
-    protected InternetAddress createInternetAddress(Postcard postcard, String address, boolean strict) throws AddressException {
-        return internetAddressCreator.create(postcard, address, strict);
+    protected InternetAddress createInternetAddress(CardView view, String address, boolean strict) throws AddressException {
+        return internetAddressCreator.create(view, address, strict);
     }
 
     protected String getPersonalEncoding() {
@@ -303,25 +315,25 @@ public class SMailHonestPostie implements SMailPostie {
     // -----------------------------------------------------
     //                                        Verify Address
     //                                        --------------
-    protected Address verifyFilteredFromAddress(Postcard postcard, Address filteredFrom) {
+    protected Address verifyFilteredFromAddress(CardView view, Address filteredFrom) {
         if (filteredFrom == null) {
-            String msg = "The filtered from-address should not be null: " + postcard;
+            String msg = "The filtered from-address should not be null: postcard=" + view;
             throw new SMailIllegalStateException(msg);
         }
         return filteredFrom;
     }
 
-    protected OptionalThing<Address> verifyFilteredOptionalAddress(Postcard postcard, OptionalThing<Address> opt) {
+    protected OptionalThing<Address> verifyFilteredOptionalAddress(CardView view, OptionalThing<Address> opt) {
         if (opt == null) {
-            String msg = "The filtered optional should not be null: postcard=" + postcard;
+            String msg = "The filtered optional should not be null: postcard=" + view;
             throw new SMailIllegalStateException(msg);
         }
         return opt;
     }
 
-    protected void verifyFilteredToAddressExists(Postcard postcard, boolean existsToAddress) {
+    protected void verifyFilteredToAddressExists(CardView view, boolean existsToAddress) {
         if (!existsToAddress) {
-            String msg = "Empty to-address by filtering: specifiedToAddress=" + postcard.getToList();
+            String msg = "Empty to-address by filtering: specifiedToAddress=" + view.getToList();
             throw new SMailIllegalStateException(msg);
         }
     }
@@ -329,12 +341,12 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                     Prepare Subject
     //                                                                     ===============
-    protected void prepareSubject(Postcard postcard, SMailPostingMessage message) {
-        message.setSubject(getSubject(postcard), getSubjectEncoding());
+    protected void prepareSubject(CardView view, SMailPostingMessage message) {
+        message.setSubject(getSubject(view), getSubjectEncoding());
     }
 
-    protected String getSubject(Postcard postcard) {
-        return subjectFilter.filterSubject(postcard, postcard.getSubject().get());
+    protected String getSubject(CardView view) {
+        return subjectFilter.filterSubject(view, view.getSubject().get());
     }
 
     protected String getSubjectEncoding() {
@@ -344,52 +356,52 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                        Prepare Body
     //                                                                        ============
-    protected void prepareBody(Postcard postcard, SMailPostingMessage message) {
-        final String plainText = toCompletePlainText(postcard);
-        final OptionalThing<String> optHtmlText = toCompleteHtmlText(postcard);
+    protected void prepareBody(CardView view, SMailPostingMessage message) {
+        final String plainText = toCompletePlainText(view);
+        final OptionalThing<String> optHtmlText = toCompleteHtmlText(view);
         message.savePlainTextForDisplay(plainText);
         message.saveHtmlTextForDisplay(optHtmlText);
-        final Map<String, SMailAttachment> attachmentMap = postcard.getAttachmentMap();
+        final Map<String, SMailAttachment> attachmentMap = view.getAttachmentMap();
         final MimeMessage nativeMessage = message.getMimeMessage();
         if (attachmentMap.isEmpty()) { // normally here
-            setupTextPart(nativeMessage, plainText, TextType.PLAIN); // plain is required
+            setupTextPart(view, nativeMessage, plainText, TextType.PLAIN); // plain is required
             optHtmlText.ifPresent(htmlText -> {
-                setupTextPart(nativeMessage, htmlText, TextType.HTML);
+                setupTextPart(view, nativeMessage, htmlText, TextType.HTML);
             });
         } else { // with attachment
             if (optHtmlText.isPresent()) {
-                throw new SMailIllegalStateException("Unsupported HTML mail with attachment for now: " + postcard);
+                throw new SMailIllegalStateException("Unsupported HTML mail with attachment for now: postcard=" + view);
             }
             try {
-                final MimeMultipart multipart = createTextWithAttachmentMultipart(postcard, message, plainText, attachmentMap);
+                final MimeMultipart multipart = createTextWithAttachmentMultipart(view, message, plainText, attachmentMap);
                 nativeMessage.setContent(multipart);
             } catch (MessagingException e) {
-                String msg = "Failed to set attachment multipart content: " + postcard;
+                String msg = "Failed to set attachment multipart content: postcard=" + view;
                 throw new SMailIllegalStateException(msg, e);
             }
         }
     }
 
-    protected String toCompletePlainText(Postcard postcard) {
-        return postcard.toCompletePlainText().map(plainText -> {
-            return bodyTextFilter.filterBody(postcard, plainText, /*html*/false);
+    protected String toCompletePlainText(CardView view) {
+        return view.toCompletePlainText().map(plainText -> {
+            return bodyTextFilter.filterBody(view, plainText, /*html*/false);
         }).get();
     }
 
-    protected OptionalThing<String> toCompleteHtmlText(Postcard postcard) {
-        return postcard.toCompleteHtmlText().map(htmlText -> {
-            return bodyTextFilter.filterBody(postcard, htmlText, /*html*/true);
+    protected OptionalThing<String> toCompleteHtmlText(CardView view) {
+        return view.toCompleteHtmlText().map(htmlText -> {
+            return bodyTextFilter.filterBody(view, htmlText, /*html*/true);
         });
     }
 
-    protected MimeMultipart createTextWithAttachmentMultipart(Postcard postcard, SMailPostingMessage message, String plain,
+    protected MimeMultipart createTextWithAttachmentMultipart(CardView view, SMailPostingMessage message, String plain,
             Map<String, SMailAttachment> attachmentMap) throws MessagingException {
         final MimeMultipart multipart = newMimeMultipart();
         multipart.setSubType("mixed");
-        multipart.addBodyPart((BodyPart) setupTextPart(newMimeBodyPart(), plain, TextType.PLAIN));
+        multipart.addBodyPart((BodyPart) setupTextPart(view, newMimeBodyPart(), plain, TextType.PLAIN));
         for (Entry<String, SMailAttachment> entry : attachmentMap.entrySet()) {
             final SMailAttachment attachment = entry.getValue();
-            multipart.addBodyPart((BodyPart) setupAttachmentPart(message, attachment));
+            multipart.addBodyPart((BodyPart) setupAttachmentPart(view, message, attachment));
         }
         return multipart;
     }
@@ -405,29 +417,32 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                           Text Part
     //                                                                           =========
-    protected MimePart setupTextPart(MimePart part, String text, TextType textType) {
+    protected MimePart setupTextPart(CardView view, MimePart part, String text, TextType textType) {
+        assertArgumentNotNull("view", view);
         assertArgumentNotNull("part", part);
         assertArgumentNotNull("text", text);
         assertArgumentNotNull("textType", textType);
-        final String encoding = getTextEncoding();
-        final ByteBuffer buffer = prepareTextByteBuffer(text, encoding);
-        final DataSource source = prepareTextDataSource(buffer);
+        final String encoding = getTextEncoding(view);
+        final ByteBuffer buffer = prepareTextByteBuffer(view, text, encoding);
+        final DataSource source = prepareTextDataSource(view, buffer);
         try {
             part.setDataHandler(createDataHandler(source));
-            // TODO jflute challenging now (2017/06/20)
-            //part.setHeader("Content-Transfer-Encoding", getTextTransferEncoding());
-            part.setHeader("Content-Type", buildTextContentType(textType, encoding));
+            final OptionalThing<String> optTransferEncoding = getTextTransferEncoding(view);
+            if (optTransferEncoding.isPresent()) { // for checked exception
+                part.setHeader("Content-Transfer-Encoding", optTransferEncoding.get());
+            }
+            part.setHeader("Content-Type", buildTextContentType(view, textType, encoding));
         } catch (MessagingException e) {
-            throw new SMailMessageSettingFailureException("Failed to set headers: " + encoding, e);
+            throw new SMailMessageSettingFailureException("Failed to set headers: postcard=" + view, e);
         }
         return part;
     }
 
-    protected String getTextEncoding() {
-        return getBasicEncoding();
+    protected String getTextEncoding(CardView view) {
+        return mailHeaderStrategy.getTextEncoding(view).orElseGet(() -> getBasicEncoding());
     }
 
-    protected ByteBuffer prepareTextByteBuffer(String text, String encoding) {
+    protected ByteBuffer prepareTextByteBuffer(CardView view, String text, String encoding) {
         final ByteBuffer buffer;
         try {
             buffer = ByteBuffer.wrap(text.getBytes(encoding));
@@ -437,19 +452,22 @@ public class SMailHonestPostie implements SMailPostie {
         return buffer;
     }
 
-    protected ByteArrayDataSource prepareTextDataSource(ByteBuffer buffer) {
-        return new ByteArrayDataSource(buffer.array(), getTextMimeType());
+    protected ByteArrayDataSource prepareTextDataSource(CardView view, ByteBuffer buffer) {
+        return new ByteArrayDataSource(buffer.array(), getTextMimeType(view));
     }
 
-    protected String getTextMimeType() {
-        return "application/octet-stream"; // as default of MailFlute
+    protected String getTextMimeType(CardView view) {
+        return mailHeaderStrategy.getTextMimeType(view).orElseGet(() -> {
+            return "application/octet-stream"; // as default of MailFlute
+        });
     }
 
-    protected String getTextTransferEncoding() {
-        return "7bit"; // as default of MailFlute
+    protected OptionalThing<String> getTextTransferEncoding(CardView view) {
+        // is optional to use mail server default adjustment
+        return mailHeaderStrategy.getTextTransferEncoding(view);
     }
 
-    protected String buildTextContentType(TextType textType, String encoding) {
+    protected String buildTextContentType(CardView view, TextType textType, String encoding) {
         return "text/" + textType.code() + "; charset=\"" + encoding + "\"";
     }
 
@@ -470,17 +488,18 @@ public class SMailHonestPostie implements SMailPostie {
     // ===================================================================================
     //                                                                     Attachment Part
     //                                                                     ===============
-    protected MimePart setupAttachmentPart(SMailPostingMessage message, SMailAttachment attachment) {
+    protected MimePart setupAttachmentPart(CardView view, SMailPostingMessage message, SMailAttachment attachment) {
+        assertArgumentNotNull("view", view);
         assertArgumentNotNull("message", message);
         assertArgumentNotNull("attachment", attachment);
         final MimePart part = newMimeBodyPart();
-        final OptionalThing<String> textEncoding = getAttachmentTextEncoding(attachment);
-        final DataSource source = prepareAttachmentDataSource(message, attachment, textEncoding);
-        final String contentType = buildAttachmentContentType(message, attachment, textEncoding);
-        final String contentDisposition = buildAttachmentContentDisposition(message, attachment, textEncoding);
+        final OptionalThing<String> textEncoding = getAttachmentTextEncoding(view, attachment);
+        final DataSource source = prepareAttachmentDataSource(view, message, attachment, textEncoding);
+        final String contentType = buildAttachmentContentType(view, attachment, textEncoding);
+        final String contentDisposition = buildAttachmentContentDisposition(view, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
-            part.setHeader("Content-Transfer-Encoding", getAttachmentTransferEncoding());
+            part.setHeader("Content-Transfer-Encoding", getAttachmentTransferEncoding(view));
             part.addHeader("Content-Type", contentType);
             part.addHeader("Content-Disposition", contentDisposition);
         } catch (MessagingException e) {
@@ -489,46 +508,18 @@ public class SMailHonestPostie implements SMailPostie {
         return part;
     }
 
-    protected String buildAttachmentContentType(SMailPostingMessage message, SMailAttachment attachment,
-            OptionalThing<String> textEncoding) {
-        final String encodedFilename = getEncodedFilename(attachment.getFilenameOnHeader());
-        final StringBuilder sb = new StringBuilder();
-        final String contentType = attachment.getContentType();
-        sb.append(contentType);
-        if (contentType.equals("text/plain")) {
-            sb.append("; charset=").append(textEncoding.get());
-        }
-        sb.append("; name=\"").append(encodedFilename).append("\"");
-        return sb.toString();
+    protected OptionalThing<String> getAttachmentTextEncoding(CardView view, SMailAttachment attachment) {
+        return attachment.getTextEncoding(); // always exists if text/plain
     }
 
-    protected String buildAttachmentContentDisposition(SMailPostingMessage message, SMailAttachment attachment,
+    protected DataSource prepareAttachmentDataSource(CardView view, SMailPostingMessage message, SMailAttachment attachment,
             OptionalThing<String> textEncoding) {
-        final String encodedFilename = getEncodedFilename(attachment.getFilenameOnHeader());
-        final StringBuilder sb = new StringBuilder();
-        sb.append("attachment; filename=\"").append(encodedFilename).append("\"");
-        return sb.toString();
-    }
-
-    protected String getEncodedFilename(String filename) {
-        final String filenameEncoding = getAttachmentFilenameEncoding();
-        final String encodedFilename;
-        try {
-            encodedFilename = MimeUtility.encodeText(filename, filenameEncoding, "B"); // uses 'B' for various characters
-        } catch (UnsupportedEncodingException e) {
-            throw new SMailMessageSettingFailureException("Unknown encoding: " + filenameEncoding, e);
-        }
-        return encodedFilename;
-    }
-
-    protected DataSource prepareAttachmentDataSource(SMailPostingMessage message, SMailAttachment attachment,
-            OptionalThing<String> textEncoding) {
-        final byte[] attachedBytes = readAttachedBytes(message, attachment);
+        final byte[] attachedBytes = readAttachedBytes(view, attachment);
         message.saveAttachmentForDisplay(attachment, attachedBytes, textEncoding);
-        return new ByteArrayDataSource(attachedBytes, getTextMimeType());
+        return new ByteArrayDataSource(attachedBytes, getAttachmentMimeType(view));
     }
 
-    protected byte[] readAttachedBytes(SMailPostingMessage message, SMailAttachment attachment) {
+    protected byte[] readAttachedBytes(CardView view, SMailAttachment attachment) {
         final InputStream ins = attachment.getReourceStream();
         AccessibleByteArrayOutputStream ous = null;
         try {
@@ -559,16 +550,50 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected OptionalThing<String> getAttachmentTextEncoding(SMailAttachment attachment) {
-        return attachment.getTextEncoding(); // always exists if text/plain
+    protected String getAttachmentMimeType(CardView view) {
+        return mailHeaderStrategy.getAttachmentMimeType(view).orElseGet(() -> {
+            return "application/octet-stream"; // as default of MailFlute
+        });
     }
 
-    protected String getAttachmentFilenameEncoding() {
+    protected String buildAttachmentContentType(CardView view, SMailAttachment attachment, OptionalThing<String> textEncoding) {
+        final String encodedFilename = getEncodedFilename(view, attachment.getFilenameOnHeader());
+        final StringBuilder sb = new StringBuilder();
+        final String contentType = attachment.getContentType();
+        sb.append(contentType);
+        if (contentType.equals("text/plain")) {
+            sb.append("; charset=").append(textEncoding.get());
+        }
+        sb.append("; name=\"").append(encodedFilename).append("\"");
+        return sb.toString();
+    }
+
+    protected String buildAttachmentContentDisposition(CardView view, SMailAttachment attachment, OptionalThing<String> textEncoding) {
+        final String encodedFilename = getEncodedFilename(view, attachment.getFilenameOnHeader());
+        final StringBuilder sb = new StringBuilder();
+        sb.append("attachment; filename=\"").append(encodedFilename).append("\"");
+        return sb.toString();
+    }
+
+    protected String getEncodedFilename(CardView view, String filename) {
+        final String filenameEncoding = getAttachmentFilenameEncoding(view);
+        final String encodedFilename;
+        try {
+            encodedFilename = MimeUtility.encodeText(filename, filenameEncoding, "B"); // uses 'B' for various characters
+        } catch (UnsupportedEncodingException e) {
+            throw new SMailMessageSettingFailureException("Unknown encoding: " + filenameEncoding, e);
+        }
+        return encodedFilename;
+    }
+
+    protected String getAttachmentFilenameEncoding(CardView view) {
         return getBasicEncoding();
     }
 
-    protected String getAttachmentTransferEncoding() {
-        return "base64";
+    protected String getAttachmentTransferEncoding(CardView view) {
+        return mailHeaderStrategy.getAttachmentTransferEncoding(view).orElseGet(() -> {
+            return "base64"; // as default of MailFlute
+        });
     }
 
     // ===================================================================================
