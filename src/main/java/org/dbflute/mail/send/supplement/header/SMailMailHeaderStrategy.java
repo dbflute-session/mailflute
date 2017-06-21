@@ -35,6 +35,10 @@ public interface SMailMailHeaderStrategy {
         return OptionalThing.empty();
     }
 
+    default boolean isSuppressTextTransferEncoding() {
+        return false;
+    }
+
     default OptionalThing<String> getTextTransferEncoding(CardView view) {
         return OptionalThing.empty();
     }
@@ -44,6 +48,10 @@ public interface SMailMailHeaderStrategy {
     //                                                                     ===============
     default OptionalThing<String> getAttachmentMimeType(CardView view) {
         return OptionalThing.empty();
+    }
+
+    default boolean isSuppressAttachmentTransferEncoding() {
+        return false;
     }
 
     default OptionalThing<String> getAttachmentTransferEncoding(CardView view) {

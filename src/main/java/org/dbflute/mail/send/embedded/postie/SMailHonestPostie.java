@@ -422,16 +422,15 @@ public class SMailHonestPostie implements SMailPostie {
         assertArgumentNotNull("part", part);
         assertArgumentNotNull("text", text);
         assertArgumentNotNull("textType", textType);
-        final String encoding = getTextEncoding(view);
-        final ByteBuffer buffer = prepareTextByteBuffer(view, text, encoding);
+        final String textEncoding = getTextEncoding(view);
+        final ByteBuffer buffer = prepareTextByteBuffer(view, text, textEncoding);
         final DataSource source = prepareTextDataSource(view, buffer);
         try {
             part.setDataHandler(createDataHandler(source));
-            final OptionalThing<String> optTransferEncoding = getTextTransferEncoding(view);
-            if (optTransferEncoding.isPresent()) { // to avoid checked exception
-                part.setHeader("Content-Transfer-Encoding", optTransferEncoding.get());
+            if (!isSuppressTextTransferEncoding(view)) {
+                part.setHeader("Content-Transfer-Encoding", getTextTransferEncoding(view));
             }
-            part.setHeader("Content-Type", buildTextContentType(view, textType, encoding));
+            part.setHeader("Content-Type", buildTextContentType(view, textType, textEncoding));
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: postcard=" + view, e);
         }
@@ -462,8 +461,14 @@ public class SMailHonestPostie implements SMailPostie {
         });
     }
 
-    protected OptionalThing<String> getTextTransferEncoding(CardView view) {
-        return mailHeaderStrategy.getTextTransferEncoding(view); // no default to use mail server adjustment
+    protected boolean isSuppressTextTransferEncoding(CardView view) {
+        return mailHeaderStrategy.isSuppressTextTransferEncoding();
+    }
+
+    protected String getTextTransferEncoding(CardView view) {
+        return mailHeaderStrategy.getTextTransferEncoding(view).orElseGet(() -> {
+            return "base64"; // as default of MailFlute (for UTF-8/base64)
+        });
     }
 
     protected String buildTextContentType(CardView view, TextType textType, String encoding) {
@@ -498,9 +503,8 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentDisposition = buildAttachmentContentDisposition(view, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
-            final OptionalThing<String> optTransferEncoding = getAttachmentTransferEncoding(view);
-            if (optTransferEncoding.isPresent()) { // to avoid checked exception
-                part.setHeader("Content-Transfer-Encoding", optTransferEncoding.get());
+            if (!isSuppressAttachmentTransferEncoding(view)) {
+                part.setHeader("Content-Transfer-Encoding", getAttachmentTransferEncoding(view));
             }
             part.setHeader("Content-Type", contentType);
             part.setHeader("Content-Disposition", contentDisposition);
@@ -592,8 +596,14 @@ public class SMailHonestPostie implements SMailPostie {
         return getBasicEncoding();
     }
 
-    protected OptionalThing<String> getAttachmentTransferEncoding(CardView view) {
-        return mailHeaderStrategy.getAttachmentTransferEncoding(view); // no default to use mail server adjustment
+    protected boolean isSuppressAttachmentTransferEncoding(CardView view) {
+        return mailHeaderStrategy.isSuppressAttachmentTransferEncoding();
+    }
+
+    protected String getAttachmentTransferEncoding(CardView view) {
+        return mailHeaderStrategy.getAttachmentTransferEncoding(view).orElseGet(() -> {
+            return "base64"; // as default of MailFlute (no change from the beginning)
+        });
     }
 
     // ===================================================================================
