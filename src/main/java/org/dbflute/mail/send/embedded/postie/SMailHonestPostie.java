@@ -428,7 +428,7 @@ public class SMailHonestPostie implements SMailPostie {
         try {
             part.setDataHandler(createDataHandler(source));
             final OptionalThing<String> optTransferEncoding = getTextTransferEncoding(view);
-            if (optTransferEncoding.isPresent()) { // for checked exception
+            if (optTransferEncoding.isPresent()) { // to avoid checked exception
                 part.setHeader("Content-Transfer-Encoding", optTransferEncoding.get());
             }
             part.setHeader("Content-Type", buildTextContentType(view, textType, encoding));
@@ -463,8 +463,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected OptionalThing<String> getTextTransferEncoding(CardView view) {
-        // is optional to use mail server default adjustment
-        return mailHeaderStrategy.getTextTransferEncoding(view);
+        return mailHeaderStrategy.getTextTransferEncoding(view); // no default to use mail server adjustment
     }
 
     protected String buildTextContentType(CardView view, TextType textType, String encoding) {
@@ -499,9 +498,12 @@ public class SMailHonestPostie implements SMailPostie {
         final String contentDisposition = buildAttachmentContentDisposition(view, attachment, textEncoding);
         try {
             part.setDataHandler(createDataHandler(source));
-            part.setHeader("Content-Transfer-Encoding", getAttachmentTransferEncoding(view));
-            part.addHeader("Content-Type", contentType);
-            part.addHeader("Content-Disposition", contentDisposition);
+            final OptionalThing<String> optTransferEncoding = getAttachmentTransferEncoding(view);
+            if (optTransferEncoding.isPresent()) { // to avoid checked exception
+                part.setHeader("Content-Transfer-Encoding", optTransferEncoding.get());
+            }
+            part.setHeader("Content-Type", contentType);
+            part.setHeader("Content-Disposition", contentDisposition);
         } catch (MessagingException e) {
             throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
         }
@@ -590,10 +592,8 @@ public class SMailHonestPostie implements SMailPostie {
         return getBasicEncoding();
     }
 
-    protected String getAttachmentTransferEncoding(CardView view) {
-        return mailHeaderStrategy.getAttachmentTransferEncoding(view).orElseGet(() -> {
-            return "base64"; // as default of MailFlute
-        });
+    protected OptionalThing<String> getAttachmentTransferEncoding(CardView view) {
+        return mailHeaderStrategy.getAttachmentTransferEncoding(view); // no default to use mail server adjustment
     }
 
     // ===================================================================================
