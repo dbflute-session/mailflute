@@ -1,0 +1,8 @@
+/*
+ [test of option, bind formatAs()]
+ ...
+*/
+subject: Welcome to your test code reading, /*pmb.birthdate:formatAs('yyyy/MM/dd')*/
+>>>
+Hello, /*pmb.birthdate:formatAs('yyyy+MM+dd')*/
+Hello, /*pmb.formalizedDatetime:formatAs('yyyy@MM@dd HH:mm:ss.SSS')*/

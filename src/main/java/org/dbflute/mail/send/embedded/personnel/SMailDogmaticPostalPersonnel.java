@@ -33,6 +33,7 @@ import org.dbflute.mail.send.supplement.filter.SMailAddressFilter;
 import org.dbflute.mail.send.supplement.filter.SMailBodyTextFilter;
 import org.dbflute.mail.send.supplement.filter.SMailCancelFilter;
 import org.dbflute.mail.send.supplement.filter.SMailSubjectFilter;
+import org.dbflute.mail.send.supplement.header.SMailMailHeaderStrategy;
 import org.dbflute.mail.send.supplement.inetaddr.SMailInternetAddressCreator;
 import org.dbflute.mail.send.supplement.label.SMailLabelStrategy;
 import org.dbflute.mail.send.supplement.logging.SMailLoggingStrategy;
@@ -67,6 +68,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
     protected final OptionalThing<SMailRetryStrategy> retryStrategy;
     protected final OptionalThing<SMailLabelStrategy> labelStrategy;
     protected final OptionalThing<SMailLoggingStrategy> loggingStrategy;
+    protected final OptionalThing<SMailMailHeaderStrategy> mailHeaderStrategy;
     protected final OptionalThing<SMailInternetAddressCreator> internetAddressCreator;
 
     // -----------------------------------------------------
@@ -88,6 +90,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         retryStrategy = createRetryStrategy();
         labelStrategy = createLabelStrategy();
         loggingStrategy = createLoggingStrategy();
+        mailHeaderStrategy = createMailHeaderStrategy();
         internetAddressCreator = createInternetAddressCreator();
     }
 
@@ -186,6 +189,10 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         return OptionalThing.empty();
     }
 
+    protected OptionalThing<SMailMailHeaderStrategy> createMailHeaderStrategy() {
+        return OptionalThing.empty();
+    }
+
     protected OptionalThing<SMailInternetAddressCreator> createInternetAddressCreator() {
         return OptionalThing.empty();
     }
@@ -231,6 +238,7 @@ public class SMailDogmaticPostalPersonnel implements SMailPostalPersonnel {
         asyncStrategy.ifPresent(strategy -> postie.withAsyncStrategy(strategy));
         retryStrategy.ifPresent(strategy -> postie.withRetryStrategy(strategy));
         loggingStrategy.ifPresent(strategy -> postie.withLoggingStrategy(strategy));
+        mailHeaderStrategy.ifPresent(strategy -> postie.withMailHeaderStrategy(strategy));
         internetAddressCreator.ifPresent(creator -> postie.withInternetAddressCreator(creator));
         return training ? postie.asTraining() : postie;
     }
