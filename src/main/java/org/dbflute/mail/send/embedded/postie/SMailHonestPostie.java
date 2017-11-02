@@ -31,6 +31,7 @@ import javax.activation.DataSource;
 import javax.mail.Address;
 import javax.mail.BodyPart;
 import javax.mail.MessagingException;
+import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.AddressException;
@@ -665,9 +666,7 @@ public class SMailHonestPostie implements SMailPostie {
         logMailBefore(postcard, message);
         RuntimeException cause = null;
         try {
-            if (!training) {
-                retryableSend(postcard, message);
-            }
+            retryableSend(postcard, message);
         } catch (RuntimeException e) {
             cause = e;
             if (postcard.isSuppressSendFailure()) {
@@ -713,7 +712,7 @@ public class SMailHonestPostie implements SMailPostie {
                 if (challengeCount > 0) { // means retry sending
                     waitBeforeRetrySending(intervalMillis);
                 }
-                actuallySend(message);
+                stagingSend(postcard, message);
                 if (challengeCount > 0) { // means retry success
                     logRetrySuccess(postcard, message, challengeCount, firstCause);
                 }
@@ -743,14 +742,6 @@ public class SMailHonestPostie implements SMailPostie {
         }
     }
 
-    protected void actuallySend(SMailPostingMessage message) throws MessagingException {
-        final Transport transport = motorbike.getNativeSession().getTransport();
-        final MimeMessage mimeMessage = message.getMimeMessage();
-        transport.connect(); // authenticated by session's authenticator
-        transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
-        message.acceptSentTransport(transport); // keep e.g. last return code
-    }
-
     protected void logRetrySuccess(Postcard postcard, SMailPostingMessage message, int challengeCount, Exception firstCause) {
         loggingStrategy.logRetrySuccess(postcard, message, challengeCount, firstCause);
     }
@@ -765,6 +756,31 @@ public class SMailHonestPostie implements SMailPostie {
         br.addElement(message);
         final String msg = br.buildExceptionMessage();
         throw new SMailTransportFailureException(msg, e);
+    }
+
+    // -----------------------------------------------------
+    //                                               Staging
+    //                                               -------
+    // you can override this to switch sender to e.g. remote api
+    protected void stagingSend(Postcard postcard, SMailPostingMessage message) throws MessagingException {
+        if (!training) {
+            actuallySend(message);
+        }
+    }
+
+    // -----------------------------------------------------
+    //                                              Actually
+    //                                              --------
+    protected void actuallySend(SMailPostingMessage message) throws MessagingException {
+        final Transport transport = prepareTransport();
+        final MimeMessage mimeMessage = message.getMimeMessage();
+        transport.connect(); // authenticated by session's authenticator
+        transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
+        message.acceptSentTransport(transport); // keep e.g. last return code
+    }
+
+    protected Transport prepareTransport() throws NoSuchProviderException {
+        return motorbike.getNativeSession().getTransport();
     }
 
     // ===================================================================================
