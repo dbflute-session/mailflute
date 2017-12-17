@@ -165,7 +165,16 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
                 setupOrElseValueIfNeeds(boundValue, _optionDef);
                 setupFormatAsValueIfNeeds(boundValue, _optionDef);
             }
+
+            @Override
+            protected boolean processDynamicBinding(CommandContext ctx, Object firstValue, Class<?> firstType, String embeddedString) {
+                return isDynamicBindingEnabled(); // to avoid unexpected error by '/*xxx*/' in parameter
+            }
         };
+    }
+
+    protected boolean isDynamicBindingEnabled() {
+        return false; // fixedly invalid as default, unneeded in mailflute
     }
 
     // -----------------------------------------------------
