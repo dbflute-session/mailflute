@@ -80,6 +80,7 @@ public class Postcard implements CardView {
     protected boolean suppressSendFailure;
     protected boolean dryrun;
     protected Map<String, Object> pushedLoggingMap; // optional, lazy loaded
+    protected Map<String, Object> pushedUlteriorMap; // optional, lazy loaded
 
     // -----------------------------------------------------
     //                                       PostOffice Work
@@ -341,6 +342,19 @@ public class Postcard implements CardView {
             pushedLoggingMap = new LinkedHashMap<String, Object>(4);
         }
         pushedLoggingMap.put(key, value);
+    }
+
+    // -----------------------------------------------------
+    //                                              Ulterior
+    //                                              --------
+    // basically unused in mailflute, this is for extension by application
+    public void pushUlterior(String key, Object value) {
+        assertArgumentNotNull("key", key);
+        assertArgumentNotNull("value", value);
+        if (pushedUlteriorMap == null) {
+            pushedUlteriorMap = new LinkedHashMap<String, Object>(4);
+        }
+        pushedUlteriorMap.put(key, value);
     }
 
     // ===================================================================================
@@ -673,6 +687,14 @@ public class Postcard implements CardView {
 
     public Map<String, Object> getPushedLoggingMap() {
         return pushedLoggingMap != null ? Collections.unmodifiableMap(pushedLoggingMap) : Collections.emptyMap();
+    }
+
+    public boolean hasPushedUlterior() {
+        return pushedUlteriorMap != null;
+    }
+
+    public Map<String, Object> getPushedUlteriorMap() {
+        return pushedUlteriorMap != null ? Collections.unmodifiableMap(pushedUlteriorMap) : Collections.emptyMap();
     }
 
     // -----------------------------------------------------

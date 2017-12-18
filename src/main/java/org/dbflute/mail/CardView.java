@@ -96,6 +96,10 @@ public interface CardView {
 
     Map<String, Object> getPushedLoggingMap();
 
+    boolean hasPushedUlterior();
+
+    Map<String, Object> getPushedUlteriorMap();
+
     // ===================================================================================
     //                                                                     PostOffice Work
     //                                                                     ===============

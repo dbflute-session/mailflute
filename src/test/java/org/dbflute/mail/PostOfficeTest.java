@@ -114,7 +114,10 @@ public class PostOfficeTest extends PlainTestCase {
         }
     }
 
-    public void test_deliver_directBody() throws Exception {
+    // ===================================================================================
+    //                                                                         Direct Body
+    //                                                                         ===========
+    public void test_deliver_directBody_basic() throws Exception {
         // ## Arrange ##
         String plainBody = preparePlainBody();
         Postcard postcard = new Postcard();
@@ -131,9 +134,6 @@ public class PostOfficeTest extends PlainTestCase {
         doAssertParameter(postcard, map, subject, false);
     }
 
-    // -----------------------------------------------------
-    //                                          Small Assist
-    //                                          ------------
     protected String preparePlainBody() {
         final String baseDir = SMailDogmaticPostalPersonnel.CLASSPATH_BASEDIR;
         final InputStream ins = DfResourceUtil.getResourceStream(baseDir + "/" + BODY_ONLY_ML);
@@ -141,28 +141,6 @@ public class PostOfficeTest extends PlainTestCase {
         return new FileTextIO().encodeAsUTF8().read(ins);
     }
 
-    protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb, String subject, boolean hasHtml) {
-        String plain = postcard.toCompletePlainText().get();
-        Object birthdate = pmb.get("birthdate");
-        assertContainsAll(plain, "jflute", "Today is " + birthdate + ".", "Thanks");
-        if (hasHtml) {
-            assertContainsAll(postcard.toCompleteHtmlText().get(), "jflute", "Today is " + birthdate + ".", "Thanks");
-        } else {
-            assertFalse(postcard.toCompleteHtmlText().isPresent());
-        }
-        assertEquals(subject, postcard.getSubject().get());
-    }
-
-    protected Map<String, Object> prepareVariableMap() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put("memberName", "jflute");
-        map.put("birthdate", currentLocalDate());
-        return map;
-    }
-
-    // ===================================================================================
-    //                                                                         Direct Body
-    //                                                                         ===========
     public void test_deliver_directBody_fixedText() throws Exception {
         // ## Arrange ##
         Postcard postcard = new Postcard();
@@ -252,6 +230,25 @@ public class PostOfficeTest extends PlainTestCase {
     }
 
     // ===================================================================================
+    //                                                                    Dynamic Headache
+    //                                                                    ================
+    public void test_deliver_dynamicBinding_invalid_asDefault() throws Exception {
+        // ## Arrange ##
+        Postcard postcard = new Postcard();
+        prepareMockAddress(postcard);
+        String memberName = "/*pmb.sea*/"; // dynamic binding error until 0.5.7
+        Map<String, Object> map = prepareVariableMap(memberName);
+        postcard.useBodyFile(HEADER_SUBJECT_ML).useTemplateText(map);
+
+        // ## Act ##
+        prepareOffice().deliver(postcard);
+
+        // ## Assert ##
+        String plain = postcard.toCompletePlainText().get();
+        assertContains(plain, memberName); // dynamic binding should be invalid in mailflute
+    }
+
+    // ===================================================================================
     //                                                                       Line Handling
     //                                                                       =============
     public void test_deliver_various_lines() throws Exception {
@@ -290,5 +287,31 @@ public class PostOfficeTest extends PlainTestCase {
         SMailPostalPersonnel personnel = new SMailDogmaticPostalPersonnel().asTraining();
         SMailDeliveryDepartment deliveryDepartment = new SMailDeliveryDepartment(parkingLot, personnel);
         return new PostOffice(deliveryDepartment);
+    }
+
+    protected void doAssertParameter(Postcard postcard, Map<String, Object> pmb, String subject, boolean hasHtml) {
+        String plain = postcard.toCompletePlainText().get();
+        Object birthdate = pmb.get("birthdate");
+        assertContainsAll(plain, "jflute", "Today is " + birthdate + ".", "Thanks");
+        if (hasHtml) {
+            assertContainsAll(postcard.toCompleteHtmlText().get(), "jflute", "Today is " + birthdate + ".", "Thanks");
+        } else {
+            assertFalse(postcard.toCompleteHtmlText().isPresent());
+        }
+        assertEquals(subject, postcard.getSubject().get());
+    }
+
+    protected Map<String, Object> prepareVariableMap() {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("memberName", "jflute");
+        map.put("birthdate", currentLocalDate());
+        return map;
+    }
+
+    protected Map<String, Object> prepareVariableMap(String memberName) {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("memberName", memberName);
+        map.put("birthdate", currentLocalDate());
+        return map;
     }
 }

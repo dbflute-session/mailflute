@@ -65,11 +65,20 @@ public class SMailConventionSecurity {
     public void throwMailTemplateFromClasspathNotFoundException(Postcard postcard, String path, String realPath) {
         final ExceptionMessageBuilder br = new ExceptionMessageBuilder();
         br.addNotice("Not found the mail template file from classpath");
+        br.addItem("Advice");
+        br.addElement("Confirm the location and file path of mail template.");
+        br.addElement("And the file should be in valid classpath.");
+        br.addElement("");
+        br.addElement("While, The searching mail template process needs");
+        br.addElement("context class-loader of current thread.");
+        br.addElement("If the class-loader is null, MailFlute cannot search it.");
         br.addItem("Postcard");
         br.addElement(postcard);
         br.addItem("Mail Template");
         br.addElement("plain path : " + path);
         br.addElement("real path  : " + realPath);
+        br.addItem("Context ClassLoader");
+        br.addElement(Thread.currentThread().getContextClassLoader());
         final String msg = br.buildExceptionMessage();
         throw new SMailTemplateNotFoundException(msg);
     }
