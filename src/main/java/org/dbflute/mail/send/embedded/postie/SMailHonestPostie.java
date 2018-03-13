@@ -510,7 +510,8 @@ public class SMailHonestPostie implements SMailPostie {
             part.setHeader("Content-Type", contentType);
             part.setHeader("Content-Disposition", contentDisposition);
         } catch (MessagingException e) {
-            throw new SMailMessageSettingFailureException("Failed to set headers: " + attachment, e);
+            String msg = "Failed to set headers: " + attachment;
+            throw new SMailMessageSettingFailureException(msg, e);
         }
         return part;
     }
@@ -528,17 +529,18 @@ public class SMailHonestPostie implements SMailPostie {
 
     protected byte[] readAttachedBytes(CardView view, SMailAttachment attachment) {
         final InputStream ins = attachment.getReourceStream();
-        AccessibleByteArrayOutputStream ous = null;
+        ByteArrayOutputStream ous = null;
         try {
-            ous = new AccessibleByteArrayOutputStream();
+            ous = new ByteArrayOutputStream();
             final byte[] buffer = new byte[8192];
             int length;
             while ((length = ins.read(buffer)) > 0) {
                 ous.write(buffer, 0, length);
             }
-            return ous.getBytes();
+            return ous.toByteArray();
         } catch (IOException e) {
-            throw new SMailIllegalStateException("Failed to read the attached stream as bytes: " + attachment);
+            String msg = "Failed to read the attached stream as bytes: " + attachment;
+            throw new SMailIllegalStateException(msg, e);
         } finally {
             if (ous != null) {
                 try {
@@ -548,12 +550,6 @@ public class SMailHonestPostie implements SMailPostie {
             try {
                 ins.close();
             } catch (IOException ignored) {}
-        }
-    }
-
-    protected static class AccessibleByteArrayOutputStream extends ByteArrayOutputStream {
-        public byte[] getBytes() {
-            return buf;
         }
     }
 
