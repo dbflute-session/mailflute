@@ -81,7 +81,7 @@ public class HarborBoot {
 <dependency>
     <groupId>org.dbflute.mail</groupId>
     <artifactId>mailflute</artifactId>
-    <version>0.5.9</version>
+    <version>0.6.0</version>
 </dependency>
 ```
 
@@ -89,8 +89,9 @@ public class HarborBoot {
 Apache License 2.0
 
 ## Official site
-comming soon...
+Japanese site:  
+http://dbflute.seasar.org/ja/manual/function/helper/mailflute/index.html
 
 # Thanks, Friends
 MailFlute is used by:  
-comming soon...
+- Fess: https://github.com/codelibs/fess (from version10)
