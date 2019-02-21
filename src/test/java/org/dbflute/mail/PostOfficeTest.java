@@ -260,7 +260,7 @@ public class PostOfficeTest extends PlainTestCase {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("sea", "exists");
         map.put("land", null);
-        map.put("iks", newArrayList("a", "b", "c"));
+        map.put("piari", newArrayList("a", "b", "c"));
         map.put("amba", null);
         postcard.useBodyFile(VARIOUS_LINES_ML).useTemplateText(map);
 
