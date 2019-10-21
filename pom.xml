@@ -13,7 +13,7 @@
 
 	<properties>
 		<dbflute.version>1.1.8</dbflute.version> <!-- about one year old (from now) -->
-		<javax.mail.version>1.6.1</javax.mail.version>
+		<javax.mail.version>1.6.2</javax.mail.version>
 		<slf4j.version>1.7.12</slf4j.version>
 		<utflute.version>0.8.7</utflute.version>
 		<junit.version>4.8.2</junit.version> <!-- latest version without hamcrest -->
