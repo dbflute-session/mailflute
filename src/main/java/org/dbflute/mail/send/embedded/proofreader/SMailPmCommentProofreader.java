@@ -73,6 +73,9 @@ public class SMailPmCommentProofreader implements SMailTextProofreader {
     //                                                                     Line Adjustment
     //                                                                     ===============
     protected String filterTemplateText(String templateText, Object pmb) {
+        // #for_now jflute pending, IF in FOR comment becomes empty line when false (2019/02/21)
+        // basically it may be unneeded because it should be structured in Java
+        // and modification is very difficult so pending, waiting for next request
         final String replaced = Srl.replace(templateText, CRLF, LF);
         final List<String> lineList = Srl.splitList(replaced, LF);
         final StringBuilder sb = new StringBuilder(templateText.length());
