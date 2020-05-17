@@ -21,10 +21,26 @@ package org.dbflute.mail;
  */
 public class DeliveryCategory {
 
-    protected final String category;
+    protected final String category; // not null
 
     public DeliveryCategory(String category) {
+        if (category == null) {
+            throw new IllegalArgumentException("The argument 'category' should not be null.");
+        }
         this.category = category;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof DeliveryCategory)) {
+            return false;
+        }
+        return category.equals(((DeliveryCategory) obj).category);
+    }
+
+    @Override
+    public int hashCode() { // needs to find motorbike
+        return category.hashCode();
     }
 
     @Override
