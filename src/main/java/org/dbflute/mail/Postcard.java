@@ -75,6 +75,7 @@ public class Postcard implements CardView {
     //                                         -------------
     // postie option
     protected boolean async;
+    protected boolean definitelySync;
     protected int retryCount;
     protected long intervalMillis;
     protected boolean suppressSendFailure;
@@ -308,6 +309,11 @@ public class Postcard implements CardView {
     //                                                                       =============
     public Postcard async() {
         async = true;
+        return this;
+    }
+
+    public Postcard definitelySync() {
+        definitelySync = true;
         return this;
     }
 
@@ -663,6 +669,10 @@ public class Postcard implements CardView {
     //                                         -------------
     public boolean isAsync() {
         return async;
+    }
+
+    public boolean isDefinitelySync() {
+        return definitelySync;
     }
 
     public int getRetryCount() {

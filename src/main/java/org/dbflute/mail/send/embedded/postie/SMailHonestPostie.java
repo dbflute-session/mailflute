@@ -652,7 +652,7 @@ public class SMailHonestPostie implements SMailPostie {
     }
 
     protected boolean needsAsync(Postcard postcard) {
-        return postcard.isAsync();
+        return postcard.isAsync() && !postcard.isDefinitelySync();
     }
 
     // -----------------------------------------------------
