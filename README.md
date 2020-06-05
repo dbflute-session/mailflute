@@ -81,7 +81,7 @@ public class HarborBoot {
 <dependency>
     <groupId>org.dbflute.mail</groupId>
     <artifactId>mailflute</artifactId>
-    <version>0.6.3</version>
+    <version>0.6.4</version>
 </dependency>
 ```
 
