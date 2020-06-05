@@ -773,10 +773,19 @@ public class SMailHonestPostie implements SMailPostie {
         transport.connect(); // authenticated by session's authenticator
         transport.sendMessage(mimeMessage, mimeMessage.getAllRecipients());
         message.acceptSentTransport(transport); // keep e.g. last return code
+        closeTransport(transport);
     }
 
     protected Transport prepareTransport() throws NoSuchProviderException {
         return motorbike.getNativeSession().getTransport();
+    }
+
+    protected void closeTransport(Transport transport) {
+        try {
+            transport.close();
+        } catch (MessagingException continued) {
+            logger.warn("Failed to close the transport: " + transport, continued);
+        }
     }
 
     // ===================================================================================
