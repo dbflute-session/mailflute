@@ -16,7 +16,7 @@
 		<javax.mail.version>1.6.2</javax.mail.version>
 		<slf4j.version>1.7.12</slf4j.version>
 		<utflute.version>0.9.1</utflute.version>
-		<junit.version>4.8.2</junit.version> <!-- latest version without hamcrest -->
+		<junit.version>4.13.1</junit.version> <!-- latest version without hamcrest -->
 	</properties>
 
 	<licenses>
