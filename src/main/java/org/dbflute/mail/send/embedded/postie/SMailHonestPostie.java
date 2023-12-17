@@ -26,23 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.mail.Address;
-import javax.mail.BodyPart;
-import javax.mail.MessagingException;
-import javax.mail.NoSuchProviderException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePart;
-import javax.mail.internet.MimeUtility;
-import javax.mail.util.ByteArrayDataSource;
-
 import org.dbflute.helper.message.ExceptionMessageBuilder;
 import org.dbflute.mail.CardView;
 import org.dbflute.mail.Postcard;
@@ -79,6 +62,23 @@ import org.dbflute.optional.OptionalThing;
 import org.dbflute.system.DBFluteSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.mail.Address;
+import jakarta.mail.BodyPart;
+import jakarta.mail.MessagingException;
+import jakarta.mail.NoSuchProviderException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimePart;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.util.ByteArrayDataSource;
 
 /**
  * @author jflute
@@ -479,6 +479,7 @@ public class SMailHonestPostie implements SMailPostie {
     protected static enum TextType {
 
         PLAIN("plain"), HTML("html");
+
         private final String code;
 
         private TextType(String code) {

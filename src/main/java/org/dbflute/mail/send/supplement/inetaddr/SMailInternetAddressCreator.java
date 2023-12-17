@@ -15,10 +15,10 @@
  */
 package org.dbflute.mail.send.supplement.inetaddr;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-
 import org.dbflute.mail.CardView;
+
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 /**
  * @author jflute

@@ -20,8 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.mail.internet.AddressException;
-
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
@@ -33,6 +31,8 @@ import org.dbflute.mail.send.exception.SMailTemplateNotFoundException;
 import org.dbflute.utflute.core.PlainTestCase;
 import org.dbflute.util.DfResourceUtil;
 import org.dbflute.util.Srl;
+
+import jakarta.mail.internet.AddressException;
 
 /**
  * @author jflute

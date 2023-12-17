@@ -19,8 +19,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
-import javax.mail.internet.AddressException;
-
 import org.dbflute.mail.send.SMailAddress;
 import org.dbflute.mail.send.SMailDeliveryDepartment;
 import org.dbflute.mail.send.SMailPostalMotorbike;
@@ -29,6 +27,8 @@ import org.dbflute.mail.send.SMailPostalPersonnel;
 import org.dbflute.mail.send.embedded.personnel.SMailDogmaticPostalPersonnel;
 import org.dbflute.twowaysql.exception.EmbeddedVariableCommentParameterNullValueException;
 import org.dbflute.utflute.core.PlainTestCase;
+
+import jakarta.mail.internet.AddressException;
 
 /**
  * @author jflute

@@ -15,10 +15,10 @@
  */
 package org.dbflute.mail.send.supplement.filter;
 
-import javax.mail.Address;
-
 import org.dbflute.mail.CardView;
 import org.dbflute.optional.OptionalThing;
+
+import jakarta.mail.Address;
 
 /**
  * @author jflute

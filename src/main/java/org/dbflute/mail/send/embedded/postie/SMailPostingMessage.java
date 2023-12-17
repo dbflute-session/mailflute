@@ -24,12 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.mail.Address;
-import javax.mail.Message.RecipientType;
-import javax.mail.MessagingException;
-import javax.mail.Transport;
-import javax.mail.internet.MimeMessage;
-
 import org.dbflute.helper.filesystem.FileTextIO;
 import org.dbflute.mail.PostOffice;
 import org.dbflute.mail.send.SMailPostalMotorbike;
@@ -42,6 +36,12 @@ import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.Srl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.mail.Address;
+import jakarta.mail.Message.RecipientType;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * @author jflute

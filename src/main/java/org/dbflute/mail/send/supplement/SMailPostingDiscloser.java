@@ -18,11 +18,11 @@ package org.dbflute.mail.send.supplement;
 import java.util.List;
 import java.util.Map;
 
-import javax.mail.Address;
-import javax.mail.internet.MimeMessage;
-
 import org.dbflute.mail.send.supplement.attachment.SMailReadAttachedData;
 import org.dbflute.optional.OptionalThing;
+
+import jakarta.mail.Address;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * @author jflute

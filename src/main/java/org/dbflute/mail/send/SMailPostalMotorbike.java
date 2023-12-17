@@ -17,13 +17,13 @@ package org.dbflute.mail.send;
 
 import java.util.Properties;
 
-import javax.mail.Authenticator;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-
 import org.dbflute.mail.send.exception.SMailIllegalStateException;
 import org.dbflute.optional.OptionalThing;
 import org.dbflute.util.Srl;
+
+import jakarta.mail.Authenticator;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
 
 /**
  * @author jflute
