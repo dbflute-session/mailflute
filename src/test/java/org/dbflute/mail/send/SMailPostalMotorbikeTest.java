@@ -2,9 +2,9 @@ package org.dbflute.mail.send;
 
 import java.util.Properties;
 
-import javax.mail.PasswordAuthentication;
-
 import org.dbflute.utflute.core.PlainTestCase;
+
+import jakarta.mail.PasswordAuthentication;
 
 /**
  * @author jflute
