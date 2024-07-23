@@ -1,6 +1,6 @@
 MailFlute
 =======================
-simple mail library with DBFlute and Java8
+simple mail library with DBFlute and Java21
 
 This library should be collaborated with FreeGen of DBFlute
 like e.g. LastaFlute:
@@ -81,7 +81,7 @@ public class HarborBoot {
 <dependency>
     <groupId>org.dbflute.mail</groupId>
     <artifactId>mailflute</artifactId>
-    <version>0.6.5</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
